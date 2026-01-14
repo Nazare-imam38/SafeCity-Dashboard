@@ -12,7 +12,8 @@ import {
   Activity, 
   Landmark,
   TrendingUp,
-  MapPin
+  MapPin,
+  Construction
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,7 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 const GIS_STATS = [
   { label: "CCTV Uptime", value: "98.4%", change: "+0.2%", icon: Camera },
   { label: "Patrol Coverage", value: "92%", change: "+5%", icon: Truck },
-  { label: "Response Radius", value: "2.4km", change: "-0.3km", icon: MapPin },
+  { label: "Construction Radius", value: "1.8km", change: "-0.1km", icon: Construction },
   { label: "Station Nodes", value: "24", change: "0", icon: Landmark },
 ];
 
@@ -31,8 +32,8 @@ export default function GISLayers() {
         {/* Statistics Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {GIS_STATS.map((stat) => (
-            <Card key={stat.label} className="border-none shadow-sm bg-primary text-white overflow-hidden relative">
-              <div className="absolute right-[-10px] top-[-10px] opacity-10">
+            <Card key={stat.label} className="border-none shadow-sm bg-primary text-white overflow-hidden relative group">
+              <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:scale-110 transition-transform">
                 <stat.icon className="h-20 w-20" />
               </div>
               <CardContent className="p-4 flex flex-col gap-1 relative z-10">
@@ -77,20 +78,20 @@ export default function GISLayers() {
                     <CardContent className="p-2 space-y-1">
                       {[
                         { icon: Camera, label: "CCTV Network", detail: "4,500 Cameras", status: "Active", color: "text-blue-500" },
+                        { icon: Construction, label: "Construction Sites", detail: "8 Active Projects", status: "In Progress", color: "text-orange-500" },
                         { icon: AlertTriangle, label: "Hotspot Zones", detail: "12 Critical", status: "Warning", color: "text-secondary" },
                         { icon: Truck, label: "Patrol Fleet", detail: "86 Units", status: "Tracking", color: "text-emerald-500" },
                         { icon: Landmark, label: "Police Stations", detail: "24 Locations", status: "Static", color: "text-primary" },
                         { icon: Activity, label: "Traffic Sensors", detail: "1,200 Nodes", status: "Live", color: "text-purple-500" },
-                        { icon: Shield, label: "Fixed Checkposts", detail: "45 Posts", status: "Secured", color: "text-slate-500" },
                       ].map((item) => (
                         <div key={item.label} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-all cursor-pointer group">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-md bg-muted group-hover:bg-white transition-colors">
+                            <div className="p-2 rounded-md bg-muted group-hover:bg-white transition-colors shadow-sm">
                               <item.icon className={`h-4 w-4 ${item.color}`} />
                             </div>
                             <div>
-                              <p className="text-sm font-bold">{item.label}</p>
-                              <p className="text-[10px] text-muted-foreground">{item.detail}</p>
+                              <p className="text-sm font-bold tracking-tight">{item.label}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase font-medium">{item.detail}</p>
                             </div>
                           </div>
                         </div>
@@ -111,9 +112,9 @@ export default function GISLayers() {
              <Card className="border-dashed border-2">
                <CardContent className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                   <TrendingUp className="h-12 w-12 mb-4 opacity-10" />
-                  <h3 className="text-lg font-bold">Layer Data Explorer</h3>
+                  <h3 className="text-lg font-bold font-heading">Layer Data Explorer</h3>
                   <p className="text-sm">Raw geospatial data attributes for urban planning and risk analysis.</p>
-                  <button className="mt-4 px-6 py-2 bg-primary text-white rounded-lg text-xs font-bold uppercase tracking-widest">Connect Data Source</button>
+                  <button className="mt-4 px-6 py-2 bg-primary text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors">Connect Data Source</button>
                </CardContent>
              </Card>
           </TabsContent>

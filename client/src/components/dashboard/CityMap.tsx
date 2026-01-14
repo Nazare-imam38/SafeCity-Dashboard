@@ -4,7 +4,8 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
-import { Camera, AlertTriangle, Truck, Shield, Activity, Landmark } from "lucide-react";
+import { Camera, AlertTriangle, Truck, Shield, Activity, Landmark, Construction, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -15,7 +16,7 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Custom Icons for better visualization
+// Custom Icons
 const getPoliceIcon = () => L.divIcon({
   className: 'police-station-icon',
   html: `<div class="p-1.5 bg-primary rounded-lg border-2 border-white shadow-xl"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>`,
@@ -28,6 +29,13 @@ const getPatrolIcon = (color: string) => L.divIcon({
   html: `<div class="p-1 bg-${color} rounded-full border-2 border-white shadow-lg animate-pulse"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M15 18H9"/></svg></div>`,
   iconSize: [24, 24],
   iconAnchor: [12, 12]
+});
+
+const getConstructionIcon = () => L.divIcon({
+  className: 'construction-icon',
+  html: `<div class="p-1.5 bg-orange-500 rounded-lg border-2 border-white shadow-xl animate-bounce"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="10" width="20" height="12" rx="2"/><path d="M6 10V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"/></svg></div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14]
 });
 
 const MOCK_DATA = {
@@ -50,15 +58,32 @@ const MOCK_DATA = {
   traffic: [
     { id: 1, path: [[31.520, 74.358], [31.540, 74.358], [31.560, 74.350]], level: "High", speed: "12 km/h" },
     { id: 2, path: [[31.500, 74.300], [31.520, 74.320], [31.540, 74.340]], level: "Low", speed: "45 km/h" },
+  ],
+  construction: [
+    { id: 1, pos: [31.5350, 74.3550], label: "Flyover Project B", progress: "45%", image: "https://images.unsplash.com/photo-1541888946425-d81bb19480c5?auto=format&fit=crop&w=300&q=80" },
+    { id: 2, pos: [31.4850, 74.3150], label: "Underpass Sector 4", progress: "70%", image: "https://images.unsplash.com/photo-1503387762-592dea58ef21?auto=format&fit=crop&w=300&q=80" },
   ]
 };
 
 export function CityMap() {
   const [isMounted, setIsMounted] = useState(false);
+  const [constructionSites, setConstructionSites] = useState(MOCK_DATA.construction);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setConstructionSites(prev => prev.map(site => 
+          site.id === id ? { ...site, image: event.target?.result as string } : site
+        ));
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
 
   if (!isMounted) {
     return <div className="h-[600px] w-full bg-muted animate-pulse rounded-xl" />;
@@ -98,11 +123,7 @@ export function CityMap() {
                         <Camera className="h-4 w-4 text-primary" />
                         <span className="font-bold text-sm">{cam.label}</span>
                       </div>
-                      <div className="space-y-1 text-xs font-mono">
-                        <p>STATUS: <span className={cam.status === 'Online' ? 'text-emerald-500' : 'text-destructive'}>{cam.status}</span></p>
-                        <p>TYPE: {cam.type}</p>
-                        <p>ALERTS: {cam.alerts}</p>
-                      </div>
+                      <p className="text-xs">STATUS: <span className={cam.status === 'Online' ? 'text-emerald-500' : 'text-destructive'}>{cam.status}</span></p>
                       <button className="w-full mt-3 bg-primary text-white text-[10px] py-1.5 rounded uppercase font-bold tracking-widest hover:bg-primary/90">Request Feed</button>
                     </div>
                   </Popup>
@@ -116,10 +137,40 @@ export function CityMap() {
               {MOCK_DATA.patrols.map(unit => (
                 <Marker key={unit.id} position={unit.pos as [number, number]} icon={getPatrolIcon(unit.color)}>
                   <Popup>
-                    <div className="p-2 text-xs">
+                    <div className="p-2 text-xs font-sans">
                       <p className="font-bold border-b pb-1 mb-1">{unit.label}</p>
-                      <p>TYPE: {unit.type}</p>
                       <p>STATUS: {unit.status}</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </LayerGroup>
+          </LayersControl.Overlay>
+
+          <LayersControl.Overlay checked name="Construction Projects">
+            <LayerGroup>
+              {constructionSites.map(site => (
+                <Marker key={site.id} position={site.pos as [number, number]} icon={getConstructionIcon()}>
+                  <Popup>
+                    <div className="p-2 w-52 font-sans">
+                      <div className="flex items-center gap-2 border-b pb-2 mb-2">
+                        <Construction className="h-4 w-4 text-orange-500" />
+                        <span className="font-bold text-sm">{site.label}</span>
+                      </div>
+                      <div className="aspect-video bg-muted rounded overflow-hidden mb-2 relative group">
+                        <img src={site.image} alt={site.label} className="w-full h-full object-cover" />
+                        <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                          <Upload className="h-6 w-6 text-white" />
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, site.id)} />
+                        </label>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground font-medium uppercase tracking-tighter">Progress</span>
+                        <span className="font-bold text-orange-500">{site.progress}</span>
+                      </div>
+                      <div className="w-full bg-muted h-1 rounded-full mt-1 overflow-hidden">
+                        <div className="bg-orange-500 h-full" style={{ width: site.progress }} />
+                      </div>
                     </div>
                   </Popup>
                 </Marker>
@@ -187,8 +238,9 @@ export function CityMap() {
           </div>
           <div className="flex gap-4 text-[10px] font-mono">
             <span>CAMS: 4,500</span>
-            <span className="text-secondary">ALERTS: 12</span>
-            <span className="text-emerald-400">PATROLS: 86</span>
+            <span className="text-secondary font-bold tracking-widest">ALERTS: 12</span>
+            <span className="text-emerald-400 font-bold tracking-widest">PATROLS: 86</span>
+            <span className="text-orange-400 font-bold tracking-widest">CONST: 8</span>
           </div>
         </div>
       </div>
