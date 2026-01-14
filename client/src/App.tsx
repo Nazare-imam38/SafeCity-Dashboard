@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Comparison from "@/pages/Comparison";
 import Finance from "@/pages/Finance";
+import GISLayers from "@/pages/GISLayers";
 
 function Router() {
   return (
@@ -14,6 +15,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/comparison" component={Comparison} />
       <Route path="/finance" component={Finance} />
+      <Route path="/gis" component={GISLayers} />
       <Route component={NotFound} />
     </Switch>
   );
