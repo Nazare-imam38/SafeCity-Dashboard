@@ -18,7 +18,6 @@ const NAV_ITEMS = [
   { icon: BarChart3, label: "Comparison", href: "/comparison" },
   { icon: DollarSign, label: "Finance & Budget", href: "/finance" },
   { icon: MapIcon, label: "GIS Layers", href: "/gis" },
-  { icon: Activity, label: "System Health", href: "/health" },
   { icon: Settings, label: "Settings", href: "/settings" },
 ];
 

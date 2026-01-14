@@ -9,6 +9,8 @@ import Comparison from "@/pages/Comparison";
 import Finance from "@/pages/Finance";
 import GISLayers from "@/pages/GISLayers";
 
+import Settings from "@/pages/Settings";
+
 function Router() {
   return (
     <Switch>
@@ -16,6 +18,7 @@ function Router() {
       <Route path="/comparison" component={Comparison} />
       <Route path="/finance" component={Finance} />
       <Route path="/gis" component={GISLayers} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );
