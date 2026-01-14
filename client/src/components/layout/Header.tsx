@@ -1,7 +1,7 @@
 import { Bell, Search, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/hooks/use-theme.ts";
 
 export function Header({ title }: { title: string }) {
   const { toggleTheme } = useTheme();
