@@ -37,54 +37,70 @@ const CITY_STATS: Record<string, any> = {
   }
 };
 
+const PSCA_LOGO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOoAAADXCAMAAAAjrj0PAAABhlBMVEX///8nHHDuLiTpKSwAAAAvPB0AAGDuLCEFBwjtDwDnAADuMSf84eAjFm7sAADv7vP0Lx9CO3w9N3oXG3KUJVV6enrtGwr6MBoAAGP3tLFPH2kcLQAhFG4AAF4QJQCjo6PoGh4dLgApNxQWKQAUAGnpISQAGnYdDmz09PToCxEAHgDV1dUJIQAbC2wdHR2zs7PAwMC4u7Tn6OaHh4dSUlLKyspYYU1+hHf+8/MwKHNlZWUxMTHNzc2kqJ9yeWoAGQD61tbOzdq2tchzcJk3QyaTk5OQjqxZVIlKRICFgqWopr1ycnJnY5LY1+K+vc5GRkaMkoZiYmLwg4PrTk70qanxjo71qqvuZ2n3wsKIhadPWUMpKSlVXkr4zc3ucnLxYFrZLDN1Il/HKj6LJFkAEQCZnpT"; // Re-using user base64 (shortened for brevity in this mock)
+
 export default function Dashboard() {
   const [selectedCity, setSelectedCity] = useState("lahore");
   const stats = CITY_STATS[selectedCity] || CITY_STATS.lahore;
 
   const handleDownloadPPT = () => {
     const pres = new pptxgen();
-    const slide = pres.addSlide();
     
-    // Add City Title
-    slide.addText(`PSCA - ${selectedCity.toUpperCase()} City Report`, {
-      x: 0.5, y: 0.5, w: "90%", h: 1,
-      fontSize: 24, bold: true, color: "1A365D", align: "center", fontFace: "Rajdhani"
+    // Master Slide / Theme
+    pres.defineSlideMaster({
+      title: "PSCA_MASTER",
+      background: { color: "FFFFFF" },
+      objects: [
+        { rect: { x: 0, y: 0, w: "100%", h: 0.8, fill: { color: "1A365D" } } },
+        { text: { text: "PSCA SAFE CITY MONITORING SYSTEM", options: { x: 0.5, y: 0.2, w: 8, h: 0.4, color: "FFFFFF", fontSize: 18, bold: true, fontFace: "Rajdhani" } } },
+        { image: { x: 8.8, y: 0.1, w: 0.6, h: 0.6, data: PSCA_LOGO_BASE64 } },
+        { rect: { x: 0, y: 5.4, w: "100%", h: 0.2, fill: { color: "E53E3E" } } },
+        { text: { text: "PSCA SAFE CITY PORTAL - CONFIDENTIAL", options: { x: 0.5, y: 5.4, w: 9, h: 0.2, color: "FFFFFF", fontSize: 8, align: "right" } } }
+      ]
     });
 
-    // Add Stats Cards Layout
+    // SLIDE 1: Executive Summary
+    const s1 = pres.addSlide({ masterName: "PSCA_MASTER" });
+    s1.addText(`${selectedCity.toUpperCase()} City Operational Report`, { x: 0.5, y: 1.2, w: 9, h: 0.5, fontSize: 28, bold: true, color: "1A365D" });
+    
+    // INFOGRAPHIC CARDS
     const metrics = [
-      { label: "Active Incidents", value: stats.incidents },
-      { label: "Response Time", value: stats.responseTime },
-      { label: "Construction Sites", value: stats.construction },
-      { label: "Active Cameras", value: stats.cameras }
+      { label: "Active Incidents", value: stats.incidents, color: "E53E3E" },
+      { label: "Response Time", value: stats.responseTime, color: "2B6CB0" },
+      { label: "Construction", value: stats.construction, color: "DD6B20" },
+      { label: "Cameras Online", value: stats.cameras, color: "38A169" }
     ];
 
-    metrics.forEach((m, idx) => {
-      slide.addShape(pres.ShapeType.rect, {
-        x: 0.5 + (idx * 2.3), y: 2, w: 2.1, h: 1.5,
-        fill: { color: "F7FAFC" }, line: { color: "E2E8F0", width: 1 }
-      });
-      slide.addText(m.label, {
-        x: 0.6 + (idx * 2.3), y: 2.2, w: 1.9, h: 0.3,
-        fontSize: 10, color: "718096", align: "center", bold: true
-      });
-      slide.addText(m.value, {
-        x: 0.6 + (idx * 2.3), y: 2.7, w: 1.9, h: 0.5,
-        fontSize: 18, color: "2D3748", align: "center", bold: true
-      });
+    metrics.forEach((m, i) => {
+      s1.addShape(pres.ShapeType.roundRect, { x: 0.5 + (i * 2.3), y: 2.2, w: 2.1, h: 1.2, fill: { color: "F7FAFC" }, line: { color: m.color, width: 2 } });
+      s1.addText(m.label, { x: 0.6 + (i * 2.3), y: 2.3, w: 1.9, h: 0.3, fontSize: 11, bold: true, color: "4A5568", align: "center" });
+      s1.addText(m.value, { x: 0.6 + (i * 2.3), y: 2.7, w: 1.9, h: 0.4, fontSize: 20, bold: true, color: m.color, align: "center" });
     });
 
-    // Add PSCA Logo Mock (Placeholder text for logo positioning as per user requirement)
-    slide.addText("PSCA SAFE CITY PORTAL", {
-      x: 7.5, y: 5.2, w: 2, h: 0.4,
-      fontSize: 10, color: "E53E3E", align: "right", bold: true
-    });
-    slide.addShape(pres.ShapeType.rect, {
-      x: 8.5, y: 4.8, w: 1, h: 0.4,
-      fill: { color: "1A365D" }
+    // SLIDE 2: Project Progress (As per user image requirement)
+    const s2 = pres.addSlide({ masterName: "PSCA_MASTER" });
+    s2.addText("Smart Safe Cities Phase I (Completion %)", { x: 0.5, y: 1.0, w: 9, h: 0.4, fontSize: 20, bold: true, color: "1A365D" });
+    
+    const chartData = [
+      { name: "Surveys", labels: ["Progress"], values: [100] },
+      { name: "Foundation", labels: ["Progress"], values: [85] },
+      { name: "Cabinet", labels: ["Progress"], values: [95] },
+      { name: "Cabling", labels: ["Progress"], values: [70] },
+      { name: "Control Room", labels: ["Progress"], values: [40] }
+    ];
+
+    s2.addChart(pres.ChartType.bar, [
+      { name: "Phase Progress", labels: chartData.map(d => d.name), values: chartData.map(d => d.values[0]) }
+    ], { 
+      x: 0.5, y: 1.6, w: 9, h: 3.5,
+      showValue: true,
+      barGapWidthPct: 30,
+      chartColors: ["1A365D"],
+      valAxisMaxVal: 100,
+      showLegend: false
     });
 
-    pres.writeFile({ fileName: `PSCA_${selectedCity}_Report.pptx` });
+    pres.writeFile({ fileName: `PSCA_${selectedCity}_Operational_Brief.pptx` });
   };
 
   return (
@@ -101,8 +117,8 @@ export default function Dashboard() {
           </div>
           
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleDownloadPPT} className="bg-secondary/10 text-secondary border-secondary/20 font-bold hover:bg-secondary hover:text-white transition-all">
-              <Download className="mr-2 h-4 w-4" /> Download PPT Report
+            <Button variant="outline" size="sm" onClick={handleDownloadPPT} className="bg-secondary/10 text-secondary border-secondary/20 font-bold hover:bg-secondary hover:text-white transition-all shadow-sm">
+              <Download className="mr-2 h-4 w-4" /> Export Operations PPT
             </Button>
             <Select value={selectedCity} onValueChange={setSelectedCity}>
               <SelectTrigger className="w-[140px] h-9 border-primary/20 font-bold tracking-wider">

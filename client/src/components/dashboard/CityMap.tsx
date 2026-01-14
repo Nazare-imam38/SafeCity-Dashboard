@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
-import { Camera, AlertTriangle, Truck, Shield, Activity, Landmark, Construction, Upload } from "lucide-react";
+import { Camera, AlertTriangle, Truck, Shield, Activity, Landmark, Construction, Upload, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 let DefaultIcon = L.icon({
@@ -38,22 +38,38 @@ const getConstructionIcon = () => L.divIcon({
   iconAnchor: [14, 14]
 });
 
+const getIncidentIcon = (severity: string) => L.divIcon({
+  className: 'incident-icon',
+  html: `<div class="p-1.5 ${severity === 'High' ? 'bg-destructive animate-ping' : 'bg-orange-600'} rounded-full border-2 border-white shadow-xl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12]
+});
+
 const MOCK_DATA = {
   cameras: [
     { id: 1, pos: [31.5204, 74.3587], status: "Online", type: "PTZ", alerts: 2, label: "Mall Road Sector 1" },
     { id: 2, pos: [31.5497, 74.3436], status: "Offline", type: "Fixed", alerts: 0, label: "Gulberg Main Blvd" },
+    { id: 3, pos: [31.4800, 74.3200], status: "Online", type: "Fixed", alerts: 1, label: "Ferozepur Rd Intersection" },
+    { id: 4, pos: [31.5600, 74.3100], status: "Online", type: "PTZ", alerts: 0, label: "Data Darbar Entry" },
+    { id: 5, pos: [31.5000, 74.3700], status: "Online", type: "Fixed", alerts: 5, label: "DHA Phase 5 Block A" },
   ],
   incidents: [
     { id: 1, pos: [31.5100, 74.3300], type: "Traffic Accident", severity: "High", time: "10:15 AM", status: "Responding" },
     { id: 2, pos: [31.5550, 74.3100], type: "Suspicious Activity", severity: "Medium", time: "10:30 AM", status: "Pending" },
+    { id: 3, pos: [31.4700, 74.3000], type: "Theft Report", severity: "Medium", time: "10:45 AM", status: "Patrol Dispatched" },
+    { id: 4, pos: [31.5300, 74.3700], type: "Illegal Parking", severity: "Low", time: "11:00 AM", status: "Warned" },
+    { id: 5, pos: [31.5450, 74.3600], type: "Fire Alert", severity: "High", time: "11:15 AM", status: "Fire Brigade Onway" },
   ],
   patrols: [
     { id: 1, pos: [31.5300, 74.3400], label: "Dolphin Unit 102", status: "Active", type: "Motorcycle", color: "emerald-500" },
     { id: 2, pos: [31.4800, 74.2800], label: "PRU Unit 45", status: "Idle", type: "Car", color: "blue-500" },
+    { id: 3, pos: [31.5150, 74.3100], label: "Dolphin Unit 205", status: "Active", type: "Motorcycle", color: "emerald-500" },
+    { id: 4, pos: [31.5500, 74.3500], label: "Traffic Warden 12", status: "Responding", type: "Car", color: "orange-500" },
   ],
   stations: [
     { id: 1, pos: [31.5250, 74.3600], name: "Model Town PS", units: 12, radius: 2000 },
     { id: 2, pos: [31.4900, 74.3000], name: "Gulberg PS", units: 15, radius: 1500 },
+    { id: 3, pos: [31.5400, 74.3200], name: "Civil Lines PS", units: 20, radius: 1800 },
   ],
   traffic: [
     { id: 1, path: [[31.520, 74.358], [31.540, 74.358], [31.560, 74.350]], level: "High", speed: "12 km/h" },
@@ -62,6 +78,7 @@ const MOCK_DATA = {
   construction: [
     { id: 1, pos: [31.5350, 74.3550], label: "Flyover Project B", progress: "45%", image: "https://images.unsplash.com/photo-1541888946425-d81bb19480c5?auto=format&fit=crop&w=300&q=80" },
     { id: 2, pos: [31.4850, 74.3150], label: "Underpass Sector 4", progress: "70%", image: "https://images.unsplash.com/photo-1503387762-592dea58ef21?auto=format&fit=crop&w=300&q=80" },
+    { id: 3, pos: [31.5100, 74.3650], label: "Orange Line Exp", progress: "25%", image: "https://images.unsplash.com/photo-1590644365607-1c5a519a9a37?auto=format&fit=crop&w=300&q=80" },
   ]
 };
 
@@ -93,7 +110,7 @@ export function CityMap() {
     <div className="h-[650px] w-full rounded-xl overflow-hidden border shadow-2xl relative z-0 group">
       <MapContainer 
         center={[31.5204, 74.3587]} 
-        zoom={13} 
+        zoom={12} 
         scrollWheelZoom={false} 
         style={{ height: "100%", width: "100%" }}
       >
@@ -128,6 +145,29 @@ export function CityMap() {
                     </div>
                   </Popup>
                 </Circle>
+              ))}
+            </LayerGroup>
+          </LayersControl.Overlay>
+
+          <LayersControl.Overlay checked name="Live Incidents">
+            <LayerGroup>
+              {MOCK_DATA.incidents.map(inc => (
+                <Marker key={inc.id} position={inc.pos as [number, number]} icon={getIncidentIcon(inc.severity)}>
+                  <Popup>
+                    <div className="p-2 w-48 font-sans">
+                      <div className="flex items-center gap-2 border-b pb-2 mb-2">
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                        <span className="font-bold text-sm">{inc.type}</span>
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <p><span className="font-bold">Severity:</span> {inc.severity}</p>
+                        <p><span className="font-bold">Time:</span> {inc.time}</p>
+                        <p><span className="font-bold">Status:</span> {inc.status}</p>
+                      </div>
+                      <Button variant="outline" className="w-full mt-3 text-[10px] h-7 border-destructive/20 text-destructive hover:bg-destructive hover:text-white">Dispatch Quick Response</Button>
+                    </div>
+                  </Popup>
+                </Marker>
               ))}
             </LayerGroup>
           </LayersControl.Overlay>
@@ -216,14 +256,6 @@ export function CityMap() {
                   </Popup>
                 </Polyline>
               ))}
-            </LayerGroup>
-          </LayersControl.Overlay>
-
-          <LayersControl.Overlay checked name="Incident Heatmap">
-            <LayerGroup>
-              <Circle center={[31.52, 74.33]} radius={2000} pathOptions={{ color: 'none', fillColor: '#ef4444', fillOpacity: 0.1 }} />
-              <Circle center={[31.52, 74.33]} radius={1200} pathOptions={{ color: 'none', fillColor: '#ef4444', fillOpacity: 0.2 }} />
-              <Circle center={[31.52, 74.33]} radius={600} pathOptions={{ color: 'none', fillColor: '#ef4444', fillOpacity: 0.4 }} />
             </LayerGroup>
           </LayersControl.Overlay>
         </LayersControl>
