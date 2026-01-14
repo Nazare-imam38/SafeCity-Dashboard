@@ -1,96 +1,121 @@
 import { Layout } from "@/components/layout/Layout";
 import { CityMap } from "@/components/dashboard/CityMap";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Map as MapIcon, Layers, Camera, AlertTriangle, Truck } from "lucide-react";
+import { 
+  Map as MapIcon, 
+  Layers, 
+  Camera, 
+  AlertTriangle, 
+  Truck, 
+  Shield, 
+  Activity, 
+  Landmark,
+  TrendingUp,
+  MapPin
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+const GIS_STATS = [
+  { label: "CCTV Uptime", value: "98.4%", change: "+0.2%", icon: Camera },
+  { label: "Patrol Coverage", value: "92%", change: "+5%", icon: Truck },
+  { label: "Response Radius", value: "2.4km", change: "-0.3km", icon: MapPin },
+  { label: "Station Nodes", value: "24", change: "0", icon: Landmark },
+];
 
 export default function GISLayers() {
   return (
-    <Layout title="Advanced GIS Layers">
+    <Layout title="Advanced GIS Intelligence">
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-xl border shadow-sm">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold font-heading">Geospatial Intelligence</h2>
-            <p className="text-sm text-muted-foreground">Manage and visualize spatial data layers for the entire metropolitan area.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">System Online</Badge>
-            <Badge className="bg-primary/10 text-primary border-primary/20">4.5k Nodes</Badge>
-          </div>
+        {/* Statistics Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {GIS_STATS.map((stat) => (
+            <Card key={stat.label} className="border-none shadow-sm bg-primary text-white overflow-hidden relative">
+              <div className="absolute right-[-10px] top-[-10px] opacity-10">
+                <stat.icon className="h-20 w-20" />
+              </div>
+              <CardContent className="p-4 flex flex-col gap-1 relative z-10">
+                <p className="text-[10px] uppercase font-bold tracking-widest opacity-70">{stat.label}</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-2xl font-bold font-heading">{stat.value}</span>
+                  <span className="text-[10px] mb-1 text-emerald-400 font-bold">{stat.change}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         <Tabs defaultValue="map" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="map" className="flex items-center gap-2">
-              <MapIcon className="h-4 w-4" /> Operational Map
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <Layers className="h-4 w-4" /> Layer Analytics
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <TabsList className="bg-muted p-1">
+              <TabsTrigger value="map" className="flex items-center gap-2">
+                <MapIcon className="h-4 w-4" /> Operations View
+              </TabsTrigger>
+              <TabsTrigger value="data" className="flex items-center gap-2">
+                <Layers className="h-4 w-4" /> Data Explorer
+              </TabsTrigger>
+            </TabsList>
+            
+            <div className="flex gap-2">
+              <Badge variant="secondary" className="px-3 py-1 font-mono text-[10px]">LHR_GRID_ACTIVE</Badge>
+              <Badge className="bg-emerald-500 hover:bg-emerald-600 px-3 py-1 font-mono text-[10px]">SYNCED</Badge>
+            </div>
+          </div>
           
           <TabsContent value="map" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Layer Controls Panel */}
-              <div className="lg:col-span-1 space-y-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Active Layers</CardTitle>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* GIS Explorer Sidebar */}
+              <div className="lg:col-span-3 space-y-4">
+                <Card className="border-primary/10">
+                  <CardHeader className="p-4 border-b">
+                    <CardTitle className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                      <Layers className="h-3 w-3" /> Spatial Inventory
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    {[
-                      { icon: Camera, label: "CCTV Network", count: "4,500", color: "text-blue-500", active: true },
-                      { icon: AlertTriangle, label: "Incident Heatmap", count: "124", color: "text-orange-500", active: true },
-                      { icon: Truck, label: "Patrol Units", count: "86", color: "text-emerald-500", active: true },
-                      { icon: Layers, label: "Traffic Density", count: "High", color: "text-purple-500", active: false },
-                    ].map((layer) => (
-                      <div key={layer.label} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <layer.icon className={`h-4 w-4 ${layer.color}`} />
-                          <div className="text-sm">
-                            <p className="font-medium">{layer.label}</p>
-                            <p className="text-[10px] text-muted-foreground">{layer.count} items</p>
+                  <ScrollArea className="h-[500px]">
+                    <CardContent className="p-2 space-y-1">
+                      {[
+                        { icon: Camera, label: "CCTV Network", detail: "4,500 Cameras", status: "Active", color: "text-blue-500" },
+                        { icon: AlertTriangle, label: "Hotspot Zones", detail: "12 Critical", status: "Warning", color: "text-secondary" },
+                        { icon: Truck, label: "Patrol Fleet", detail: "86 Units", status: "Tracking", color: "text-emerald-500" },
+                        { icon: Landmark, label: "Police Stations", detail: "24 Locations", status: "Static", color: "text-primary" },
+                        { icon: Activity, label: "Traffic Sensors", detail: "1,200 Nodes", status: "Live", color: "text-purple-500" },
+                        { icon: Shield, label: "Fixed Checkposts", detail: "45 Posts", status: "Secured", color: "text-slate-500" },
+                      ].map((item) => (
+                        <div key={item.label} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-all cursor-pointer group">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-md bg-muted group-hover:bg-white transition-colors">
+                              <item.icon className={`h-4 w-4 ${item.color}`} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold">{item.label}</p>
+                              <p className="text-[10px] text-muted-foreground">{item.detail}</p>
+                            </div>
                           </div>
                         </div>
-                        <div className={`h-2 w-2 rounded-full ${layer.active ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Spatial Alerts</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                      <p className="text-xs font-bold text-destructive">High Density Alert</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">Abnormal crowd gathering detected at Mall Road Intersection.</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                      <p className="text-xs font-bold text-orange-600">Camera Offline</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">Node 402 (Gulberg) reporting power failure.</p>
-                    </div>
-                  </CardContent>
+                      ))}
+                    </CardContent>
+                  </ScrollArea>
                 </Card>
               </div>
 
-              {/* Main Map View */}
-              <div className="lg:col-span-3">
+              {/* Advanced Map Engine */}
+              <div className="lg:col-span-9">
                 <CityMap />
               </div>
             </div>
           </TabsContent>
-          
-          <TabsContent value="analytics">
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
-                <Layers className="h-12 w-12 mb-4 opacity-20" />
-                <p>Advanced geospatial analytics reporting engine.</p>
-                <p className="text-xs">Processing city-wide spatial data...</p>
-              </CardContent>
-            </Card>
+
+          <TabsContent value="data">
+             <Card className="border-dashed border-2">
+               <CardContent className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                  <TrendingUp className="h-12 w-12 mb-4 opacity-10" />
+                  <h3 className="text-lg font-bold">Layer Data Explorer</h3>
+                  <p className="text-sm">Raw geospatial data attributes for urban planning and risk analysis.</p>
+                  <button className="mt-4 px-6 py-2 bg-primary text-white rounded-lg text-xs font-bold uppercase tracking-widest">Connect Data Source</button>
+               </CardContent>
+             </Card>
           </TabsContent>
         </Tabs>
       </div>
