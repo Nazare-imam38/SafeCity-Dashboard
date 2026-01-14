@@ -82,13 +82,16 @@ const MOCK_DATA = {
   ]
 };
 
-export function CityMap() {
+const CITY_COORDINATES: Record<string, [number, number]> = {
+  lahore: [31.5204, 74.3587],
+  rawalpindi: [33.5651, 73.0169],
+  gujranwala: [32.1877, 74.1945],
+};
+
+export function CityMap({ city = "lahore" }: { city?: string }) {
   const [isMounted, setIsMounted] = useState(false);
   const [constructionSites, setConstructionSites] = useState(MOCK_DATA.construction);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const center = CITY_COORDINATES[city.toLowerCase()] || CITY_COORDINATES.lahore;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
     if (e.target.files && e.target.files[0]) {
@@ -102,6 +105,10 @@ export function CityMap() {
     }
   };
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   if (!isMounted) {
     return <div className="h-[600px] w-full bg-muted animate-pulse rounded-xl" />;
   }
@@ -109,10 +116,11 @@ export function CityMap() {
   return (
     <div className="h-[650px] w-full rounded-xl overflow-hidden border shadow-2xl relative z-0 group">
       <MapContainer 
-        center={[31.5204, 74.3587]} 
+        center={center} 
         zoom={12} 
         scrollWheelZoom={false} 
         style={{ height: "100%", width: "100%" }}
+        key={city} // Force re-render on city change to fly to center
       >
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Operational Dark">

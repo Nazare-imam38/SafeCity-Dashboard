@@ -61,25 +61,27 @@ export default function Dashboard() {
 
     // SLIDE 1: Executive Summary
     const s1 = pres.addSlide({ masterName: "PSCA_MASTER" });
-    s1.addText(`${selectedCity.toUpperCase()} City Operational Report`, { x: 0.5, y: 1.2, w: 9, h: 0.5, fontSize: 28, bold: true, color: "1A365D" });
+    s1.addText(`${selectedCity.toUpperCase()} City Operational Report`, { x: 0.5, y: 1.2, w: 9, h: 0.5, fontSize: 24, bold: true, color: "1A365D" });
     
-    // INFOGRAPHIC CARDS
+    // INFOGRAPHIC CARDS WITH SYMBOLS (using wingdings/builtin shapes as placeholders for icons)
     const metrics = [
-      { label: "Active Incidents", value: stats.incidents, color: "E53E3E" },
-      { label: "Response Time", value: stats.responseTime, color: "2B6CB0" },
-      { label: "Construction", value: stats.construction, color: "DD6B20" },
-      { label: "Cameras Online", value: stats.cameras, color: "38A169" }
+      { label: "Active Incidents", value: stats.incidents, color: "E53E3E", icon: "!" },
+      { label: "Response Time", value: stats.responseTime, color: "2B6CB0", icon: "t" },
+      { label: "Construction", value: stats.construction, color: "DD6B20", icon: "c" },
+      { label: "Cameras Online", value: stats.cameras, color: "38A169", icon: "v" }
     ];
 
     metrics.forEach((m, i) => {
-      s1.addShape(pres.ShapeType.roundRect, { x: 0.5 + (i * 2.3), y: 2.2, w: 2.1, h: 1.2, fill: { color: "F7FAFC" }, line: { color: m.color, width: 2 } });
-      s1.addText(m.label, { x: 0.6 + (i * 2.3), y: 2.3, w: 1.9, h: 0.3, fontSize: 11, bold: true, color: "4A5568", align: "center" });
-      s1.addText(m.value, { x: 0.6 + (i * 2.3), y: 2.7, w: 1.9, h: 0.4, fontSize: 20, bold: true, color: m.color, align: "center" });
+      const xPos = 0.5 + (i * 2.3);
+      s1.addShape(pres.ShapeType.roundRect, { x: xPos, y: 2.0, w: 2.1, h: 1.6, fill: { color: "F7FAFC" }, line: { color: m.color, width: 2 } });
+      s1.addText(m.icon, { x: xPos, y: 2.1, w: 2.1, h: 0.4, fontSize: 24, bold: true, color: m.color, align: "center", fontFace: "Wingdings" });
+      s1.addText(m.label, { x: xPos, y: 2.6, w: 2.1, h: 0.3, fontSize: 10, bold: true, color: "4A5568", align: "center" });
+      s1.addText(m.value, { x: xPos, y: 2.9, w: 2.1, h: 0.4, fontSize: 18, bold: true, color: m.color, align: "center" });
     });
 
-    // SLIDE 2: Project Progress (As per user image requirement)
+    // SLIDE 2: Project Progress
     const s2 = pres.addSlide({ masterName: "PSCA_MASTER" });
-    s2.addText("Smart Safe Cities Phase I (Completion %)", { x: 0.5, y: 1.0, w: 9, h: 0.4, fontSize: 20, bold: true, color: "1A365D" });
+    s2.addText("Infrastructure Development Progress", { x: 0.5, y: 1.0, w: 9, h: 0.4, fontSize: 20, bold: true, color: "1A365D" });
     
     const chartData = [
       { name: "Surveys", labels: ["Progress"], values: [100] },
@@ -92,12 +94,35 @@ export default function Dashboard() {
     s2.addChart(pres.ChartType.bar, [
       { name: "Phase Progress", labels: chartData.map(d => d.name), values: chartData.map(d => d.values[0]) }
     ], { 
-      x: 0.5, y: 1.6, w: 9, h: 3.5,
+      x: 0.5, y: 1.6, w: 4.5, h: 3.5,
       showValue: true,
       barGapWidthPct: 30,
       chartColors: ["1A365D"],
       valAxisMaxVal: 100,
       showLegend: false
+    });
+
+    // Added a second chart for better visualization
+    s2.addChart(pres.ChartType.line, [
+      { name: "Incidents Trend", labels: ["Mon", "Tue", "Wed", "Thu", "Fri"], values: [120, 150, 110, 180, 140] }
+    ], { 
+      x: 5.2, y: 1.6, w: 4.2, h: 3.5,
+      showLegend: true,
+      chartColors: ["E53E3E"],
+      title: "Weekly Incident Volatility"
+    });
+
+    // SLIDE 3: Resource Distribution (New visualization)
+    const s3 = pres.addSlide({ masterName: "PSCA_MASTER" });
+    s3.addText("Resource Allocation Analysis", { x: 0.5, y: 1.0, w: 9, h: 0.4, fontSize: 20, bold: true, color: "1A365D" });
+    s3.addChart(pres.ChartType.pie, [
+      { name: "Personnel", labels: ["Dolphin", "Traffic", "PRU", "Admin"], values: [40, 30, 20, 10] }
+    ], {
+      x: 2.5, y: 1.6, w: 5, h: 3.5,
+      showLegend: true,
+      legendPos: "r",
+      showValue: true,
+      chartColors: ["1A365D", "2B6CB0", "4A5568", "E53E3E"]
     });
 
     pres.writeFile({ fileName: `PSCA_${selectedCity}_Operational_Brief.pptx` });
@@ -188,7 +213,7 @@ export default function Dashboard() {
         <div className="grid gap-6 lg:grid-cols-12">
           {/* Map & Chart Section */}
           <div className="lg:col-span-8 space-y-6">
-            <CityMap />
+            <CityMap city={selectedCity} />
             <TrendChart />
           </div>
           
