@@ -47,29 +47,36 @@ const getIncidentIcon = (severity: string) => L.divIcon({
 
 const MOCK_DATA = {
   cameras: [
+    // Lahore
     { id: 1, pos: [31.5204, 74.3587], status: "Online", type: "PTZ", alerts: 2, label: "Mall Road Sector 1" },
     { id: 2, pos: [31.5497, 74.3436], status: "Offline", type: "Fixed", alerts: 0, label: "Gulberg Main Blvd" },
-    { id: 3, pos: [31.4800, 74.3200], status: "Online", type: "Fixed", alerts: 1, label: "Ferozepur Rd Intersection" },
-    { id: 4, pos: [31.5600, 74.3100], status: "Online", type: "PTZ", alerts: 0, label: "Data Darbar Entry" },
-    { id: 5, pos: [31.5000, 74.3700], status: "Online", type: "Fixed", alerts: 5, label: "DHA Phase 5 Block A" },
+    // Rawalpindi
+    { id: 101, pos: [33.5651, 73.0169], status: "Online", type: "PTZ", alerts: 1, label: "Saddar Metro Station" },
+    { id: 102, pos: [33.5900, 73.0300], status: "Online", type: "Fixed", alerts: 0, label: "Murree Road Intersection" },
+    // Gujranwala
+    { id: 201, pos: [32.1877, 74.1945], status: "Online", type: "PTZ", alerts: 3, label: "GT Road Central" },
+    { id: 202, pos: [32.1600, 74.2100], status: "Offline", type: "Fixed", alerts: 0, label: "Sialkot Bypass" },
   ],
   incidents: [
+    // Lahore
     { id: 1, pos: [31.5100, 74.3300], type: "Traffic Accident", severity: "High", time: "10:15 AM", status: "Responding" },
-    { id: 2, pos: [31.5550, 74.3100], type: "Suspicious Activity", severity: "Medium", time: "10:30 AM", status: "Pending" },
-    { id: 3, pos: [31.4700, 74.3000], type: "Theft Report", severity: "Medium", time: "10:45 AM", status: "Patrol Dispatched" },
-    { id: 4, pos: [31.5300, 74.3700], type: "Illegal Parking", severity: "Low", time: "11:00 AM", status: "Warned" },
-    { id: 5, pos: [31.5450, 74.3600], type: "Fire Alert", severity: "High", time: "11:15 AM", status: "Fire Brigade Onway" },
+    // Rawalpindi
+    { id: 101, pos: [33.5750, 73.0200], type: "Suspicious Activity", severity: "Medium", time: "11:20 AM", status: "Pending" },
+    // Gujranwala
+    { id: 201, pos: [32.1950, 74.2000], type: "Fire Alert", severity: "High", time: "09:45 AM", status: "Responding" },
   ],
   patrols: [
+    // Lahore
     { id: 1, pos: [31.5300, 74.3400], label: "Dolphin Unit 102", status: "Active", type: "Motorcycle", color: "emerald-500" },
-    { id: 2, pos: [31.4800, 74.2800], label: "PRU Unit 45", status: "Idle", type: "Car", color: "blue-500" },
-    { id: 3, pos: [31.5150, 74.3100], label: "Dolphin Unit 205", status: "Active", type: "Motorcycle", color: "emerald-500" },
-    { id: 4, pos: [31.5500, 74.3500], label: "Traffic Warden 12", status: "Responding", type: "Car", color: "orange-500" },
+    // Rawalpindi
+    { id: 101, pos: [33.5550, 73.0100], label: "PRU Unit 88", status: "Active", type: "Car", color: "blue-500" },
+    // Gujranwala
+    { id: 201, pos: [32.1750, 74.1850], label: "Warden 42", status: "Active", type: "Motorcycle", color: "emerald-500" },
   ],
   stations: [
     { id: 1, pos: [31.5250, 74.3600], name: "Model Town PS", units: 12, radius: 2000 },
-    { id: 2, pos: [31.4900, 74.3000], name: "Gulberg PS", units: 15, radius: 1500 },
-    { id: 3, pos: [31.5400, 74.3200], name: "Civil Lines PS", units: 20, radius: 1800 },
+    { id: 101, pos: [33.5600, 73.0150], name: "Civil Lines Pindi", units: 18, radius: 2000 },
+    { id: 201, pos: [32.1850, 74.1900], name: "City PS Gujranwala", units: 14, radius: 2000 },
   ],
   traffic: [
     { id: 1, path: [[31.520, 74.358], [31.540, 74.358], [31.560, 74.350]], level: "High", speed: "12 km/h" },

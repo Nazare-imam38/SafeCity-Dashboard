@@ -3,11 +3,12 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { CityMap } from "@/components/dashboard/CityMap";
 import { IncidentList } from "@/components/dashboard/IncidentList";
 import { TrendChart } from "@/components/dashboard/TrendChart";
-import { AlertCircle, Car, Users, Clock, Camera, Construction, Download } from "lucide-react";
+import { AlertCircle, Car, Users, Clock, Camera, Construction, Download, Moon, Sun } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useTheme } from "@/hooks/use-theme";
 import pptxgen from "pptxgenjs";
 
 const CITY_STATS: Record<string, any> = {
@@ -41,6 +42,7 @@ const PSCA_LOGO_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAOoAAADXCAMAAAAjrj0PAAABhlBMVE
 
 export default function Dashboard() {
   const [selectedCity, setSelectedCity] = useState("lahore");
+  const { theme, toggleTheme } = useTheme();
   const stats = CITY_STATS[selectedCity] || CITY_STATS.lahore;
 
   const handleDownloadPPT = () => {
@@ -65,18 +67,22 @@ export default function Dashboard() {
     
     // INFOGRAPHIC CARDS WITH SYMBOLS (using wingdings/builtin shapes as placeholders for icons)
     const metrics = [
-      { label: "Active Incidents", value: stats.incidents, color: "E53E3E", icon: "!" },
-      { label: "Response Time", value: stats.responseTime, color: "2B6CB0", icon: "t" },
-      { label: "Construction", value: stats.construction, color: "DD6B20", icon: "c" },
-      { label: "Cameras Online", value: stats.cameras, color: "38A169", icon: "v" }
+      { label: "Active Incidents", value: stats.incidents, color: "E53E3E", icon: "N", shape: pres.ShapeType.octagon }, // Octagon/Alert symbol
+      { label: "Response Time", value: stats.responseTime, color: "2B6CB0", icon: "¾", shape: pres.ShapeType.triangle }, // Clock-like
+      { label: "Construction", value: stats.construction, color: "DD6B20", icon: "p", shape: pres.ShapeType.plus }, // Construction
+      { label: "Cameras Online", value: stats.cameras, color: "38A169", icon: "v", shape: pres.ShapeType.sun } // Camera/Vision
     ];
 
     metrics.forEach((m, i) => {
       const xPos = 0.5 + (i * 2.3);
-      s1.addShape(pres.ShapeType.roundRect, { x: xPos, y: 2.0, w: 2.1, h: 1.6, fill: { color: "F7FAFC" }, line: { color: m.color, width: 2 } });
-      s1.addText(m.icon, { x: xPos, y: 2.1, w: 2.1, h: 0.4, fontSize: 24, bold: true, color: m.color, align: "center", fontFace: "Wingdings" });
-      s1.addText(m.label, { x: xPos, y: 2.6, w: 2.1, h: 0.3, fontSize: 10, bold: true, color: "4A5568", align: "center" });
-      s1.addText(m.value, { x: xPos, y: 2.9, w: 2.1, h: 0.4, fontSize: 18, bold: true, color: m.color, align: "center" });
+      s1.addShape(pres.ShapeType.roundRect, { x: xPos, y: 2.0, w: 2.1, h: 1.8, fill: { color: "F7FAFC" }, line: { color: m.color, width: 2 } });
+      
+      // Decorative Shape for icon background
+      s1.addShape(m.shape, { x: xPos + 0.75, y: 2.1, w: 0.6, h: 0.6, fill: { color: m.color, transparency: 80 } });
+      s1.addText(m.icon, { x: xPos, y: 2.2, w: 2.1, h: 0.4, fontSize: 28, bold: true, color: m.color, align: "center", fontFace: "Wingdings" });
+      
+      s1.addText(m.label, { x: xPos, y: 2.8, w: 2.1, h: 0.3, fontSize: 10, bold: true, color: "4A5568", align: "center" });
+      s1.addText(m.value, { x: xPos, y: 3.1, w: 2.1, h: 0.4, fontSize: 18, bold: true, color: m.color, align: "center" });
     });
 
     // SLIDE 2: Project Progress
@@ -112,7 +118,7 @@ export default function Dashboard() {
       title: "Weekly Incident Volatility"
     });
 
-    // SLIDE 3: Resource Distribution (New visualization)
+    // SLIDE 3: Resource Distribution
     const s3 = pres.addSlide({ masterName: "PSCA_MASTER" });
     s3.addText("Resource Allocation Analysis", { x: 0.5, y: 1.0, w: 9, h: 0.4, fontSize: 20, bold: true, color: "1A365D" });
     s3.addChart(pres.ChartType.pie, [
@@ -142,6 +148,14 @@ export default function Dashboard() {
           </div>
           
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full w-9 h-9 border-primary/20"
+              onClick={() => toggleTheme()}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Button variant="outline" size="sm" onClick={handleDownloadPPT} className="bg-secondary/10 text-secondary border-secondary/20 font-bold hover:bg-secondary hover:text-white transition-all shadow-sm">
               <Download className="mr-2 h-4 w-4" /> Export Operations PPT
             </Button>
@@ -153,17 +167,6 @@ export default function Dashboard() {
                 <SelectItem value="lahore">Lahore</SelectItem>
                 <SelectItem value="rawalpindi">Rawalpindi</SelectItem>
                 <SelectItem value="gujranwala">Gujranwala</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-[140px] h-9 border-primary/20 font-bold tracking-wider">
-                <SelectValue placeholder="Zone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Zones</SelectItem>
-                <SelectItem value="north">North Zone</SelectItem>
-                <SelectItem value="south">South Zone</SelectItem>
-                <SelectItem value="central">Central</SelectItem>
               </SelectContent>
             </Select>
           </div>
