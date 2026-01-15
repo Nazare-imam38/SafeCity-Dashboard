@@ -7,6 +7,12 @@ import { PhaseDistributionChart } from "@/components/dashboard/PhaseDistribution
 import { PhaseTimelineChart } from "@/components/dashboard/PhaseTimelineChart";
 import { exportDashboardToPPTX } from "@/utils/exportToPPTX";
 import { 
+  getAllDivisions,
+  getDistrictsByDivision,
+  getTehsilsByDivisionAndDistrict,
+  CITY_TO_HIERARCHY_MAP
+} from "@/data/punjabHierarchy";
+import { 
   ClipboardCheck, 
   Building2, 
   Camera, 
@@ -16,13 +22,14 @@ import {
   Moon, 
   Sun,
   TrendingUp,
-  FileDown
+  FileDown,
+  Filter
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTheme } from "@/hooks/use-theme";
 
 // Installation progress data for all Punjab cities
@@ -233,10 +240,149 @@ const CITY_NAMES: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const [selectedCity, setSelectedCity] = useState<keyof typeof CITY_INSTALLATION_DATA>("sheikhupura");
+  const [selectedCity, setSelectedCity] = useState<keyof typeof CITY_INSTALLATION_DATA | "all">("sheikhupura");
+  const [selectedDivision, setSelectedDivision] = useState<string>("all");
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("all");
+  const [selectedTehsil, setSelectedTehsil] = useState<string>("all");
   const { theme, toggleTheme } = useTheme();
-  const cityData = CITY_INSTALLATION_DATA[selectedCity];
-  const cityName = CITY_NAMES[selectedCity] || selectedCity;
+
+  // Get available divisions
+  const divisions = useMemo(() => ["all", ...getAllDivisions()], []);
+
+  // Get available districts based on selected division
+  const districts = useMemo(() => {
+    if (selectedDivision === "all") return ["all"];
+    return ["all", ...getDistrictsByDivision(selectedDivision)];
+  }, [selectedDivision]);
+
+  // Get available tehsils based on selected division and district
+  const tehsils = useMemo(() => {
+    if (selectedDivision === "all" || selectedDistrict === "all") return ["all"];
+    return ["all", ...getTehsilsByDivisionAndDistrict(selectedDivision, selectedDistrict)];
+  }, [selectedDivision, selectedDistrict]);
+
+  // Filter cities based on hierarchy selection
+  const filteredCities = useMemo(() => {
+    const allCityKeys = Object.keys(CITY_NAMES);
+    
+    if (selectedDivision === "all") return allCityKeys;
+    
+    let filtered = allCityKeys.filter(cityKey => {
+      const cityName = CITY_NAMES[cityKey];
+      const hierarchy = CITY_TO_HIERARCHY_MAP[cityName];
+      if (!hierarchy) return false;
+      
+      if (hierarchy.division !== selectedDivision) return false;
+      if (selectedDistrict !== "all" && hierarchy.district !== selectedDistrict) return false;
+      if (selectedTehsil !== "all" && hierarchy.tehsil !== selectedTehsil) return false;
+      
+      return true;
+    });
+    
+    return filtered;
+  }, [selectedDivision, selectedDistrict, selectedTehsil]);
+
+  // Reset dependent filters when parent filter changes
+  const handleDivisionChange = (value: string) => {
+    setSelectedDivision(value);
+    setSelectedDistrict("all");
+    setSelectedTehsil("all");
+  };
+
+  const handleDistrictChange = (value: string) => {
+    setSelectedDistrict(value);
+    setSelectedTehsil("all");
+  };
+  
+  // Calculate aggregated data for filtered cities
+  const getFilteredCitiesData = (cityKeys: string[]): CityInstallationData => {
+    const cities = cityKeys.map(key => CITY_INSTALLATION_DATA[key]).filter(Boolean);
+    const count = cities.length;
+    if (count === 0) {
+      // Return default empty data structure
+      return {
+        surveys: 0,
+        foundations: 0,
+        cabinet: 0,
+        cable: 0,
+        controlRoom: 0,
+        ppic3: 0,
+        overall: 0,
+        timeline: [],
+      };
+    }
+    
+    return {
+      surveys: Math.round(cities.reduce((sum, city) => sum + city.surveys, 0) / count),
+      foundations: Math.round(cities.reduce((sum, city) => sum + city.foundations, 0) / count),
+      cabinet: Math.round(cities.reduce((sum, city) => sum + city.cabinet, 0) / count),
+      cable: Math.round(cities.reduce((sum, city) => sum + city.cable, 0) / count),
+      controlRoom: Math.round(cities.reduce((sum, city) => sum + city.controlRoom, 0) / count),
+      ppic3: Math.round(cities.reduce((sum, city) => sum + city.ppic3, 0) / count),
+      overall: Math.round(cities.reduce((sum, city) => sum + city.overall, 0) / count),
+      timeline: cities[0]?.timeline?.map((_, monthIndex) => {
+        const monthData = cities.map(city => city.timeline?.[monthIndex]).filter(Boolean);
+        if (monthData.length === 0) return null;
+        
+        return {
+          month: monthData[0]?.month || "",
+          surveys: Math.round(monthData.reduce((sum, m) => sum + (m?.surveys || 0), 0) / monthData.length),
+          foundations: Math.round(monthData.reduce((sum, m) => sum + (m?.foundations || 0), 0) / monthData.length),
+          cabinet: Math.round(monthData.reduce((sum, m) => sum + (m?.cabinet || 0), 0) / monthData.length),
+          cable: Math.round(monthData.reduce((sum, m) => sum + (m?.cable || 0), 0) / monthData.length),
+          controlRoom: Math.round(monthData.reduce((sum, m) => sum + (m?.controlRoom || 0), 0) / monthData.length),
+          ppic3: Math.round(monthData.reduce((sum, m) => sum + (m?.ppic3 || 0), 0) / monthData.length),
+          overall: Math.round(monthData.reduce((sum, m) => sum + (m?.overall || 0), 0) / monthData.length),
+        };
+      }).filter(Boolean) as CityInstallationData['timeline'],
+    };
+  };
+
+  // Determine which cities to show based on filters
+  const citiesToShow = useMemo(() => {
+    if (selectedCity === "all") {
+      // If hierarchy filters are applied, use filtered cities, otherwise all cities
+      if (selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") {
+        return filteredCities;
+      }
+      return Object.keys(CITY_NAMES);
+    }
+    // If a specific city is selected, check if it matches the filters
+    const cityName = CITY_NAMES[selectedCity];
+    const hierarchy = CITY_TO_HIERARCHY_MAP[cityName];
+    if (hierarchy) {
+      if (selectedDivision !== "all" && hierarchy.division !== selectedDivision) return [];
+      if (selectedDistrict !== "all" && hierarchy.district !== selectedDistrict) return [];
+      if (selectedTehsil !== "all" && hierarchy.tehsil !== selectedTehsil) return [];
+    }
+    return [selectedCity];
+  }, [selectedCity, selectedDivision, selectedDistrict, selectedTehsil, filteredCities]);
+
+  // Check if we have valid data to display
+  const hasValidData = citiesToShow.length > 0;
+  
+  const cityData = hasValidData
+    ? (selectedCity === "all" || citiesToShow.length > 1
+        ? getFilteredCitiesData(citiesToShow)
+        : CITY_INSTALLATION_DATA[selectedCity])
+    : {
+        surveys: 0,
+        foundations: 0,
+        cabinet: 0,
+        cable: 0,
+        controlRoom: 0,
+        ppic3: 0,
+        overall: 0,
+        timeline: [],
+      };
+  
+  const cityName = hasValidData
+    ? (selectedCity === "all" 
+        ? (citiesToShow.length === Object.keys(CITY_NAMES).length 
+            ? "All Cities" 
+            : `Filtered Cities (${citiesToShow.length})`)
+        : CITY_NAMES[selectedCity] || selectedCity)
+    : "No Data Available";
 
   const installationPhases = [
     {
@@ -280,6 +426,93 @@ export default function Dashboard() {
   return (
     <Layout title="Camera Installation Progress Dashboard">
       <div className="flex flex-col gap-8">
+        {/* Filter Bar */}
+        <Card className="border-border/50 shadow-sm bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Filters Label */}
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Filters:</span>
+              </div>
+
+              {/* Division Filter */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-foreground whitespace-nowrap">Division:</label>
+                <Select value={selectedDivision} onValueChange={handleDivisionChange}>
+                  <SelectTrigger className="w-[160px] h-9 border-border/50">
+                    <SelectValue placeholder="All Divisions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Divisions</SelectItem>
+                    {getAllDivisions().map(div => (
+                      <SelectItem key={div} value={div}>{div}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* District Filter */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-foreground whitespace-nowrap">District:</label>
+                <Select 
+                  value={selectedDistrict} 
+                  onValueChange={handleDistrictChange}
+                  disabled={selectedDivision === "all"}
+                >
+                  <SelectTrigger className="w-[160px] h-9 border-border/50" disabled={selectedDivision === "all"}>
+                    <SelectValue placeholder="All Districts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Districts</SelectItem>
+                    {selectedDivision !== "all" && getDistrictsByDivision(selectedDivision).map(dist => (
+                      <SelectItem key={dist} value={dist}>{dist}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Tehsil Filter */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-foreground whitespace-nowrap">Tehsil:</label>
+                <Select 
+                  value={selectedTehsil} 
+                  onValueChange={setSelectedTehsil}
+                  disabled={selectedDivision === "all" || selectedDistrict === "all"}
+                >
+                  <SelectTrigger className="w-[160px] h-9 border-border/50" disabled={selectedDivision === "all" || selectedDistrict === "all"}>
+                    <SelectValue placeholder="All Tehsils" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tehsils</SelectItem>
+                    {selectedDivision !== "all" && selectedDistrict !== "all" && 
+                      getTehsilsByDivisionAndDistrict(selectedDivision, selectedDistrict).map(teh => (
+                        <SelectItem key={teh} value={teh}>{teh}</SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Clear Filters Button */}
+              {(selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDivision("all");
+                    setSelectedDistrict("all");
+                    setSelectedTehsil("all");
+                  }}
+                  className="ml-auto h-9"
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Top Header Section - Enhanced Design */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg">
           <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
@@ -322,6 +555,10 @@ export default function Dashboard() {
               variant="outline"
               className="rounded-xl h-11 border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all shadow-sm font-semibold"
               onClick={async () => {
+                if (selectedCity === "all") {
+                  alert('Please select a specific city to export the presentation.');
+                  return;
+                }
                 try {
                   await exportDashboardToPPTX({
                     cityName,
@@ -337,18 +574,37 @@ export default function Dashboard() {
                   alert('Error exporting presentation. Please try again.');
                 }
               }}
+              disabled={selectedCity === "all"}
             >
               <FileDown className="h-4 w-4 mr-2" />
               Export Operation pptx
             </Button>
-              <Select value={selectedCity} onValueChange={(value) => setSelectedCity(value as keyof typeof CITY_INSTALLATION_DATA)}>
+              <Select 
+                value={selectedCity} 
+                onValueChange={(value) => setSelectedCity(value as keyof typeof CITY_INSTALLATION_DATA | "all")}
+              >
                 <SelectTrigger className="w-[200px] h-11 border-border/50 hover:border-primary/50 font-semibold rounded-xl shadow-sm">
                   <SelectValue placeholder="Select City" />
               </SelectTrigger>
               <SelectContent>
-                  {Object.entries(CITY_NAMES).map(([key, name]) => (
-                    <SelectItem key={key} value={key}>{name}</SelectItem>
-                  ))}
+                  <SelectItem value="all">All Cities</SelectItem>
+                  {Object.entries(CITY_NAMES)
+                    .filter(([key]) => {
+                      // Filter cities based on hierarchy filters
+                      if (selectedDivision === "all" && selectedDistrict === "all" && selectedTehsil === "all") {
+                        return true;
+                      }
+                      const cityName = CITY_NAMES[key];
+                      const hierarchy = CITY_TO_HIERARCHY_MAP[cityName];
+                      if (!hierarchy) return false;
+                      if (selectedDivision !== "all" && hierarchy.division !== selectedDivision) return false;
+                      if (selectedDistrict !== "all" && hierarchy.district !== selectedDistrict) return false;
+                      if (selectedTehsil !== "all" && hierarchy.tehsil !== selectedTehsil) return false;
+                      return true;
+                    })
+                    .map(([key, name]) => (
+                      <SelectItem key={key} value={key}>{name}</SelectItem>
+                    ))}
               </SelectContent>
             </Select>
             </div>
@@ -356,95 +612,108 @@ export default function Dashboard() {
         </div>
 
         {/* Installation Phase Cards - Single Row with Better Spacing */}
-        <div className="w-full">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold font-heading mb-1">Installation Phases</h2>
-            <p className="text-sm text-muted-foreground">Progress breakdown by installation phase</p>
+        {hasValidData ? (
+          <div className="w-full">
+            <div className="mb-4">
+              <h2 className="text-xl font-bold font-heading mb-1">Installation Phases</h2>
+              <p className="text-sm text-muted-foreground">Progress breakdown by installation phase</p>
+            </div>
+            <div className="grid grid-cols-6 gap-3" key={`cards-${selectedCity}`}>
+              {installationPhases.map((phase) => (
+                <InstallationCard
+                  key={`${selectedCity}-${phase.key}`}
+                  title={phase.title}
+                  percentage={cityData[phase.key]}
+                  icon={phase.icon}
+                  color={phase.color}
+                />
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-6 gap-3" key={`cards-${selectedCity}`}>
-            {installationPhases.map((phase) => (
-              <InstallationCard
-                key={`${selectedCity}-${phase.key}`}
-                title={phase.title}
-                percentage={cityData[phase.key]}
-                icon={phase.icon}
-                color={phase.color}
-              />
-            ))}
-          </div>
-        </div>
+        ) : (
+          <Card className="border-border/50">
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">No data available for the selected filters. Please adjust your filter criteria.</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Overall Progress Card - Enhanced Design */}
-        <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-card/95">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-          <CardContent className="relative p-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-                    <TrendingUp className="h-7 w-7 text-white" />
+        {hasValidData && (
+          <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-card/95">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <CardContent className="relative p-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+                      <TrendingUp className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold font-heading">Overall Installation Progress</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Combined progress across all installation phases
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold font-heading">Overall Installation Progress</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Combined progress across all installation phases
-                    </p>
+                </div>
+                <div className="text-center md:text-right">
+                  <div className="inline-block">
+                    <div className="text-6xl font-bold font-heading bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
+                      {cityData.overall}
+                      <span className="text-3xl">%</span>
+                    </div>
+                    <div className="mt-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 inline-block">
+                      <span className="text-sm font-semibold text-primary">
+                        {cityData.overall === 100 ? "Fully Completed" : 
+                         cityData.overall >= 80 ? "Near Completion" : 
+                         cityData.overall >= 50 ? "In Progress" : "Early Stage"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="text-center md:text-right">
-                <div className="inline-block">
-                  <div className="text-6xl font-bold font-heading bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
-                    {cityData.overall}
-                    <span className="text-3xl">%</span>
-                  </div>
-                  <div className="mt-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 inline-block">
-                    <span className="text-sm font-semibold text-primary">
-                      {cityData.overall === 100 ? "Fully Completed" : 
-                       cityData.overall >= 80 ? "Near Completion" : 
-                       cityData.overall >= 50 ? "In Progress" : "Early Stage"}
-                    </span>
+              <div className="mt-8">
+                <div className="relative h-5 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
+                  <div 
+                    className="h-full bg-gradient-to-r from-primary via-primary/90 to-primary transition-all duration-1000 ease-out rounded-full shadow-lg relative overflow-hidden"
+                    style={{ width: `${cityData.overall}%` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div className="mt-8">
-              <div className="relative h-5 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
-                <div 
-                  className="h-full bg-gradient-to-r from-primary via-primary/90 to-primary transition-all duration-1000 ease-out rounded-full shadow-lg relative overflow-hidden"
-                  style={{ width: `${cityData.overall}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+                <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+                  <span>0%</span>
+                  <span className="font-medium">Target: 100%</span>
+                  <span>100%</span>
                 </div>
               </div>
-              <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-                <span>0%</span>
-                <span className="font-medium">Target: 100%</span>
-                <span>100%</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Map Section */}
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-xl font-bold font-heading mb-1">Geographic Overview</h2>
-            <p className="text-sm text-muted-foreground">Interactive map showing installation progress across Punjab cities</p>
-          </div>
-          <InstallationMap 
-            cityData={Object.fromEntries(
-              Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => [
-                key,
-                { overall: data.overall }
-              ])
-            )}
-            selectedCity={selectedCity}
-            onCitySelect={(city) => setSelectedCity(city as keyof typeof CITY_INSTALLATION_DATA)}
+        {hasValidData && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-bold font-heading mb-1">Geographic Overview</h2>
+              <p className="text-sm text-muted-foreground">Interactive map showing installation progress across Punjab cities</p>
+            </div>
+            <InstallationMap 
+              cityData={Object.fromEntries(
+                Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => [
+                  key,
+                  { overall: data.overall }
+                ])
+              )}
+              selectedCity={selectedCity === "all" ? undefined : selectedCity}
+              onCitySelect={(city) => setSelectedCity(city as keyof typeof CITY_INSTALLATION_DATA)}
           />
         </div>
+        )}
 
         {/* Charts Grid - Enhanced Layout */}
+        {hasValidData ? (
         <div className="space-y-6">
           <div>
             <h2 className="text-xl font-bold font-heading mb-1">Analytics & Insights</h2>
@@ -491,6 +760,13 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        ) : (
+          <Card className="border-border/50">
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">No chart data available for the selected filters.</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </Layout>
   );

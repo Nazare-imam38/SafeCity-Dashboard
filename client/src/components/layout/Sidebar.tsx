@@ -28,8 +28,12 @@ export function Sidebar() {
     <div className="flex h-full flex-col gap-4">
       <div className="flex h-16 items-center border-b border-white/10 px-6">
         <Link href="/">
-          <a className="flex items-center gap-2 font-heading font-bold text-2xl text-white tracking-wide">
-            <Shield className="h-8 w-8 text-secondary" />
+          <a className="flex items-center gap-3 font-heading font-bold text-2xl text-white tracking-wide">
+            <img 
+              src="/Assets/psca logo.png" 
+              alt="PSCA Logo" 
+              className="h-10 w-10 object-contain"
+            />
             <div className="flex flex-col leading-none">
               <span>PSCA</span>
               <span className="text-[10px] text-white/50 font-medium tracking-tighter uppercase">Safe City Portal</span>
