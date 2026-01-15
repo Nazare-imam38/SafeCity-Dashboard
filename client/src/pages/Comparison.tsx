@@ -1,125 +1,107 @@
 import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-
-const comparisonData = [
-  { metric: "Response Time (min)", Lahore: 8, Rawalpindi: 10, Faisalabad: 12 },
-  { metric: "Incidents (Daily)", Lahore: 120, Rawalpindi: 85, Faisalabad: 90 },
-  { metric: "Staff Count", Lahore: 1450, Rawalpindi: 800, Faisalabad: 750 },
-  { metric: "Camera Uptime %", Lahore: 98, Rawalpindi: 95, Faisalabad: 92 },
-];
+import { CityCompletionChart } from "@/components/comparison/CityCompletionChart";
+import { PhaseComparisonPieChart } from "@/components/comparison/PhaseComparisonPieChart";
+import { StackedPhaseChart } from "@/components/comparison/StackedPhaseChart";
+import { RadarComparisonChart } from "@/components/comparison/RadarComparisonChart";
+import { HeatmapChart } from "@/components/comparison/HeatmapChart";
+import { CITY_INSTALLATION_DATA, CITY_NAMES } from "@/data/cityData";
 
 export default function Comparison() {
+  // Prepare data for city completion chart
+  const cityCompletionData = Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
+    city: CITY_NAMES[key] || key,
+    completion: data.overall,
+  }));
+
+  // Prepare data for stacked phase chart
+  const stackedData = Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
+    city: CITY_NAMES[key] || key,
+    surveys: data.surveys,
+    foundations: data.foundations,
+    cabinet: data.cabinet,
+    cable: data.cable,
+    controlRoom: data.controlRoom,
+    ppic3: data.ppic3,
+  }));
+
+  // Prepare data for radar chart
+  const radarData = [
+    { phase: "Surveys" },
+    { phase: "Foundations" },
+    { phase: "Cabinet" },
+    { phase: "Cable" },
+    { phase: "Control Room" },
+    { phase: "PPIC3" },
+  ];
+
+  Object.entries(CITY_INSTALLATION_DATA).forEach(([key, data]) => {
+    const cityName = CITY_NAMES[key] || key;
+    (radarData[0] as any)[cityName] = data.surveys;
+    (radarData[1] as any)[cityName] = data.foundations;
+    (radarData[2] as any)[cityName] = data.cabinet;
+    (radarData[3] as any)[cityName] = data.cable;
+    (radarData[4] as any)[cityName] = data.controlRoom;
+    (radarData[5] as any)[cityName] = data.ppic3;
+  });
+
+  const cities = Object.values(CITY_NAMES);
+
+  // Prepare phase comparison data for pie charts
+  const surveysData = Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
+    city: CITY_NAMES[key] || key,
+    value: data.surveys,
+  }));
+
+  const foundationsData = Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
+    city: CITY_NAMES[key] || key,
+    value: data.foundations,
+  }));
+
+  const cabinetData = Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
+    city: CITY_NAMES[key] || key,
+    value: data.cabinet,
+  }));
+
+
   return (
-    <Layout title="Cross-City Comparison">
+    <Layout title="City Comparison - Smart Safe Cities">
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <p className="text-muted-foreground">Compare performance metrics across major districts.</p>
-          <div className="flex gap-2">
-            <Select defaultValue="all">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Add City to Compare" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Major Cities</SelectItem>
-                <SelectItem value="lhr">Lahore</SelectItem>
-                <SelectItem value="rwp">Rawalpindi</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Header Section */}
+        <div>
+          <h1 className="text-3xl font-bold font-heading">City Comparison</h1>
+          <p className="text-muted-foreground mt-1">Compare installation progress across all Punjab cities</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Rankings Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Ranking</CardTitle>
-              <CardDescription>Based on weighted efficiency score</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { city: "Lahore", score: 92, trend: "+2%" },
-                  { city: "Rawalpindi", score: 88, trend: "-1%" },
-                  { city: "Faisalabad", score: 85, trend: "+4%" },
-                  { city: "Multan", score: 81, trend: "0%" },
-                ].map((item, i) => (
-                  <div key={item.city} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border">
-                    <div className="flex items-center gap-3">
-                      <div className="font-heading font-bold text-xl text-muted-foreground w-6">#{i + 1}</div>
-                      <div>
-                        <p className="font-bold">{item.city}</p>
-                        <p className="text-xs text-muted-foreground">Efficiency Score</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-heading font-bold text-lg text-primary">{item.score}</p>
-                      <p className={`text-xs ${item.trend.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>{item.trend}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        {/* City Completion Comparison Chart */}
+        <CityCompletionChart cityData={cityCompletionData} />
 
-          {/* Incident Comparison */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Response Time Comparison</CardTitle>
-              <CardDescription>Average minutes per priority incident</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonData.filter(d => d.metric === "Response Time (min)")} layout="vertical">
-                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                   <XAxis type="number" hide />
-                   <YAxis type="category" dataKey="metric" hide />
-                   <Tooltip cursor={{fill: 'transparent'}} />
-                   <Legend />
-                   <Bar dataKey="Lahore" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20} />
-                   <Bar dataKey="Rawalpindi" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} barSize={20} />
-                   <Bar dataKey="Faisalabad" fill="hsl(var(--chart-3))" radius={[0, 4, 4, 0]} barSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-                 <div>
-                   <p className="text-sm font-medium">Lahore</p>
-                   <p className="text-2xl font-bold font-heading text-primary">8m</p>
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium">Rawalpindi</p>
-                   <p className="text-2xl font-bold font-heading text-[hsl(var(--chart-2))]">10m</p>
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium">Faisalabad</p>
-                   <p className="text-2xl font-bold font-heading text-[hsl(var(--chart-3))]">12m</p>
-                 </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Stacked Phase Chart */}
+        <StackedPhaseChart data={stackedData} />
+
+        {/* Radar Chart - Full Width */}
+        <RadarComparisonChart data={radarData} cities={cities} />
+
+        {/* Pie Charts Grid - All Phases */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <PhaseComparisonPieChart phaseName="Surveys" cityData={surveysData} />
+          <PhaseComparisonPieChart phaseName="Foundations" cityData={foundationsData} />
+          <PhaseComparisonPieChart phaseName="Cabinet Installation" cityData={cabinetData} />
+          <PhaseComparisonPieChart phaseName="Cable Laying" cityData={Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
+            city: CITY_NAMES[key] || key,
+            value: data.cable,
+          }))} />
+          <PhaseComparisonPieChart phaseName="Control Room" cityData={Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
+            city: CITY_NAMES[key] || key,
+            value: data.controlRoom,
+          }))} />
+          <PhaseComparisonPieChart phaseName="PPIC3" cityData={Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
+            city: CITY_NAMES[key] || key,
+            value: data.ppic3,
+          }))} />
         </div>
 
-        {/* Detailed Chart */}
-        <Card>
-           <CardHeader>
-             <CardTitle>Metric Overview</CardTitle>
-           </CardHeader>
-           <CardContent className="h-[400px]">
-             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonData}>
-                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                   <XAxis dataKey="metric" />
-                   <YAxis />
-                   <Tooltip />
-                   <Legend />
-                   <Bar dataKey="Lahore" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                   <Bar dataKey="Rawalpindi" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-                   <Bar dataKey="Faisalabad" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-             </ResponsiveContainer>
-           </CardContent>
-        </Card>
+        {/* Heatmap Chart */}
+        <HeatmapChart data={stackedData} />
       </div>
     </Layout>
   );
