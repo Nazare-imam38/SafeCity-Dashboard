@@ -83,6 +83,63 @@ export function HeatmapChart({ data }: HeatmapChartProps) {
             </table>
           </div>
         </div>
+        
+        {/* Legend */}
+        <div className="mt-6 pt-4 border-t">
+          <div className="flex flex-col gap-3">
+            <h4 className="text-sm font-semibold text-foreground mb-1">Progress Legend</h4>
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 rounded bg-emerald-600 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">100%</span>
+                </div>
+                <span className="text-muted-foreground">90-100%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 rounded bg-emerald-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">85%</span>
+                </div>
+                <span className="text-muted-foreground">80-89%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 rounded bg-blue-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">75%</span>
+                </div>
+                <span className="text-muted-foreground">70-79%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 rounded bg-blue-400 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">65%</span>
+                </div>
+                <span className="text-muted-foreground">60-69%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 rounded bg-orange-400 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">55%</span>
+                </div>
+                <span className="text-muted-foreground">50-59%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 rounded bg-orange-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">45%</span>
+                </div>
+                <span className="text-muted-foreground">40-49%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 rounded bg-red-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">35%</span>
+                </div>
+                <span className="text-muted-foreground">30-39%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 rounded bg-red-600 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">25%</span>
+                </div>
+                <span className="text-muted-foreground">&lt;30%</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

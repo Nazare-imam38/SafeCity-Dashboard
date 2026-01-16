@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, Wallet, AlertCircle, CheckCircle2, Filter } from "lucide-react";
+import { TrendingUp, TrendingDown, LucideBanknote, Wallet, AlertCircle, CheckCircle2, Filter } from "lucide-react";
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -177,7 +177,7 @@ export default function Finance() {
 
   const kpiDataWithIcons = {
     totalBudget: { value: kpiData.totalBudget, label: "Total Budget Allocated", icon: Wallet, trend: 2.5 },
-    ytdUtilization: { value: kpiData.ytdUtilization, label: "YTD Utilization", icon: DollarSign, trend: utilizationRate },
+    ytdUtilization: { value: kpiData.ytdUtilization, label: "YTD Utilization", icon: LucideBanknote, trend: utilizationRate },
     variance: { value: kpiData.variance, label: "Projected Variance", icon: AlertCircle, trend: -1.2 },
     remaining: { value: kpiData.remaining, label: "Remaining Budget", icon: CheckCircle2, trend: (kpiData.remaining / kpiData.totalBudget) * 100 },
   };
@@ -187,7 +187,7 @@ export default function Finance() {
       <div className="flex flex-col gap-6">
         {/* Filter Bar Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg p-6">
-          <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-4 flex-nowrap">
             {/* Filters Label */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Filter className="h-4 w-4 text-primary" />
@@ -264,29 +264,23 @@ export default function Finance() {
 
             {/* Clear Filters Button */}
             {(selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") && (
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedDivision("all");
-                    setSelectedDistrict("all");
-                    setSelectedTehsil("all");
-                  }}
-                  className="h-9 px-3 rounded-md text-sm font-medium"
-                >
-                  Clear Filters
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedDivision("all");
+                  setSelectedDistrict("all");
+                  setSelectedTehsil("all");
+                }}
+                className="h-9 px-2 text-xs font-medium flex-shrink-0"
+              >
+                Clear Filters
+              </Button>
             )}
           </div>
         </div>
 
-        {/* Header */}
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold font-heading">FY 2025-26 Financial Overview - {getLocationName()}</h2>
-          <p className="text-muted-foreground">Track budget allocation, utilization, and variance analysis in PKR</p>
-        </div>
+        
 
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -459,10 +453,10 @@ export default function Finance() {
                     borderColor: "hsl(var(--border))", 
                     borderRadius: "8px" 
                   }}
-                  formatter={(value: number, name: string) => [
-                    formatPKR(value),
-                    name === 'planned' ? 'Planned' : 'Actual'
-                  ]}
+                  formatter={(value: number, name: string) => {
+                    // The name comes from the Bar component's name prop
+                    return [formatPKR(value), name];
+                  }}
                 />
                 <Legend />
                 <Bar dataKey="planned" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Planned" />

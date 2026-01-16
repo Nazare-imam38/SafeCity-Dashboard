@@ -627,10 +627,10 @@ ${areaBase64 ? '<Relationship Id="rId6" Type="http://schemas.openxmlformats.org/
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    alert('PowerPoint presentation exported successfully!\n\nThe PPTX file includes all KPIs with proper icons and all charts based on your current filter selection.');
+    // Success - dialog will be shown by the calling component
   } catch (error) {
     console.error('Error exporting presentation:', error);
-    alert('Error exporting presentation. Please try again.');
+    throw error; // Re-throw so calling component can handle it
   }
 }
 

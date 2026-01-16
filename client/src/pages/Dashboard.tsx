@@ -37,8 +37,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useState, useMemo } from "react";
 import { useTheme } from "@/hooks/use-theme";
+import { CheckCircle2 } from "lucide-react";
 
 // Installation progress data for all Punjab cities
 interface CityInstallationData {
@@ -251,6 +253,8 @@ export default function Dashboard() {
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("all");
   const [selectedTehsil, setSelectedTehsil] = useState<string>("all");
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   // Get available divisions
@@ -536,14 +540,14 @@ export default function Dashboard() {
 
   return (
     <Layout title="PSCA Progress Dashboard">
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
         {/* Top Header Section - Enhanced Design with Filter Bar */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg">
           <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
           
           {/* Filter Bar Section */}
-          <div className="relative border-b border-border/30 pb-4 px-6 pt-6">
-            <div className="flex items-center gap-6 flex-wrap">
+          <div className="relative border-b border-border/30 pb-3 px-6 pt-4">
+            <div className="flex items-center gap-4 flex-nowrap">
               {/* Filters Label */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Filter className="h-4 w-4 text-primary" />
@@ -620,26 +624,24 @@ export default function Dashboard() {
 
               {/* Clear Filters Button */}
               {(selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") && (
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedDivision("all");
-                      setSelectedDistrict("all");
-                      setSelectedTehsil("all");
-                    }}
-                    className="h-9 px-3 rounded-md text-sm font-medium"
-                  >
-                    Clear Filters
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDivision("all");
+                    setSelectedDistrict("all");
+                    setSelectedTehsil("all");
+                  }}
+                  className="h-9 px-2 text-xs font-medium flex-shrink-0"
+                >
+                  Clear Filters
+                </Button>
               )}
             </div>
           </div>
 
           {/* Header Content Section */}
-          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 md:p-8">
+          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:p-6">
             <div className="space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
@@ -675,11 +677,10 @@ export default function Dashboard() {
                 {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
             <Button
-              variant="outline"
-              className="rounded-xl h-11 border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all shadow-sm font-semibold"
+              className="rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm font-semibold"
               onClick={async () => {
                 if (citiesToShow.length === 0 || (selectedDivision === "all" && selectedDistrict === "all" && selectedTehsil === "all" && citiesToShow.length > 1)) {
-                  alert('Please apply specific filters (Division, District, or Tehsil) to export the presentation.');
+                  setShowErrorDialog(true);
                   return;
                 }
                 try {
@@ -692,9 +693,10 @@ export default function Dashboard() {
                       percentage: cityData[phase.key],
                     })),
                   });
+                  setShowSuccessDialog(true);
                 } catch (error) {
                   console.error('Error exporting to PPTX:', error);
-                  alert('Error exporting presentation. Please try again.');
+                  setShowErrorDialog(true);
                 }
               }}
               disabled={citiesToShow.length === 0 || (selectedDivision === "all" && selectedDistrict === "all" && selectedTehsil === "all" && citiesToShow.length > 1)}
@@ -709,11 +711,11 @@ export default function Dashboard() {
         {/* Installation Phase Cards - Single Row with Better Spacing */}
         {hasValidData ? (
           <div className="w-full">
-            <div className="mb-4">
+            <div className="mb-3">
               <h2 className="text-xl font-bold font-heading mb-1">Installation Phases</h2>
               <p className="text-sm text-muted-foreground">Progress breakdown by installation phase</p>
             </div>
-            <div className="grid grid-cols-6 gap-3" key={`cards-${cityName}`}>
+            <div className="grid grid-cols-6 gap-2" key={`cards-${cityName}`}>
               {installationPhases.map((phase) => (
                 <InstallationCard
                   key={`${cityName}-${phase.key}`}
@@ -737,8 +739,8 @@ export default function Dashboard() {
         {hasValidData && (
           <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-card/95">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-            <CardContent className="relative p-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <CardContent className="relative p-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
@@ -789,7 +791,7 @@ export default function Dashboard() {
 
         {/* Map Section */}
         {hasValidData && (
-              <div className="space-y-4">
+              <div className="space-y-3">
             <div>
               <h2 className="text-xl font-bold font-heading mb-1">Geographic Overview</h2>
               <p className="text-sm text-muted-foreground">Interactive map showing installation progress across Punjab cities</p>
@@ -818,13 +820,13 @@ export default function Dashboard() {
 
         {/* Charts Grid - Enhanced Layout */}
         {hasValidData ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div>
             <h2 className="text-xl font-bold font-heading mb-1">Analytics & Insights</h2>
             <p className="text-sm text-muted-foreground">Detailed progress analysis and city comparisons</p>
                    </div>
           
-          <div className="grid gap-6 lg:grid-cols-12">
+          <div className="grid gap-4 lg:grid-cols-12">
             {/* Progress Timeline Chart */}
             <div className="lg:col-span-7" key={`timeline-${cityName}`}>
               <TrendChart cityData={cityData.timeline} cityKey={cityName} />
@@ -842,7 +844,7 @@ export default function Dashboard() {
           </div>
 
           {/* Modern Charts Section */}
-          <div className="grid gap-6 lg:grid-cols-12">
+          <div className="grid gap-4 lg:grid-cols-12">
             {/* Phase Distribution Pie Chart */}
             <div className="lg:col-span-12" key={`phase-distribution-${cityName}`}>
               <PhaseDistributionChart 
@@ -855,7 +857,7 @@ export default function Dashboard() {
                    </div>
 
           {/* Phase Timeline Chart */}
-          <div className="grid gap-6 lg:grid-cols-12">
+          <div className="grid gap-4 lg:grid-cols-12">
             <div className="lg:col-span-12" key={`phase-timeline-${cityName}`}>
               <PhaseTimelineChart 
                 timelineData={cityData.timeline}
@@ -872,6 +874,62 @@ export default function Dashboard() {
           </Card>
         )}
       </div>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex flex-col items-center gap-4 mb-2">
+              <img 
+                src="/Assets/psca logo.png" 
+                alt="PSCA Logo" 
+                className="h-16 w-16 object-contain"
+              />
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                <DialogTitle className="text-xl font-bold">Export Successful!</DialogTitle>
+              </div>
+            </div>
+            <DialogDescription className="text-center pt-2">
+              PowerPoint presentation exported successfully!
+              <br />
+              <br />
+              The PPTX file includes all KPIs with proper icons and all charts based on your current filter selection.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button onClick={() => setShowSuccessDialog(false)} className="w-full sm:w-auto">
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Dialog */}
+      <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex flex-col items-center gap-4 mb-2">
+              <img 
+                src="/Assets/psca logo.png" 
+                alt="PSCA Logo" 
+                className="h-16 w-16 object-contain"
+              />
+              <DialogTitle className="text-xl font-bold">Export Error</DialogTitle>
+            </div>
+            <DialogDescription className="text-center pt-2">
+              {citiesToShow.length === 0 || (selectedDivision === "all" && selectedDistrict === "all" && selectedTehsil === "all" && citiesToShow.length > 1)
+                ? "Please apply specific filters (Division, District, or Tehsil) to export the presentation."
+                : "Error exporting presentation. Please try again."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button onClick={() => setShowErrorDialog(false)} className="w-full sm:w-auto">
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

@@ -85,12 +85,12 @@ export function PhaseTimelineChart({ timelineData, cityKey = "default" }: PhaseT
               formatter={(value: number, name: string) => [`${value}%`, name]}
             />
             <Legend />
-            <Area type="monotone" dataKey="surveys" stackId="1" stroke="#3b82f6" fill={`url(#${gradientIds.surveys})`} fillOpacity={0.3} strokeWidth={2} />
-            <Area type="monotone" dataKey="foundations" stackId="1" stroke="#10b981" fill={`url(#${gradientIds.foundations})`} fillOpacity={0.3} strokeWidth={2} />
-            <Area type="monotone" dataKey="cabinet" stackId="1" stroke="#f59e0b" fill={`url(#${gradientIds.cabinet})`} fillOpacity={0.3} strokeWidth={2} />
-            <Area type="monotone" dataKey="cable" stackId="1" stroke="#a855f7" fill={`url(#${gradientIds.cable})`} fillOpacity={0.3} strokeWidth={2} />
-            <Area type="monotone" dataKey="controlRoom" stackId="1" stroke="#ef4444" fill={`url(#${gradientIds.controlRoom})`} fillOpacity={0.3} strokeWidth={2} />
-            <Area type="monotone" dataKey="ppic3" stackId="1" stroke="#eab308" fill={`url(#${gradientIds.ppic3})`} fillOpacity={0.3} strokeWidth={2} />
+            <Area type="monotone" dataKey="surveys" stackId="1" stroke="#3b82f6" fill="transparent" strokeWidth={2} />
+            <Area type="monotone" dataKey="foundations" stackId="1" stroke="#10b981" fill="transparent" strokeWidth={2} />
+            <Area type="monotone" dataKey="cabinet" stackId="1" stroke="#f59e0b" fill="transparent" strokeWidth={2} />
+            <Area type="monotone" dataKey="cable" stackId="1" stroke="#a855f7" fill="transparent" strokeWidth={2} />
+            <Area type="monotone" dataKey="controlRoom" stackId="1" stroke="#ef4444" fill="transparent" strokeWidth={2} />
+            <Area type="monotone" dataKey="ppic3" stackId="1" stroke="#eab308" fill="transparent" strokeWidth={2} />
           </AreaChart>
         </ResponsiveContainer>
       </CardContent>
