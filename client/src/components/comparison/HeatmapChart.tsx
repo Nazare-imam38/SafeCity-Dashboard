@@ -40,7 +40,7 @@ export function HeatmapChart({ data }: HeatmapChartProps) {
   });
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Progress Heatmap</CardTitle>
         <CardDescription className="text-sm">Visual comparison of all phases across all cities</CardDescription>

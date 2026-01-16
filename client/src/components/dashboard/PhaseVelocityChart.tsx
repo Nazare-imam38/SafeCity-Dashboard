@@ -41,7 +41,7 @@ export function PhaseVelocityChart({ phaseData, cityKey = "default" }: PhaseVelo
   }));
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Phase Progress & Velocity</CardTitle>
         <CardDescription className="text-sm">Current progress and monthly completion rate by phase</CardDescription>

@@ -651,9 +651,7 @@ export default function Dashboard() {
                   <h1 className="text-3xl md:text-4xl font-bold font-heading bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {cityName}
                   </h1>
-                  <p className="text-sm font-medium text-muted-foreground mt-1">
-                    Camera Installation Progress Dashboard
-                  </p>
+                
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -661,9 +659,6 @@ export default function Dashboard() {
                   <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
                   Overall: {cityData.overall}%
                 </Badge>
-                <span className="text-xs text-muted-foreground font-medium">
-                  Punjab Safe City Authority
-                </span>
             </div>
           </div>
           

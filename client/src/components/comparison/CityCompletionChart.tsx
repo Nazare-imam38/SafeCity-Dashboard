@@ -19,7 +19,7 @@ export function CityCompletionChart({ cityData }: CityCompletionChartProps) {
   const sortedData = [...cityData].sort((a, b) => b.completion - a.completion);
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Smart Safe Cities Phase I (Completion %)</CardTitle>
         <CardDescription className="text-sm">District Wise Progress</CardDescription>

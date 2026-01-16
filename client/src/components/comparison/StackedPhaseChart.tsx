@@ -30,7 +30,7 @@ export function StackedPhaseChart({ data }: StackedPhaseChartProps) {
   });
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Phase Progress Comparison</CardTitle>
         <CardDescription className="text-sm">Stacked view of all installation phases by city</CardDescription>

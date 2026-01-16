@@ -328,7 +328,7 @@ export default function Finance() {
         {/* Budget vs Actual Charts */}
         <div className="grid gap-6 lg:grid-cols-12">
           {/* Main Budget vs Actual Chart */}
-          <Card className="lg:col-span-8">
+          <Card className="lg:col-span-8 border-2 transition-colors hover:border-[#101a3c]">
             <CardHeader>
               <CardTitle>Planned vs Actual Budget</CardTitle>
               <CardDescription>Monthly budget comparison in PKR</CardDescription>
@@ -427,7 +427,7 @@ export default function Finance() {
         </div>
 
         {/* Department Expense Chart */}
-        <Card>
+        <Card className="border-2 transition-colors hover:border-[#101a3c]">
           <CardHeader>
             <CardTitle>Department Budget Analysis</CardTitle>
             <CardDescription>Planned vs Actual expenses by department</CardDescription>

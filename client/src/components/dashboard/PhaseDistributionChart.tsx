@@ -60,7 +60,7 @@ export function PhaseDistributionChart({ data }: PhaseDistributionChartProps) {
   };
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Phase Distribution</CardTitle>
         <CardDescription className="text-sm">Progress distribution across installation phases</CardDescription>

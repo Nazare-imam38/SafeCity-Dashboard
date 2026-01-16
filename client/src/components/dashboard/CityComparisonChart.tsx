@@ -22,7 +22,7 @@ export function CityComparisonChart({ cityData, selectedCity }: CityComparisonCh
   };
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">City Comparison</CardTitle>
         <CardDescription className="text-sm">Overall installation progress across all cities</CardDescription>

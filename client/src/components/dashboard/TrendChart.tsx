@@ -31,7 +31,7 @@ export function TrendChart({ cityData, cityKey = "default" }: TrendChartProps) {
   const gradientId2 = `colorSurveys-${cityKey}`;
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Installation Progress Timeline</CardTitle>
         <CardDescription className="text-sm">Monthly Progress Overview (Last 6 Months)</CardDescription>

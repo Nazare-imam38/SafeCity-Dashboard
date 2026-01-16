@@ -18,7 +18,7 @@ export function PhaseComparisonPieChart({ phaseName, cityData }: PhaseComparison
   const sortedData = [...cityData].sort((a, b) => b.value - a.value).slice(0, 6); // Top 6 cities
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-3">
         <CardTitle className="font-heading text-lg font-bold">{phaseName}</CardTitle>
         <CardDescription className="text-sm">Top 6 cities comparison</CardDescription>

@@ -30,7 +30,7 @@ export function CompletionForecastChart({ currentProgress, cityKey = "default" }
   const gradientId = `forecastGradient-${cityKey}`;
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Completion Forecast</CardTitle>
         <CardDescription className="text-sm">Projected completion timeline based on current progress rate</CardDescription>

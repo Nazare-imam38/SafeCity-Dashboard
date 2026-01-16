@@ -18,7 +18,7 @@ export function RadarComparisonChart({ data, cities }: RadarComparisonChartProps
   const topCities = cities.slice(0, 5); // Show top 5 cities
 
   return (
-    <Card className="shadow-lg border-border/50">
+    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Multi-City Phase Comparison</CardTitle>
         <CardDescription className="text-sm">Radar chart comparing top 5 cities across all phases</CardDescription>
