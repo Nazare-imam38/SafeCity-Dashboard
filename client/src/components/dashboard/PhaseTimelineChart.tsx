@@ -39,27 +39,27 @@ export function PhaseTimelineChart({ timelineData, cityKey = "default" }: PhaseT
           <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} key={cityKey}>
             <defs>
               <linearGradient id={gradientIds.surveys} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.0}/>
                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id={gradientIds.foundations} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.0}/>
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id={gradientIds.cabinet} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4}/>
+                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.0}/>
                 <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id={gradientIds.cable} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4}/>
+                <stop offset="5%" stopColor="#a855f7" stopOpacity={0.0}/>
                 <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id={gradientIds.controlRoom} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4}/>
+                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.0}/>
                 <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id={gradientIds.ppic3} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#eab308" stopOpacity={0.4}/>
+                <stop offset="5%" stopColor="#eab308" stopOpacity={0.0}/>
                 <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
               </linearGradient>
             </defs>
@@ -85,12 +85,12 @@ export function PhaseTimelineChart({ timelineData, cityKey = "default" }: PhaseT
               formatter={(value: number, name: string) => [`${value}%`, name]}
             />
             <Legend />
-            <Area type="monotone" dataKey="surveys" stackId="1" stroke="#3b82f6" fill={`url(#${gradientIds.surveys})`} strokeWidth={2} />
-            <Area type="monotone" dataKey="foundations" stackId="1" stroke="#10b981" fill={`url(#${gradientIds.foundations})`} strokeWidth={2} />
-            <Area type="monotone" dataKey="cabinet" stackId="1" stroke="#f59e0b" fill={`url(#${gradientIds.cabinet})`} strokeWidth={2} />
-            <Area type="monotone" dataKey="cable" stackId="1" stroke="#a855f7" fill={`url(#${gradientIds.cable})`} strokeWidth={2} />
-            <Area type="monotone" dataKey="controlRoom" stackId="1" stroke="#ef4444" fill={`url(#${gradientIds.controlRoom})`} strokeWidth={2} />
-            <Area type="monotone" dataKey="ppic3" stackId="1" stroke="#eab308" fill={`url(#${gradientIds.ppic3})`} strokeWidth={2} />
+            <Area type="monotone" dataKey="surveys" stackId="1" stroke="#3b82f6" fill={`url(#${gradientIds.surveys})`} fillOpacity={0.3} strokeWidth={2} />
+            <Area type="monotone" dataKey="foundations" stackId="1" stroke="#10b981" fill={`url(#${gradientIds.foundations})`} fillOpacity={0.3} strokeWidth={2} />
+            <Area type="monotone" dataKey="cabinet" stackId="1" stroke="#f59e0b" fill={`url(#${gradientIds.cabinet})`} fillOpacity={0.3} strokeWidth={2} />
+            <Area type="monotone" dataKey="cable" stackId="1" stroke="#a855f7" fill={`url(#${gradientIds.cable})`} fillOpacity={0.3} strokeWidth={2} />
+            <Area type="monotone" dataKey="controlRoom" stackId="1" stroke="#ef4444" fill={`url(#${gradientIds.controlRoom})`} fillOpacity={0.3} strokeWidth={2} />
+            <Area type="monotone" dataKey="ppic3" stackId="1" stroke="#eab308" fill={`url(#${gradientIds.ppic3})`} fillOpacity={0.3} strokeWidth={2} />
           </AreaChart>
         </ResponsiveContainer>
       </CardContent>

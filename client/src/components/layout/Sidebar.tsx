@@ -4,11 +4,12 @@ import {
   Shield, 
   Activity, 
   BarChart3, 
-  DollarSign, 
+  CoinsIcon, 
   LayoutDashboard, 
   Map as MapIcon, 
   Settings,
-  Menu
+  Menu,
+  
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -16,7 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "City Monitor", href: "/" },
   { icon: BarChart3, label: "Comparison", href: "/comparison" },
-  { icon: DollarSign, label: "Finance & Budget", href: "/finance" },
+  { icon: CoinsIcon, label: "Finance & Budget", href: "/finance" },
   { icon: MapIcon, label: "GIS Layers", href: "/gis" },
   { icon: Settings, label: "Settings", href: "/settings" },
 ];

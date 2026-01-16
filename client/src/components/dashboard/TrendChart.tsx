@@ -41,11 +41,11 @@ export function TrendChart({ cityData, cityKey = "default" }: TrendChartProps) {
           <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} key={cityKey}>
             <defs>
               <linearGradient id={gradientId1} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                 <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id={gradientId2} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0}/>
                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
               </linearGradient>
             </defs>
@@ -56,8 +56,8 @@ export function TrendChart({ cityData, cityKey = "default" }: TrendChartProps) {
               contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px" }}
               itemStyle={{ color: "hsl(var(--foreground))" }}
             />
-            <Area type="monotone" dataKey="overall" stroke="hsl(var(--primary))" fillOpacity={1} fill={`url(#${gradientId1})`} strokeWidth={2} />
-            <Area type="monotone" dataKey="surveys" stroke="#3b82f6" fillOpacity={1} fill={`url(#${gradientId2})`} strokeWidth={1.5} strokeDasharray="5 5" />
+            <Area type="monotone" dataKey="overall" stroke="hsl(var(--primary))" fillOpacity={0} fill={`url(#${gradientId1})`} strokeWidth={2} />
+            <Area type="monotone" dataKey="surveys" stroke="#3b82f6" fillOpacity={0} fill={`url(#${gradientId2})`} strokeWidth={1.5} strokeDasharray="5 5" />
           </AreaChart>
         </ResponsiveContainer>
       </CardContent>

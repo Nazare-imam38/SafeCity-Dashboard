@@ -67,10 +67,7 @@ export default function Comparison() {
     <Layout title="City Comparison - Smart Safe Cities">
       <div className="flex flex-col gap-6">
         {/* Header Section */}
-        <div>
-          <h1 className="text-3xl font-bold font-heading">City Comparison</h1>
-          <p className="text-muted-foreground mt-1">Compare installation progress across all Punjab cities</p>
-        </div>
+        
 
         {/* City Completion Comparison Chart */}
         <CityCompletionChart cityData={cityCompletionData} />

@@ -535,7 +535,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <Layout title="Camera Installation Progress Dashboard">
+    <Layout title="PSCA Progress Dashboard">
       <div className="flex flex-col gap-8">
         {/* Top Header Section - Enhanced Design with Filter Bar */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg">
