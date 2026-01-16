@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PhaseComparisonPieChartProps {
@@ -17,12 +17,6 @@ const COLORS = [
 export function PhaseComparisonPieChart({ phaseName, cityData }: PhaseComparisonPieChartProps) {
   const sortedData = [...cityData].sort((a, b) => b.value - a.value).slice(0, 6); // Top 6 cities
 
-  // Custom label function - show city name and actual progress value
-  const renderLabel = (entry: any) => {
-    // Show full city name and actual value percentage
-    return `${entry.city}: ${entry.value}%`;
-  };
-
   return (
     <Card className="shadow-lg border-border/50">
       <CardHeader className="pb-3">
@@ -37,8 +31,7 @@ export function PhaseComparisonPieChart({ phaseName, cityData }: PhaseComparison
               data={sortedData}
               cx="50%"
               cy="50%"
-              labelLine={true}
-              label={renderLabel}
+              label={false}
               outerRadius={100}
               innerRadius={40}
               fill="#8884d8"
@@ -64,16 +57,16 @@ export function PhaseComparisonPieChart({ phaseName, cityData }: PhaseComparison
           </PieChart>
         </ResponsiveContainer>
 
-        {/* Legend */}
+        {/* Legend with City Names */}
         <div className="flex flex-wrap justify-center gap-3 text-xs">
           {sortedData.map((entry, index) => (
-            <div key={index} className="flex items-center gap-1.5">
+            <div key={entry.city} className="flex items-center gap-1.5">
               <div 
-                className="w-3 h-3 rounded-full" 
+                className="w-3 h-3 rounded-full flex-shrink-0" 
                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
               />
-              <span className="text-muted-foreground">
-                {index}: {entry.value}%
+              <span className="text-muted-foreground font-medium">
+                {entry.city}: {entry.value}%
               </span>
             </div>
           ))}

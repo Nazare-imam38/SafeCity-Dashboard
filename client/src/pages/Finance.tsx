@@ -1,10 +1,16 @@
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, Wallet, AlertCircle, CheckCircle2 } from "lucide-react";
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
-
-// PKR conversion rate (approximate)
-const USD_TO_PKR = 280;
+import { TrendingUp, TrendingDown, DollarSign, Wallet, AlertCircle, CheckCircle2, Filter } from "lucide-react";
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
+import { 
+  getAllDivisions,
+  getDistrictsByDivision,
+  getTehsilsByDivisionAndDistrict,
+  PUNJAB_HIERARCHY
+} from "@/data/punjabHierarchy";
 
 // Format PKR currency
 const formatPKR = (amount: number) => {
@@ -17,50 +23,274 @@ const formatPKR = (amount: number) => {
   }
 };
 
-// Budget data with PKR values
-const budgetData = [
-  { month: 'Jan', planned: 1120000000, actual: 1064000000, variance: -56000000 },
-  { month: 'Feb', planned: 840000000, actual: 896000000, variance: 56000000 },
-  { month: 'Mar', planned: 560000000, actual: 504000000, variance: -56000000 },
-  { month: 'Apr', planned: 778400000, actual: 812000000, variance: 33600000 },
-  { month: 'May', planned: 529200000, actual: 532000000, variance: 2800000 },
-  { month: 'Jun', planned: 669200000, actual: 616000000, variance: -53200000 },
-  { month: 'Jul', planned: 977200000, actual: 952000000, variance: -25200000 },
-];
+// Generate deterministic hash from string
+const hashString = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+};
 
-// Department expense data
-const expenseData = [
-  { department: "Infrastructure", planned: 1260000000, actual: 1190000000, color: "#3b82f6" },
-  { department: "Personnel", planned: 896000000, actual: 840000000, color: "#10b981" },
-  { department: "Maintenance", planned: 336000000, actual: 308000000, color: "#f59e0b" },
-  { department: "Software Licenses", planned: 224000000, actual: 196000000, color: "#a855f7" },
-];
-
-// KPI Data
-const kpiData = {
-  totalBudget: { value: 3500000000, label: "Total Budget Allocated", icon: Wallet, trend: 2.5 },
-  ytdUtilization: { value: 2296000000, label: "YTD Utilization", icon: DollarSign, trend: 65.6 },
-  variance: { value: -42000000, label: "Projected Variance", icon: AlertCircle, trend: -1.2 },
-  remaining: { value: 1204000000, label: "Remaining Budget", icon: CheckCircle2, trend: 34.4 },
+// Generate mock finance data based on filter selection
+const generateFinanceData = (
+  division: string,
+  district: string,
+  tehsil: string
+): {
+  budgetData: Array<{ month: string; planned: number; actual: number; variance: number }>;
+  expenseData: Array<{ department: string; planned: number; actual: number; color: string }>;
+  kpiData: {
+    totalBudget: number;
+    ytdUtilization: number;
+    variance: number;
+    remaining: number;
+  };
+} => {
+  // Create a seed based on the filter selection
+  const filterKey = `${division}-${district}-${tehsil}`;
+  const seed = hashString(filterKey);
+  
+  // Generate base multiplier based on hierarchy level
+  let baseMultiplier = 1;
+  if (division !== "all") {
+    baseMultiplier = 0.8 + (seed % 100) / 500; // 0.8 to 1.0
+    if (district !== "all") {
+      baseMultiplier = 0.5 + (seed % 100) / 400; // 0.5 to 0.75
+      if (tehsil !== "all") {
+        baseMultiplier = 0.2 + (seed % 100) / 500; // 0.2 to 0.4
+      }
+    }
+  }
+  
+  // Generate monthly budget data
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+  const budgetData = months.map((month, index) => {
+    const monthSeed = hashString(`${filterKey}-${month}`);
+    const planned = Math.floor((800000000 + (monthSeed % 500000000)) * baseMultiplier);
+    const variancePercent = -10 + ((monthSeed % 200) / 10); // -10% to +10%
+    const actual = Math.floor(planned * (1 + variancePercent / 100));
+    const variance = actual - planned;
+    
+    return {
+      month,
+      planned,
+      actual,
+      variance,
+    };
+  });
+  
+  // Generate department expense data
+  const departments = [
+    { name: "Infrastructure", color: "#3b82f6" },
+    { name: "Personnel", color: "#10b981" },
+    { name: "Maintenance", color: "#f59e0b" },
+    { name: "Software Licenses", color: "#a855f7" },
+  ];
+  
+  const expenseData = departments.map((dept, index) => {
+    const deptSeed = hashString(`${filterKey}-${dept.name}`);
+    const planned = Math.floor((200000000 + (deptSeed % 1500000000)) * baseMultiplier);
+    const variancePercent = -15 + ((deptSeed % 300) / 10); // -15% to +15%
+    const actual = Math.floor(planned * (1 + variancePercent / 100));
+    
+    return {
+      department: dept.name,
+      planned,
+      actual,
+      color: dept.color,
+    };
+  });
+  
+  // Calculate KPIs
+  const totalPlanned = budgetData.reduce((sum, item) => sum + item.planned, 0);
+  const totalActual = budgetData.reduce((sum, item) => sum + item.actual, 0);
+  const variance = totalActual - totalPlanned;
+  const remaining = totalPlanned - totalActual;
+  const ytdUtilization = totalActual;
+  
+  return {
+    budgetData,
+    expenseData,
+    kpiData: {
+      totalBudget: totalPlanned,
+      ytdUtilization,
+      variance,
+      remaining,
+    },
+  };
 };
 
 export default function Finance() {
+  const [selectedDivision, setSelectedDivision] = useState<string>("all");
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("all");
+  const [selectedTehsil, setSelectedTehsil] = useState<string>("all");
+
+  // Get available divisions
+  const divisions = useMemo(() => ["all", ...getAllDivisions()], []);
+
+  // Get available districts based on selected division
+  const districts = useMemo(() => {
+    if (selectedDivision === "all") return ["all"];
+    return ["all", ...getDistrictsByDivision(selectedDivision)];
+  }, [selectedDivision]);
+
+  // Get available tehsils based on selected division and district
+  const tehsils = useMemo(() => {
+    if (selectedDivision === "all" || selectedDistrict === "all") return ["all"];
+    return ["all", ...getTehsilsByDivisionAndDistrict(selectedDivision, selectedDistrict)];
+  }, [selectedDivision, selectedDistrict]);
+
+  // Generate finance data based on filters
+  const financeData = useMemo(() => {
+    return generateFinanceData(selectedDivision, selectedDistrict, selectedTehsil);
+  }, [selectedDivision, selectedDistrict, selectedTehsil]);
+
+  const { budgetData, expenseData, kpiData } = financeData;
+
+  // Calculate utilization rate
   const totalPlanned = budgetData.reduce((sum, item) => sum + item.planned, 0);
   const totalActual = budgetData.reduce((sum, item) => sum + item.actual, 0);
-  const utilizationRate = (totalActual / totalPlanned) * 100;
+  const utilizationRate = totalPlanned > 0 ? (totalActual / totalPlanned) * 100 : 0;
+
+  // Reset dependent filters when parent filter changes
+  const handleDivisionChange = (value: string) => {
+    setSelectedDivision(value);
+    setSelectedDistrict("all");
+    setSelectedTehsil("all");
+  };
+
+  const handleDistrictChange = (value: string) => {
+    setSelectedDistrict(value);
+    setSelectedTehsil("all");
+  };
+
+  // Get display name for current selection
+  const getLocationName = () => {
+    if (selectedDivision === "all") return "All Punjab";
+    if (selectedDistrict === "all") return selectedDivision;
+    if (selectedTehsil === "all") return `${selectedDistrict}, ${selectedDivision}`;
+    return `${selectedTehsil}, ${selectedDistrict}`;
+  };
+
+  const kpiDataWithIcons = {
+    totalBudget: { value: kpiData.totalBudget, label: "Total Budget Allocated", icon: Wallet, trend: 2.5 },
+    ytdUtilization: { value: kpiData.ytdUtilization, label: "YTD Utilization", icon: DollarSign, trend: utilizationRate },
+    variance: { value: kpiData.variance, label: "Projected Variance", icon: AlertCircle, trend: -1.2 },
+    remaining: { value: kpiData.remaining, label: "Remaining Budget", icon: CheckCircle2, trend: (kpiData.remaining / kpiData.totalBudget) * 100 },
+  };
 
   return (
     <Layout title="Financial & Budget Analytics">
-       <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
+        {/* Filter Bar Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg p-6">
+          <div className="flex items-center gap-6 flex-wrap">
+            {/* Filters Label */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Filter className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">Filters:</span>
+            </div>
+
+            {/* Division Filter */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Division:</label>
+              <Select value={selectedDivision} onValueChange={handleDivisionChange}>
+                <SelectTrigger className="w-[160px] h-9 border-border/50 bg-background rounded-md">
+                  <SelectValue placeholder="All Divisions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Divisions</SelectItem>
+                  {getAllDivisions().map(div => (
+                    <SelectItem key={div} value={div}>{div}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* District Filter */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">District:</label>
+              <Select 
+                value={selectedDistrict} 
+                onValueChange={handleDistrictChange}
+                disabled={selectedDivision === "all"}
+              >
+                <SelectTrigger 
+                  className={`w-[160px] h-9 border-border/50 bg-background rounded-md ${
+                    selectedDivision === "all" ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  disabled={selectedDivision === "all"}
+                >
+                  <SelectValue placeholder="All Districts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Districts</SelectItem>
+                  {selectedDivision !== "all" && getDistrictsByDivision(selectedDivision).map(dist => (
+                    <SelectItem key={dist} value={dist}>{dist}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Tehsil Filter */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Tehsil:</label>
+              <Select 
+                value={selectedTehsil} 
+                onValueChange={setSelectedTehsil}
+                disabled={selectedDivision === "all" || selectedDistrict === "all"}
+              >
+                <SelectTrigger 
+                  className={`w-[160px] h-9 border-border/50 bg-background rounded-md ${
+                    selectedDivision === "all" || selectedDistrict === "all" ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  disabled={selectedDivision === "all" || selectedDistrict === "all"}
+                >
+                  <SelectValue placeholder="All Tehsils" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tehsils</SelectItem>
+                  {selectedDivision !== "all" && selectedDistrict !== "all" && 
+                    getTehsilsByDivisionAndDistrict(selectedDivision, selectedDistrict).map(teh => (
+                      <SelectItem key={teh} value={teh}>{teh}</SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDivision("all");
+                    setSelectedDistrict("all");
+                    setSelectedTehsil("all");
+                  }}
+                  className="h-9 px-3 rounded-md text-sm font-medium"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Header */}
-            <div className="space-y-1">
-          <h2 className="text-2xl font-bold font-heading">FY 2025-26 Financial Overview</h2>
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold font-heading">FY 2025-26 Financial Overview - {getLocationName()}</h2>
           <p className="text-muted-foreground">Track budget allocation, utilization, and variance analysis in PKR</p>
         </div>
 
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Object.entries(kpiData).map(([key, kpi]) => {
+          {Object.entries(kpiDataWithIcons).map(([key, kpi]) => {
             const Icon = kpi.icon;
             const isPositive = kpi.trend >= 0;
             const isVariance = key === 'variance';
@@ -86,9 +316,9 @@ export default function Finance() {
                         <TrendingDown className="h-3 w-3 text-red-500" />
                       )}
                       <p className={`text-xs ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {Math.abs(kpi.trend)}% {key === 'ytdUtilization' ? 'Utilized' : 'from last year'}
+                        {key === 'ytdUtilization' ? `${kpi.trend.toFixed(1)}% Utilized` : `${Math.abs(kpi.trend).toFixed(1)}% from last year`}
                       </p>
-            </div>
+                    </div>
                   )}
                   {isVariance && (
                     <p className="text-xs text-muted-foreground mt-1">
@@ -99,7 +329,7 @@ export default function Finance() {
               </Card>
             );
           })}
-         </div>
+        </div>
 
         {/* Budget vs Actual Charts */}
         <div className="grid gap-6 lg:grid-cols-12">
@@ -108,7 +338,7 @@ export default function Finance() {
             <CardHeader>
               <CardTitle>Planned vs Actual Budget</CardTitle>
               <CardDescription>Monthly budget comparison in PKR</CardDescription>
-              </CardHeader>
+            </CardHeader>
             <CardContent className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={budgetData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -153,15 +383,15 @@ export default function Finance() {
                   />
                 </ComposedChart>
               </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
 
           {/* Utilization Progress */}
           <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Budget Utilization</CardTitle>
               <CardDescription>Overall progress</CardDescription>
-              </CardHeader>
+            </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -198,18 +428,18 @@ export default function Finance() {
                   </div>
                 </div>
               </div>
-              </CardContent>
-            </Card>
-         </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Department Expense Chart */}
         <Card>
-               <CardHeader>
+          <CardHeader>
             <CardTitle>Department Budget Analysis</CardTitle>
             <CardDescription>Planned vs Actual expenses by department</CardDescription>
-               </CardHeader>
-               <CardContent className="h-[350px]">
-                 <ResponsiveContainer width="100%" height="100%">
+          </CardHeader>
+          <CardContent className="h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={expenseData} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis 
@@ -234,28 +464,28 @@ export default function Finance() {
                     name === 'planned' ? 'Planned' : 'Actual'
                   ]}
                 />
-                     <Legend />
+                <Legend />
                 <Bar dataKey="planned" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Planned" />
                 <Bar dataKey="actual" fill="#10b981" radius={[4, 4, 0, 0]} name="Actual" />
-                   </ComposedChart>
-                 </ResponsiveContainer>
-               </CardContent>
-            </Card>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
         {/* Department Drill-down */}
         <Card>
-               <CardHeader>
+          <CardHeader>
             <CardTitle>Department Expense Breakdown</CardTitle>
             <CardDescription>Detailed expense categorization in PKR</CardDescription>
-               </CardHeader>
-               <CardContent>
-                 <div className="space-y-6">
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
               {expenseData.map((item) => {
                 const utilization = (item.actual / item.planned) * 100;
                 const variance = item.actual - item.planned;
                 
                 return (
-                     <div key={item.department} className="space-y-2">
+                  <div key={item.department} className="space-y-2">
                     <div className="flex justify-between items-center text-sm">
                       <span className="font-semibold">{item.department}</span>
                       <div className="flex items-center gap-4">
@@ -267,27 +497,27 @@ export default function Finance() {
                           {variance < 0 ? '-' : '+'}{formatPKR(Math.abs(variance))}
                         </div>
                       </div>
-                       </div>
+                    </div>
                     <div className="w-full bg-muted h-3 rounded-full overflow-hidden">
-                         <div 
+                      <div 
                         className="h-full rounded-full transition-all"
-                           style={{ 
+                        style={{ 
                           width: `${utilization}%`,
-                             backgroundColor: item.color 
-                           }}
-                         />
-                       </div>
+                          backgroundColor: item.color 
+                        }}
+                      />
+                    </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>{utilization.toFixed(1)}% Utilized</span>
                       <span>{variance < 0 ? 'Under' : 'Over'} Budget</span>
                     </div>
-                     </div>
+                  </div>
                 );
               })}
-                 </div>
-               </CardContent>
-            </Card>
-       </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </Layout>
   );
 }
