@@ -1,15 +1,16 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SplashScreen } from "@/components/layout/SplashScreen";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Comparison from "@/pages/Comparison";
 import Finance from "@/pages/Finance";
 import GISLayers from "@/pages/GISLayers";
-
 import Settings from "@/pages/Settings";
+import { useState, useEffect, useRef } from "react";
 
 function Router() {
   return (
@@ -24,12 +25,52 @@ function Router() {
   );
 }
 
+function AppContent() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [location] = useLocation();
+  const previousLocation = useRef<string | null>(null);
+  const isInitialLoad = useRef<boolean>(true);
+
+  useEffect(() => {
+    // On initial load, show splash screen first
+    if (isInitialLoad.current) {
+      previousLocation.current = location;
+      return;
+    }
+
+    // If route changed (navigation), show splash screen
+    if (previousLocation.current !== null && previousLocation.current !== location) {
+      setShowSplash(true);
+    }
+    
+    previousLocation.current = location;
+  }, [location]);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+    }
+  };
+
+  return (
+    <>
+      {/* Router is always mounted to detect route changes */}
+      <div style={{ visibility: showSplash ? 'hidden' : 'visible' }}>
+        <Router />
+      </div>
+      {/* Splash screen overlays on top */}
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+    </>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Router />
+        <AppContent />
       </TooltipProvider>
     </QueryClientProvider>
   );
