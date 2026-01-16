@@ -51,9 +51,9 @@ export default function Finance() {
 
   return (
     <Layout title="Financial & Budget Analytics">
-      <div className="flex flex-col gap-6">
+       <div className="flex flex-col gap-6">
         {/* Header */}
-        <div className="space-y-1">
+            <div className="space-y-1">
           <h2 className="text-2xl font-bold font-heading">FY 2025-26 Financial Overview</h2>
           <p className="text-muted-foreground">Track budget allocation, utilization, and variance analysis in PKR</p>
         </div>
@@ -88,7 +88,7 @@ export default function Finance() {
                       <p className={`text-xs ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
                         {Math.abs(kpi.trend)}% {key === 'ytdUtilization' ? 'Utilized' : 'from last year'}
                       </p>
-                    </div>
+            </div>
                   )}
                   {isVariance && (
                     <p className="text-xs text-muted-foreground mt-1">
@@ -99,7 +99,7 @@ export default function Finance() {
               </Card>
             );
           })}
-        </div>
+         </div>
 
         {/* Budget vs Actual Charts */}
         <div className="grid gap-6 lg:grid-cols-12">
@@ -108,7 +108,7 @@ export default function Finance() {
             <CardHeader>
               <CardTitle>Planned vs Actual Budget</CardTitle>
               <CardDescription>Monthly budget comparison in PKR</CardDescription>
-            </CardHeader>
+              </CardHeader>
             <CardContent className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={budgetData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -153,15 +153,15 @@ export default function Finance() {
                   />
                 </ComposedChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
           {/* Utilization Progress */}
           <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Budget Utilization</CardTitle>
               <CardDescription>Overall progress</CardDescription>
-            </CardHeader>
+              </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -198,18 +198,18 @@ export default function Finance() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+         </div>
 
         {/* Department Expense Chart */}
         <Card>
-          <CardHeader>
+               <CardHeader>
             <CardTitle>Department Budget Analysis</CardTitle>
             <CardDescription>Planned vs Actual expenses by department</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
+               </CardHeader>
+               <CardContent className="h-[350px]">
+                 <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={expenseData} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis 
@@ -234,28 +234,28 @@ export default function Finance() {
                     name === 'planned' ? 'Planned' : 'Actual'
                   ]}
                 />
-                <Legend />
+                     <Legend />
                 <Bar dataKey="planned" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Planned" />
                 <Bar dataKey="actual" fill="#10b981" radius={[4, 4, 0, 0]} name="Actual" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+                   </ComposedChart>
+                 </ResponsiveContainer>
+               </CardContent>
+            </Card>
 
         {/* Department Drill-down */}
         <Card>
-          <CardHeader>
+               <CardHeader>
             <CardTitle>Department Expense Breakdown</CardTitle>
             <CardDescription>Detailed expense categorization in PKR</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-6">
               {expenseData.map((item) => {
                 const utilization = (item.actual / item.planned) * 100;
                 const variance = item.actual - item.planned;
                 
                 return (
-                  <div key={item.department} className="space-y-2">
+                     <div key={item.department} className="space-y-2">
                     <div className="flex justify-between items-center text-sm">
                       <span className="font-semibold">{item.department}</span>
                       <div className="flex items-center gap-4">
@@ -267,27 +267,27 @@ export default function Finance() {
                           {variance < 0 ? '-' : '+'}{formatPKR(Math.abs(variance))}
                         </div>
                       </div>
-                    </div>
+                       </div>
                     <div className="w-full bg-muted h-3 rounded-full overflow-hidden">
-                      <div 
+                         <div 
                         className="h-full rounded-full transition-all"
-                        style={{ 
+                           style={{ 
                           width: `${utilization}%`,
-                          backgroundColor: item.color 
-                        }}
-                      />
-                    </div>
+                             backgroundColor: item.color 
+                           }}
+                         />
+                       </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>{utilization.toFixed(1)}% Utilized</span>
                       <span>{variance < 0 ? 'Under' : 'Over'} Budget</span>
                     </div>
-                  </div>
+                     </div>
                 );
               })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                 </div>
+               </CardContent>
+            </Card>
+       </div>
     </Layout>
   );
 }

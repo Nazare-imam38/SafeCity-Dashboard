@@ -24,7 +24,7 @@ export function TrendChart({ cityData, cityKey = "default" }: TrendChartProps) {
     { month: "Apr", surveys: 90, foundations: 80, cabinet: 70, cable: 55, controlRoom: 40, ppic3: 25, overall: 60 },
     { month: "May", surveys: 95, foundations: 90, cabinet: 85, cable: 75, controlRoom: 60, ppic3: 45, overall: 75 },
     { month: "Jun", surveys: 100, foundations: 95, cabinet: 92, cable: 85, controlRoom: 75, ppic3: 65, overall: 85 },
-  ];
+];
 
   const data = cityData || defaultData;
   const gradientId1 = `colorOverall-${cityKey}`;

@@ -10,8 +10,16 @@ import {
   getAllDivisions,
   getDistrictsByDivision,
   getTehsilsByDivisionAndDistrict,
-  CITY_TO_HIERARCHY_MAP
+  CITY_TO_HIERARCHY_MAP,
+  PUNJAB_HIERARCHY
 } from "@/data/punjabHierarchy";
+import { 
+  getAllDivisionData,
+  getAllDistrictData,
+  getAllTehsilData,
+  KNOWN_CITY_DATA,
+  generateMockData
+} from "@/data/punjabInstallationData";
 import { 
   ClipboardCheck, 
   Building2, 
@@ -240,7 +248,6 @@ const CITY_NAMES: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const [selectedCity, setSelectedCity] = useState<keyof typeof CITY_INSTALLATION_DATA | "all">("sheikhupura");
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("all");
   const [selectedTehsil, setSelectedTehsil] = useState<string>("all");
@@ -261,26 +268,83 @@ export default function Dashboard() {
     return ["all", ...getTehsilsByDivisionAndDistrict(selectedDivision, selectedDistrict)];
   }, [selectedDivision, selectedDistrict]);
 
+  // Get all cities from hierarchy based on filters
+  const getCitiesFromHierarchy = useMemo(() => {
+    if (selectedDivision === "all") {
+      // Return all cities from all divisions
+      const allCities: string[] = [];
+      PUNJAB_HIERARCHY.forEach(div => {
+        div.districts.forEach(dist => {
+          dist.tehsils.forEach(teh => {
+            teh.cities.forEach(city => {
+              if (city && city.trim() !== '') {
+                allCities.push(city);
+              }
+            });
+          });
+        });
+      });
+      return allCities;
+    }
+    
+    const div = PUNJAB_HIERARCHY.find(d => d.division === selectedDivision);
+    if (!div) return [];
+    
+    if (selectedDistrict === "all") {
+      // Return all cities from division
+      const cities: string[] = [];
+      div.districts.forEach(dist => {
+        dist.tehsils.forEach(teh => {
+          teh.cities.forEach(city => {
+            if (city && city.trim() !== '') {
+              cities.push(city);
+            }
+      });
+    });
+      });
+      return cities;
+    }
+    
+    const dist = div.districts.find(d => d.district === selectedDistrict);
+    if (!dist) return [];
+    
+    if (selectedTehsil === "all") {
+      // Return all cities from district
+      const cities: string[] = [];
+      dist.tehsils.forEach(teh => {
+        teh.cities.forEach(city => {
+          if (city && city.trim() !== '') {
+            cities.push(city);
+          }
+        });
+      });
+      return cities;
+    }
+    
+    // Return cities from specific tehsil
+    const teh = dist.tehsils.find(t => t.tehsil === selectedTehsil);
+    return teh ? teh.cities.filter(c => c && c.trim() !== '') : [];
+  }, [selectedDivision, selectedDistrict, selectedTehsil]);
+
   // Filter cities based on hierarchy selection
   const filteredCities = useMemo(() => {
+    const hierarchyCities = getCitiesFromHierarchy;
+    if (hierarchyCities.length === 0) return [];
+    
+    // Map hierarchy city names to our city keys
     const allCityKeys = Object.keys(CITY_NAMES);
-    
-    if (selectedDivision === "all") return allCityKeys;
-    
-    let filtered = allCityKeys.filter(cityKey => {
-      const cityName = CITY_NAMES[cityKey];
-      const hierarchy = CITY_TO_HIERARCHY_MAP[cityName];
-      if (!hierarchy) return false;
-      
-      if (hierarchy.division !== selectedDivision) return false;
-      if (selectedDistrict !== "all" && hierarchy.district !== selectedDistrict) return false;
-      if (selectedTehsil !== "all" && hierarchy.tehsil !== selectedTehsil) return false;
-      
-      return true;
+    const cityNameToKey: Record<string, string> = {};
+    Object.entries(CITY_NAMES).forEach(([key, name]) => {
+      cityNameToKey[name] = key;
     });
     
-    return filtered;
-  }, [selectedDivision, selectedDistrict, selectedTehsil]);
+    // Find matching city keys
+    const matchedKeys = hierarchyCities
+      .map(cityName => cityNameToKey[cityName])
+      .filter(key => key !== undefined);
+    
+    return matchedKeys;
+  }, [getCitiesFromHierarchy]);
 
   // Reset dependent filters when parent filter changes
   const handleDivisionChange = (value: string) => {
@@ -294,21 +358,67 @@ export default function Dashboard() {
     setSelectedTehsil("all");
   };
   
+  // Get data for hierarchy level (division/district/tehsil)
+  const getHierarchyData = (): { surveys: number; foundations: number; cabinet: number; cable: number; controlRoom: number; ppic3: number; overall: number } | null => {
+    if (selectedDivision === "all") return null;
+    
+    if (selectedDistrict !== "all" && selectedTehsil !== "all") {
+      // Tehsil level data
+      const tehsilKey = `${selectedDivision}-${selectedDistrict}-${selectedTehsil}`.toLowerCase().replace(/\s+/g, '');
+      const tehsilData = getAllTehsilData();
+      return tehsilData[tehsilKey] || null;
+    }
+    
+    if (selectedDistrict !== "all") {
+      // District level data
+      const districtKey = `${selectedDivision}-${selectedDistrict}`.toLowerCase().replace(/\s+/g, '');
+      const districtData = getAllDistrictData();
+      return districtData[districtKey] || null;
+    }
+    
+    // Division level data
+    const divisionKey = selectedDivision.toLowerCase().replace(/\s+/g, '');
+    const divisionData = getAllDivisionData();
+    return divisionData[divisionKey] || null;
+  };
+
   // Calculate aggregated data for filtered cities
   const getFilteredCitiesData = (cityKeys: string[]): CityInstallationData => {
+    // First try to get hierarchy-level data
+    const hierarchyData = getHierarchyData();
+    if (hierarchyData) {
+      // Generate timeline data for hierarchy
+      const timeline = [
+        { month: "Jan", surveys: Math.max(0, hierarchyData.surveys - 50), foundations: Math.max(0, hierarchyData.foundations - 75), cabinet: Math.max(0, hierarchyData.cabinet - 73), cable: Math.max(0, hierarchyData.cable - 70), controlRoom: Math.max(0, hierarchyData.controlRoom - 60), ppic3: Math.max(0, hierarchyData.ppic3 - 55), overall: Math.max(0, hierarchyData.overall - 60) },
+        { month: "Feb", surveys: Math.max(0, hierarchyData.surveys - 30), foundations: Math.max(0, hierarchyData.foundations - 50), cabinet: Math.max(0, hierarchyData.cabinet - 55), cable: Math.max(0, hierarchyData.cable - 50), controlRoom: Math.max(0, hierarchyData.controlRoom - 45), ppic3: Math.max(0, hierarchyData.ppic3 - 40), overall: Math.max(0, hierarchyData.overall - 40) },
+        { month: "Mar", surveys: Math.max(0, hierarchyData.surveys - 15), foundations: Math.max(0, hierarchyData.foundations - 30), cabinet: Math.max(0, hierarchyData.cabinet - 35), cable: Math.max(0, hierarchyData.cable - 30), controlRoom: Math.max(0, hierarchyData.controlRoom - 25), ppic3: Math.max(0, hierarchyData.ppic3 - 20), overall: Math.max(0, hierarchyData.overall - 20) },
+        { month: "Apr", surveys: Math.max(0, hierarchyData.surveys - 8), foundations: Math.max(0, hierarchyData.foundations - 15), cabinet: Math.max(0, hierarchyData.cabinet - 20), cable: Math.max(0, hierarchyData.cable - 15), controlRoom: Math.max(0, hierarchyData.controlRoom - 12), ppic3: Math.max(0, hierarchyData.ppic3 - 10), overall: Math.max(0, hierarchyData.overall - 10) },
+        { month: "May", surveys: Math.max(0, hierarchyData.surveys - 3), foundations: Math.max(0, hierarchyData.foundations - 8), cabinet: Math.max(0, hierarchyData.cabinet - 10), cable: Math.max(0, hierarchyData.cable - 8), controlRoom: Math.max(0, hierarchyData.controlRoom - 5), ppic3: Math.max(0, hierarchyData.ppic3 - 3), overall: Math.max(0, hierarchyData.overall - 3) },
+        { month: "Jun", surveys: hierarchyData.surveys, foundations: hierarchyData.foundations, cabinet: hierarchyData.cabinet, cable: hierarchyData.cable, controlRoom: hierarchyData.controlRoom, ppic3: hierarchyData.ppic3, overall: hierarchyData.overall },
+      ];
+      
+      return {
+        ...hierarchyData,
+        timeline,
+      };
+    }
+    
+    // Fallback to city-level aggregation
     const cities = cityKeys.map(key => CITY_INSTALLATION_DATA[key]).filter(Boolean);
     const count = cities.length;
     if (count === 0) {
-      // Return default empty data structure
+      // Generate mock data if no cities found
+      const mockData = generateMockData();
       return {
-        surveys: 0,
-        foundations: 0,
-        cabinet: 0,
-        cable: 0,
-        controlRoom: 0,
-        ppic3: 0,
-        overall: 0,
-        timeline: [],
+        ...mockData,
+        timeline: [
+          { month: "Jan", surveys: Math.max(0, mockData.surveys - 50), foundations: Math.max(0, mockData.foundations - 75), cabinet: Math.max(0, mockData.cabinet - 73), cable: Math.max(0, mockData.cable - 70), controlRoom: Math.max(0, mockData.controlRoom - 60), ppic3: Math.max(0, mockData.ppic3 - 55), overall: Math.max(0, mockData.overall - 60) },
+          { month: "Feb", surveys: Math.max(0, mockData.surveys - 30), foundations: Math.max(0, mockData.foundations - 50), cabinet: Math.max(0, mockData.cabinet - 55), cable: Math.max(0, mockData.cable - 50), controlRoom: Math.max(0, mockData.controlRoom - 45), ppic3: Math.max(0, mockData.ppic3 - 40), overall: Math.max(0, mockData.overall - 40) },
+          { month: "Mar", surveys: Math.max(0, mockData.surveys - 15), foundations: Math.max(0, mockData.foundations - 30), cabinet: Math.max(0, mockData.cabinet - 35), cable: Math.max(0, mockData.cable - 30), controlRoom: Math.max(0, mockData.controlRoom - 25), ppic3: Math.max(0, mockData.ppic3 - 20), overall: Math.max(0, mockData.overall - 20) },
+          { month: "Apr", surveys: Math.max(0, mockData.surveys - 8), foundations: Math.max(0, mockData.foundations - 15), cabinet: Math.max(0, mockData.cabinet - 20), cable: Math.max(0, mockData.cable - 15), controlRoom: Math.max(0, mockData.controlRoom - 12), ppic3: Math.max(0, mockData.ppic3 - 10), overall: Math.max(0, mockData.overall - 10) },
+          { month: "May", surveys: Math.max(0, mockData.surveys - 3), foundations: Math.max(0, mockData.foundations - 8), cabinet: Math.max(0, mockData.cabinet - 10), cable: Math.max(0, mockData.cable - 8), controlRoom: Math.max(0, mockData.controlRoom - 5), ppic3: Math.max(0, mockData.ppic3 - 3), overall: Math.max(0, mockData.overall - 3) },
+          { month: "Jun", surveys: mockData.surveys, foundations: mockData.foundations, cabinet: mockData.cabinet, cable: mockData.cable, controlRoom: mockData.controlRoom, ppic3: mockData.ppic3, overall: mockData.overall },
+        ],
       };
     }
     
@@ -340,31 +450,26 @@ export default function Dashboard() {
 
   // Determine which cities to show based on filters
   const citiesToShow = useMemo(() => {
-    if (selectedCity === "all") {
-      // If hierarchy filters are applied, use filtered cities, otherwise all cities
-      if (selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") {
-        return filteredCities;
-      }
-      return Object.keys(CITY_NAMES);
+    // If hierarchy filters are applied, always show data (even if no cities match)
+    if (selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") {
+      // Return hierarchy cities or empty array (we'll use hierarchy data)
+      return getCitiesFromHierarchy.length > 0 ? filteredCities : [];
     }
-    // If a specific city is selected, check if it matches the filters
-    const cityName = CITY_NAMES[selectedCity];
-    const hierarchy = CITY_TO_HIERARCHY_MAP[cityName];
-    if (hierarchy) {
-      if (selectedDivision !== "all" && hierarchy.division !== selectedDivision) return [];
-      if (selectedDistrict !== "all" && hierarchy.district !== selectedDistrict) return [];
-      if (selectedTehsil !== "all" && hierarchy.tehsil !== selectedTehsil) return [];
-    }
-    return [selectedCity];
-  }, [selectedCity, selectedDivision, selectedDistrict, selectedTehsil, filteredCities]);
+    
+    // If no filters are selected, show all cities
+    return Object.keys(CITY_NAMES);
+  }, [selectedDivision, selectedDistrict, selectedTehsil, filteredCities, getCitiesFromHierarchy]);
 
   // Check if we have valid data to display
-  const hasValidData = citiesToShow.length > 0;
+  // Data is valid if: we have cities OR we have hierarchy filters selected
+  const hasValidData = citiesToShow.length > 0 || (selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all");
   
   const cityData = hasValidData
-    ? (selectedCity === "all" || citiesToShow.length > 1
+    ? (citiesToShow.length > 1 || (selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all")
         ? getFilteredCitiesData(citiesToShow)
-        : CITY_INSTALLATION_DATA[selectedCity])
+        : citiesToShow.length === 1 
+        ? CITY_INSTALLATION_DATA[citiesToShow[0]]
+        : getFilteredCitiesData(citiesToShow))
     : {
         surveys: 0,
         foundations: 0,
@@ -377,11 +482,17 @@ export default function Dashboard() {
       };
   
   const cityName = hasValidData
-    ? (selectedCity === "all" 
-        ? (citiesToShow.length === Object.keys(CITY_NAMES).length 
+    ? (selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all"
+        ? (selectedTehsil !== "all" 
+            ? `${selectedTehsil}, ${selectedDistrict}`
+            : selectedDistrict !== "all"
+            ? `${selectedDistrict}, ${selectedDivision}`
+            : selectedDivision)
+        : (citiesToShow.length === Object.keys(CITY_NAMES).length 
             ? "All Cities" 
-            : `Filtered Cities (${citiesToShow.length})`)
-        : CITY_NAMES[selectedCity] || selectedCity)
+            : citiesToShow.length === 1
+            ? CITY_NAMES[citiesToShow[0]] || citiesToShow[0]
+            : `Filtered Cities (${citiesToShow.length})`))
     : "No Data Available";
 
   const installationPhases = [
@@ -426,21 +537,24 @@ export default function Dashboard() {
   return (
     <Layout title="Camera Installation Progress Dashboard">
       <div className="flex flex-col gap-8">
-        {/* Filter Bar */}
-        <Card className="border-border/50 shadow-sm bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4 flex-wrap">
+        {/* Top Header Section - Enhanced Design with Filter Bar */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg">
+          <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
+          
+          {/* Filter Bar Section */}
+          <div className="relative border-b border-border/30 pb-4 px-6 pt-6">
+            <div className="flex items-center gap-6 flex-wrap">
               {/* Filters Label */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <Filter className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-foreground">Filters:</span>
               </div>
 
               {/* Division Filter */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-foreground whitespace-nowrap">Division:</label>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Division:</label>
                 <Select value={selectedDivision} onValueChange={handleDivisionChange}>
-                  <SelectTrigger className="w-[160px] h-9 border-border/50">
+                  <SelectTrigger className="w-[160px] h-9 border-border/50 bg-background rounded-md">
                     <SelectValue placeholder="All Divisions" />
                   </SelectTrigger>
                   <SelectContent>
@@ -453,14 +567,19 @@ export default function Dashboard() {
               </div>
 
               {/* District Filter */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-foreground whitespace-nowrap">District:</label>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">District:</label>
                 <Select 
                   value={selectedDistrict} 
                   onValueChange={handleDistrictChange}
                   disabled={selectedDivision === "all"}
                 >
-                  <SelectTrigger className="w-[160px] h-9 border-border/50" disabled={selectedDivision === "all"}>
+                  <SelectTrigger 
+                    className={`w-[160px] h-9 border-border/50 bg-background rounded-md ${
+                      selectedDivision === "all" ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    disabled={selectedDivision === "all"}
+                  >
                     <SelectValue placeholder="All Districts" />
                   </SelectTrigger>
                   <SelectContent>
@@ -473,14 +592,19 @@ export default function Dashboard() {
               </div>
 
               {/* Tehsil Filter */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-foreground whitespace-nowrap">Tehsil:</label>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Tehsil:</label>
                 <Select 
                   value={selectedTehsil} 
                   onValueChange={setSelectedTehsil}
                   disabled={selectedDivision === "all" || selectedDistrict === "all"}
                 >
-                  <SelectTrigger className="w-[160px] h-9 border-border/50" disabled={selectedDivision === "all" || selectedDistrict === "all"}>
+                  <SelectTrigger 
+                    className={`w-[160px] h-9 border-border/50 bg-background rounded-md ${
+                      selectedDivision === "all" || selectedDistrict === "all" ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    disabled={selectedDivision === "all" || selectedDistrict === "all"}
+                  >
                     <SelectValue placeholder="All Tehsils" />
                   </SelectTrigger>
                   <SelectContent>
@@ -496,32 +620,31 @@ export default function Dashboard() {
 
               {/* Clear Filters Button */}
               {(selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedDivision("all");
-                    setSelectedDistrict("all");
-                    setSelectedTehsil("all");
-                  }}
-                  className="ml-auto h-9"
-                >
-                  Clear Filters
-                </Button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedDivision("all");
+                      setSelectedDistrict("all");
+                      setSelectedTehsil("all");
+                    }}
+                    className="h-9 px-3 rounded-md text-sm font-medium"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Top Header Section - Enhanced Design */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg">
-          <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
+          {/* Header Content Section */}
           <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 md:p-8">
             <div className="space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
                   <Camera className="h-6 w-6 text-white" />
-                </div>
+            </div>
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold font-heading bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {cityName}
@@ -555,8 +678,8 @@ export default function Dashboard() {
               variant="outline"
               className="rounded-xl h-11 border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all shadow-sm font-semibold"
               onClick={async () => {
-                if (selectedCity === "all") {
-                  alert('Please select a specific city to export the presentation.');
+                if (citiesToShow.length === 0 || (selectedDivision === "all" && selectedDistrict === "all" && selectedTehsil === "all" && citiesToShow.length > 1)) {
+                  alert('Please apply specific filters (Division, District, or Tehsil) to export the presentation.');
                   return;
                 }
                 try {
@@ -574,39 +697,11 @@ export default function Dashboard() {
                   alert('Error exporting presentation. Please try again.');
                 }
               }}
-              disabled={selectedCity === "all"}
+              disabled={citiesToShow.length === 0 || (selectedDivision === "all" && selectedDistrict === "all" && selectedTehsil === "all" && citiesToShow.length > 1)}
             >
               <FileDown className="h-4 w-4 mr-2" />
               Export Operation pptx
             </Button>
-              <Select 
-                value={selectedCity} 
-                onValueChange={(value) => setSelectedCity(value as keyof typeof CITY_INSTALLATION_DATA | "all")}
-              >
-                <SelectTrigger className="w-[200px] h-11 border-border/50 hover:border-primary/50 font-semibold rounded-xl shadow-sm">
-                  <SelectValue placeholder="Select City" />
-              </SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="all">All Cities</SelectItem>
-                  {Object.entries(CITY_NAMES)
-                    .filter(([key]) => {
-                      // Filter cities based on hierarchy filters
-                      if (selectedDivision === "all" && selectedDistrict === "all" && selectedTehsil === "all") {
-                        return true;
-                      }
-                      const cityName = CITY_NAMES[key];
-                      const hierarchy = CITY_TO_HIERARCHY_MAP[cityName];
-                      if (!hierarchy) return false;
-                      if (selectedDivision !== "all" && hierarchy.division !== selectedDivision) return false;
-                      if (selectedDistrict !== "all" && hierarchy.district !== selectedDistrict) return false;
-                      if (selectedTehsil !== "all" && hierarchy.tehsil !== selectedTehsil) return false;
-                      return true;
-                    })
-                    .map(([key, name]) => (
-                      <SelectItem key={key} value={key}>{name}</SelectItem>
-                    ))}
-              </SelectContent>
-            </Select>
             </div>
           </div>
         </div>
@@ -618,17 +713,17 @@ export default function Dashboard() {
               <h2 className="text-xl font-bold font-heading mb-1">Installation Phases</h2>
               <p className="text-sm text-muted-foreground">Progress breakdown by installation phase</p>
             </div>
-            <div className="grid grid-cols-6 gap-3" key={`cards-${selectedCity}`}>
+            <div className="grid grid-cols-6 gap-3" key={`cards-${cityName}`}>
               {installationPhases.map((phase) => (
                 <InstallationCard
-                  key={`${selectedCity}-${phase.key}`}
+                  key={`${cityName}-${phase.key}`}
                   title={phase.title}
                   percentage={cityData[phase.key]}
                   icon={phase.icon}
                   color={phase.color}
                 />
               ))}
-            </div>
+        </div>
           </div>
         ) : (
           <Card className="border-border/50">
@@ -648,7 +743,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3">
                     <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
                       <TrendingUp className="h-7 w-7 text-white" />
-                    </div>
+          </div>
                     <div>
                       <h3 className="text-2xl font-bold font-heading">Overall Installation Progress</h3>
                       <p className="text-sm text-muted-foreground mt-1">
@@ -694,22 +789,31 @@ export default function Dashboard() {
 
         {/* Map Section */}
         {hasValidData && (
-          <div className="space-y-4">
+              <div className="space-y-4">
             <div>
               <h2 className="text-xl font-bold font-heading mb-1">Geographic Overview</h2>
               <p className="text-sm text-muted-foreground">Interactive map showing installation progress across Punjab cities</p>
-            </div>
-            <InstallationMap 
-              cityData={Object.fromEntries(
-                Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => [
-                  key,
-                  { overall: data.overall }
-                ])
-              )}
-              selectedCity={selectedCity === "all" ? undefined : selectedCity}
-              onCitySelect={(city) => setSelectedCity(city as keyof typeof CITY_INSTALLATION_DATA)}
-          />
-        </div>
+                      </div>
+          <InstallationMap 
+            cityData={Object.fromEntries(
+              Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => [
+                key,
+                { overall: data.overall }
+              ])
+            )}
+            selectedCity={citiesToShow.length === 1 ? citiesToShow[0] : undefined}
+            onCitySelect={(city) => {
+              // Find the city's hierarchy and update filters accordingly
+              const cityName = CITY_NAMES[city];
+              const hierarchy = CITY_TO_HIERARCHY_MAP[cityName];
+              if (hierarchy) {
+                setSelectedDivision(hierarchy.division);
+                setSelectedDistrict(hierarchy.district);
+                setSelectedTehsil(hierarchy.tehsil);
+              }
+            }}
+                        />
+                      </div>
         )}
 
         {/* Charts Grid - Enhanced Layout */}
@@ -718,16 +822,16 @@ export default function Dashboard() {
           <div>
             <h2 className="text-xl font-bold font-heading mb-1">Analytics & Insights</h2>
             <p className="text-sm text-muted-foreground">Detailed progress analysis and city comparisons</p>
-          </div>
+                   </div>
           
           <div className="grid gap-6 lg:grid-cols-12">
             {/* Progress Timeline Chart */}
-            <div className="lg:col-span-7" key={`timeline-${selectedCity}`}>
-              <TrendChart cityData={cityData.timeline} cityKey={selectedCity} />
-            </div>
+            <div className="lg:col-span-7" key={`timeline-${cityName}`}>
+              <TrendChart cityData={cityData.timeline} cityKey={cityName} />
+              </div>
 
             {/* Phase Breakdown Chart */}
-            <div className="lg:col-span-5" key={`phase-breakdown-${selectedCity}`}>
+            <div className="lg:col-span-5" key={`phase-breakdown-${cityName}`}>
               <PhaseBreakdownChart 
                 data={installationPhases.map(phase => ({
                   phase: phase.title,
@@ -735,27 +839,27 @@ export default function Dashboard() {
                 }))}
               />
             </div>
-                      </div>
+          </div>
 
           {/* Modern Charts Section */}
           <div className="grid gap-6 lg:grid-cols-12">
             {/* Phase Distribution Pie Chart */}
-            <div className="lg:col-span-12" key={`phase-distribution-${selectedCity}`}>
+            <div className="lg:col-span-12" key={`phase-distribution-${cityName}`}>
               <PhaseDistributionChart 
                 data={installationPhases.map(phase => ({
                   phase: phase.title,
                   percentage: cityData[phase.key],
                 }))}
                         />
-                      </div>
+        </div>
                    </div>
 
           {/* Phase Timeline Chart */}
           <div className="grid gap-6 lg:grid-cols-12">
-            <div className="lg:col-span-12" key={`phase-timeline-${selectedCity}`}>
+            <div className="lg:col-span-12" key={`phase-timeline-${cityName}`}>
               <PhaseTimelineChart 
                 timelineData={cityData.timeline}
-                cityKey={selectedCity}
+                cityKey={cityName}
               />
             </div>
           </div>
