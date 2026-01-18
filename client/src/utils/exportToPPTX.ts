@@ -238,7 +238,7 @@ async function createKPICards(data: ExportData): Promise<string> {
   ctx.fillStyle = '#2C3E50';
   ctx.font = 'bold 42px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('Installation Phases Progress', canvas.width / 2, 50);
+  ctx.fillText('Milestone Progress', canvas.width / 2, 50);
 
   const cardWidth = 240;
   const cardHeight = 380;
@@ -525,7 +525,7 @@ ${areaBase64 ? '<Override PartName="/ppt/media/image4.png" ContentType="image/pn
 </p:sld>`);
 
     // KPI Cards slide
-    slidesFolder?.file('slide2.xml', createSlideXML(2, 'Installation Phases Progress', 1));
+    slidesFolder?.file('slide2.xml', createSlideXML(2, 'Milestone Progress', 1));
     
     // Bar Chart slide
     slidesFolder?.file('slide3.xml', createSlideXML(3, 'Phase Breakdown Analysis', 2));

@@ -86,8 +86,8 @@ export function InstallationMap({ cityData, selectedCity, onCitySelect }: Instal
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Installation Progress Map</CardTitle>
-          <CardDescription>Geographic overview of camera installation across Punjab</CardDescription>
+          <CardTitle>Divisonwise Milestone Progress Map</CardTitle>
+          <CardDescription>Geographic overview across Punjab</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[500px] w-full bg-muted animate-pulse rounded-xl" />
@@ -107,7 +107,7 @@ export function InstallationMap({ cityData, selectedCity, onCitySelect }: Instal
           <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
             <MapPin className="h-5 w-5 text-primary" />
           </div>
-          Installation Progress Map
+          Progress Map
         </CardTitle>
         <CardDescription className="text-sm">Geographic overview of camera installation across Punjab cities</CardDescription>
       </CardHeader>

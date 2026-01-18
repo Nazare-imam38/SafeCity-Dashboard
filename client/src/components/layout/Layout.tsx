@@ -1,5 +1,6 @@
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { Footer } from "./Footer";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export function Layout({ children, title = "Dashboard" }: LayoutProps) {
         <main className="flex-1 p-6 space-y-6">
           {children}
         </main>
+        <Footer />
       </div>
     </div>
   );

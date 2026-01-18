@@ -32,7 +32,7 @@ export function PhaseTimelineChart({ timelineData, cityKey = "default" }: PhaseT
     <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Phase Evolution Timeline</CardTitle>
-        <CardDescription className="text-sm">All installation phases progress over time</CardDescription>
+        <CardDescription className="text-sm">All milestone progress over time</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={350}>

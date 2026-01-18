@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { SubProject, SubProjectCard } from "./SubProjectCard";
 
 interface InstallationCardProps {
   title: string;
@@ -8,9 +10,27 @@ interface InstallationCardProps {
   icon: LucideIcon;
   className?: string;
   color?: "blue" | "green" | "orange" | "purple" | "red" | "yellow" | "primary";
+  subProjects?: SubProject[];
+  actualProgress?: number;
+  plannedProgress?: number;
 }
 
-export function InstallationCard({ title, percentage, icon: Icon, className, color = "primary" }: InstallationCardProps) {
+export function InstallationCard({ 
+  title, 
+  percentage, 
+  icon: Icon, 
+  className, 
+  color = "primary",
+  subProjects = [],
+  actualProgress,
+  plannedProgress
+}: InstallationCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const hasSubProjects = subProjects.length > 0;
+  const showDualProgress = actualProgress !== undefined && plannedProgress !== undefined;
+  
+  // Calculate actual vs planned variance
+  const variance = showDualProgress ? actualProgress - plannedProgress : null;
   const getColorClasses = () => {
     switch (color) {
       case "blue": return { 
@@ -106,17 +126,107 @@ export function InstallationCard({ title, percentage, icon: Icon, className, col
               {status}
             </span>
           </div>
-          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/50 shadow-inner">
-            <div 
-              className={cn(
-                "h-full rounded-full transition-all duration-1000 ease-out shadow-md relative overflow-hidden",
-                colors.progress
-              )}
-              style={{ width: `${percentage}%` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+          
+          {/* Show dual progress bars if actual/planned provided */}
+          {showDualProgress ? (
+            <div className="space-y-1.5">
+              {/* Actual Progress */}
+              <div>
+                <div className="flex justify-between text-[7px] mb-0.5 text-muted-foreground">
+                  <span>Actual</span>
+                  <span className="font-semibold">{actualProgress.toFixed(1)}%</span>
+                </div>
+                <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/50 shadow-inner">
+                  <div 
+                    className={cn("h-full rounded-full transition-all duration-1000 ease-out", colors.progress)}
+                    style={{ width: `${Math.min(100, actualProgress)}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* Planned Progress */}
+              <div>
+                <div className="flex justify-between text-[7px] mb-0.5 text-muted-foreground">
+                  <span>Planned</span>
+                  <span className="font-semibold">{plannedProgress.toFixed(1)}%</span>
+                  {variance !== null && (
+                    <span className={cn(
+                      "font-semibold",
+                      variance >= 0 ? "text-emerald-600" : "text-red-600"
+                    )}>
+                      {variance >= 0 ? "+" : ""}{variance.toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+                <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/50 shadow-inner">
+                  <div 
+                    className="h-full rounded-full transition-all duration-1000 ease-out border border-dashed opacity-60"
+                    style={{ 
+                      width: `${Math.min(100, plannedProgress)}%`,
+                      borderColor: colors.progress.replace("bg-", "").replace("-500", "-600"),
+                      backgroundColor: "transparent"
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Single progress bar (legacy) */
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/50 shadow-inner">
+              <div 
+                className={cn(
+                  "h-full rounded-full transition-all duration-1000 ease-out shadow-md relative overflow-hidden",
+                  colors.progress
+                )}
+                style={{ width: `${percentage}%` }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+              </div>
+            </div>
+          )}
+          
+          {/* Expandable sub-projects section */}
+          {hasSubProjects && (
+            <div className="pt-2 border-t border-border/30">
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full flex items-center justify-between text-[8px] font-semibold text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                <span>Sub-Projects ({subProjects.length})</span>
+                {isExpanded ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
+              </button>
+              
+              {isExpanded && (
+                <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto">
+                  {subProjects.map((subProject) => {
+                    // Convert Tailwind color class to hex for SubProjectCard
+                    const colorMap: Record<string, string> = {
+                      "bg-blue-500": "#3b82f6",
+                      "bg-emerald-500": "#10b981",
+                      "bg-orange-500": "#f59e0b",
+                      "bg-purple-500": "#a855f7",
+                      "bg-red-500": "#ef4444",
+                      "bg-yellow-500": "#eab308",
+                      "bg-primary": "hsl(var(--primary))"
+                    };
+                    const hexColor = colorMap[colors.progress] || "#6b7280";
+                    
+                    return (
+                      <SubProjectCard 
+                        key={subProject.id} 
+                        subProject={subProject}
+                        color={hexColor}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

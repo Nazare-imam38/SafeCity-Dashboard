@@ -4,13 +4,13 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Show splash screen for 2.5 seconds
+    // Show splash screen for 1 second
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(() => {
         onComplete();
-      }, 500); // Wait for fade out animation
-    }, 2500);
+      }, 300); // Wait for fade out animation
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -68,7 +68,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         {/* Logo */}
         <div className="relative z-10 flex items-center justify-center">
           <img
-            src="/Assets/psca logo.png"
+            src="/Assets/psca.png"
             alt="PSCA Logo"
             className="h-28 w-28 object-contain"
           />
