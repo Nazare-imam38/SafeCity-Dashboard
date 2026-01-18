@@ -358,10 +358,18 @@ export default function Finance() {
                       borderColor: "hsl(var(--border))", 
                       borderRadius: "8px" 
                     }}
-                    formatter={(value: number, name: string) => [
-                      formatPKR(value),
-                      name === 'planned' ? 'Planned' : name === 'actual' ? 'Actual' : 'Variance'
-                    ]}
+                    formatter={(value: number, name: string) => {
+                      // Map dataKey to display name
+                      let displayName = 'Variance';
+                      if (name === 'planned' || name === 'Planned') {
+                        displayName = 'Planned';
+                      } else if (name === 'actual' || name === 'Actual') {
+                        displayName = 'Actual';
+                      } else if (name === 'variance' || name === 'Variance') {
+                        displayName = 'Variance';
+                      }
+                      return [formatPKR(value), displayName];
+                    }}
                   />
                   <Legend />
                   <Bar dataKey="planned" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Planned" />

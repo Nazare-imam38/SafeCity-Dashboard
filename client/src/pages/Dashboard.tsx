@@ -36,7 +36,10 @@ import {
   TrendingUp,
   FileDown,
   Filter,
-  ArrowLeft
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  Search
 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -44,7 +47,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { useState, useMemo, useEffect } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { CheckCircle2 } from "lucide-react";
 
@@ -370,6 +374,11 @@ export default function Dashboard() {
   const [selectedItemType, setSelectedItemType] = useState<"division" | "district" | "tehsil" | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [expandedDivisions, setExpandedDivisions] = useState(false);
+  const [expandedDistricts, setExpandedDistricts] = useState(false);
+  const [expandedTehsilGroups, setExpandedTehsilGroups] = useState<Record<string, boolean>>({});
+  const [tehsilSearchQuery, setTehsilSearchQuery] = useState("");
+  const [allTehsilGroupsExpanded, setAllTehsilGroupsExpanded] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   // Get available divisions - independent filter
@@ -516,7 +525,7 @@ export default function Dashboard() {
         { month: "May", surveys: Math.max(0, itemData.surveys - 3), foundations: Math.max(0, itemData.foundations - 8), cabinet: Math.max(0, itemData.cabinet - 10), cable: Math.max(0, itemData.cable - 8), controlRoom: Math.max(0, itemData.controlRoom - 5), ppic3: Math.max(0, itemData.ppic3 - 3), overall: Math.max(0, itemData.overall - 3) },
         { month: "Jun", surveys: itemData.surveys, foundations: itemData.foundations, cabinet: itemData.cabinet, cable: itemData.cable, controlRoom: itemData.controlRoom, ppic3: itemData.ppic3, overall: itemData.overall },
       ];
-
+      
       return {
         surveys: convertToPhaseProgress(itemData.surveys, "surveys", timeline),
         foundations: convertToPhaseProgress(itemData.foundations, "foundations", timeline),
@@ -553,28 +562,30 @@ export default function Dashboard() {
     return null;
   }, [viewType]);
 
-  // Get all divisions data for cards view
+  // Get all divisions data for cards view - sorted by overall progress (descending)
   const divisionsData = useMemo(() => {
     try {
       const divData = getAllDivisionData();
       const divisions = getAllDivisions();
       if (!divisions || !Array.isArray(divisions)) return [];
-      return divisions.map((div, index) => {
+      const data = divisions.map((div, index) => {
         const key = div.toLowerCase().replace(/\s+/g, '');
-      return {
+        return {
           name: div,
           overall: divData[key]?.overall || 0,
           data: divData[key],
           color: CARD_COLORS[index % CARD_COLORS.length]
         };
       });
+      // Sort by overall progress (descending) - higher progress first
+      return data.sort((a, b) => b.overall - a.overall);
     } catch (error) {
       console.error('Error loading divisions data:', error);
       return [];
     }
   }, []);
 
-  // Get ALL districts data for cards view (from all divisions)
+  // Get ALL districts data for cards view (from all divisions) - sorted by overall progress (descending)
   const districtsData = useMemo(() => {
     try {
       if (!PUNJAB_HIERARCHY || !Array.isArray(PUNJAB_HIERARCHY)) return [];
@@ -609,34 +620,41 @@ export default function Dashboard() {
         }
       });
       
-      return Array.from(districtMap.entries()).map(([name, info], index) => ({
+      const data = Array.from(districtMap.entries()).map(([name, info], index) => ({
         name,
         overall: info.overall,
         data: info.data,
         color: info.color
       }));
+      // Sort by overall progress (descending) - higher progress first
+      return data.sort((a, b) => b.overall - a.overall);
     } catch (error) {
       console.error('Error loading districts data:', error);
       return [];
     }
   }, []);
 
-  // Get ALL tehsils data for cards view (from all divisions/districts)
-  const tehsilsData = useMemo(() => {
+  // Get ALL tehsils data grouped by district - sorted by overall progress (descending)
+  const tehsilsDataByDistrict = useMemo(() => {
     try {
-      if (!PUNJAB_HIERARCHY || !Array.isArray(PUNJAB_HIERARCHY)) return [];
+      if (!PUNJAB_HIERARCHY || !Array.isArray(PUNJAB_HIERARCHY)) return {};
       const tehData = getAllTehsilData();
-      const tehsilMap = new Map<string, { overall: number; data: any; color: string }>();
+      const districtMap = new Map<string, Array<{ name: string; overall: number; data: any; color: string }>>();
       
       PUNJAB_HIERARCHY.forEach((div, divIndex) => {
         if (div?.districts) {
           div.districts.forEach((dist, distIndex) => {
-            if (dist?.tehsils) {
+            if (dist?.district && dist?.tehsils) {
+              const districtName = dist.district;
+              if (!districtMap.has(districtName)) {
+                districtMap.set(districtName, []);
+              }
+              
               dist.tehsils.forEach((teh, tehIndex) => {
-                if (teh?.tehsil && !tehsilMap.has(teh.tehsil)) {
+                if (teh?.tehsil) {
                   const possibleKeys = PUNJAB_HIERARCHY
                     .flatMap(d => d?.districts
-                      ?.filter(dd => dd?.tehsils?.some(tt => tt?.tehsil === teh.tehsil))
+                      ?.filter(dd => dd?.district === districtName && dd?.tehsils?.some(tt => tt?.tehsil === teh.tehsil))
                       .map(dd => `${d.division}-${dd.district}-${teh.tehsil}`.toLowerCase().replace(/\s+/g, '')) || []
                     );
                   
@@ -648,11 +666,16 @@ export default function Dashboard() {
                     }
                   }
                   
-                  tehsilMap.set(teh.tehsil, {
-                    overall: overall || Math.floor(Math.random() * 40) + 40, // Fallback
-                    data: tehData[possibleKeys[0]] || null,
-                    color: CARD_COLORS[(divIndex + distIndex + tehIndex) % CARD_COLORS.length]
-                  });
+                  const tehsilList = districtMap.get(districtName)!;
+                  // Check if tehsil already exists (might be in multiple divisions)
+                  if (!tehsilList.find(t => t.name === teh.tehsil)) {
+                    tehsilList.push({
+                      name: teh.tehsil,
+                      overall: overall || Math.floor(Math.random() * 40) + 40, // Fallback
+                      data: tehData[possibleKeys[0]] || null,
+                      color: CARD_COLORS[(divIndex + distIndex + tehIndex) % CARD_COLORS.length]
+                    });
+                  }
                 }
               });
             }
@@ -660,15 +683,28 @@ export default function Dashboard() {
         }
       });
       
-      return Array.from(tehsilMap.entries()).map(([name, info]) => ({
-        name,
-        overall: info.overall,
-        data: info.data,
-        color: info.color
-      }));
+      // Sort tehsils within each district by overall progress (descending)
+      const result: Record<string, Array<{ name: string; overall: number; data: any; color: string }>> = {};
+      districtMap.forEach((tehsils, district) => {
+        result[district] = tehsils.sort((a, b) => b.overall - a.overall);
+      });
+      
+      // Sort districts by their highest tehsil progress (descending)
+      const sortedDistricts = Object.keys(result).sort((a, b) => {
+        const maxA = Math.max(...result[a].map(t => t.overall));
+        const maxB = Math.max(...result[b].map(t => t.overall));
+        return maxB - maxA;
+      });
+      
+      const sortedResult: Record<string, Array<{ name: string; overall: number; data: any; color: string }>> = {};
+      sortedDistricts.forEach(district => {
+        sortedResult[district] = result[district];
+      });
+      
+      return sortedResult;
     } catch (error) {
       console.error('Error loading tehsils data:', error);
-      return [];
+      return {};
     }
   }, []);
 
@@ -697,7 +733,6 @@ export default function Dashboard() {
                   color={phase.color}
                   actualProgress={hasDetails ? progress.actual : undefined}
                   plannedProgress={hasDetails ? progress.planned : undefined}
-                  subProjects={hasDetails ? progress.subProjects : undefined}
                 />
               );
             })}
@@ -900,6 +935,22 @@ export default function Dashboard() {
                   setViewType(value as "divisions" | "districts" | "tehsils" | "");
                   setSelectedItemName(null);
                   setSelectedItemType(null);
+                  setExpandedDivisions(false);
+                  setExpandedDistricts(false);
+                  // Initialize default districts (Lahore and Sheikhupura) when switching to tehsils view
+                  if (value === "tehsils") {
+                    const DEFAULT_DISTRICTS = ['Lahore', 'Sheikhupura'];
+                    const defaultState: Record<string, boolean> = {};
+                    DEFAULT_DISTRICTS.forEach(districtName => {
+                      defaultState[districtName] = true;
+                    });
+                    setExpandedTehsilGroups(defaultState);
+                    setAllTehsilGroupsExpanded(false);
+                  } else {
+                    setExpandedTehsilGroups({});
+                    setAllTehsilGroupsExpanded(false);
+                  }
+                  setTehsilSearchQuery("");
                 }}
                 className="flex items-center gap-6"
               >
@@ -943,8 +994,8 @@ export default function Dashboard() {
               </div>
               {aggregatedData && (
               <div className="flex items-center gap-3">
-                <Badge className="px-4 py-1.5 text-sm font-semibold bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors">
-                  <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+                <Badge className="px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
+                  <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400" />
                     Overall: {aggregatedData.overall}%
                 </Badge>
             </div>
@@ -1019,8 +1070,8 @@ export default function Dashboard() {
               <div>
                 <h2 className="text-2xl font-bold font-heading">{selectedItemName}</h2>
                 <p className="text-sm text-muted-foreground">Detailed progress with actual vs planned</p>
-              </div>
             </div>
+        </div>
 
             {/* Detailed View */}
             {renderAggregatedCharts(selectedItemName, singleItemData)}
@@ -1030,87 +1081,289 @@ export default function Dashboard() {
         {/* Hierarchy Cards View with Charts */}
         {!selectedItemName && viewType === "divisions" && aggregatedData && (
           <div className="space-y-6">
-            <div>
+                    <div>
               <h2 className="text-xl font-bold font-heading mb-1">All Punjab Divisions</h2>
-              <p className="text-sm text-muted-foreground">Overall progress across all divisions of Punjab</p>
-            </div>
+              <p className="text-sm text-muted-foreground">Overall progress across all divisions of Punjab (sorted by progress)</p>
+                    </div>
             
             {/* Division Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {divisionsData.map((div) => (
-                <HierarchyCard
-                  key={div.name}
-                  title={div.name}
-                  overallProgress={div.overall}
-                  color={div.color}
-                  onClick={() => {
-                    setSelectedItemName(div.name);
-                    setSelectedItemType("division");
-                  }}
-                />
-              ))}
-        </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {(expandedDivisions ? divisionsData : divisionsData.slice(0, 4)).map((div) => (
+                  <HierarchyCard
+                    key={div.name}
+                    title={div.name}
+                    overallProgress={div.overall}
+                    color={div.color}
+                    onClick={() => {
+                      setSelectedItemName(div.name);
+                      setSelectedItemType("division");
+                    }}
+                  />
+                ))}
+                  </div>
+              
+              {divisionsData.length > 4 && (
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setExpandedDivisions(!expandedDivisions)}
+                    className="rounded-xl text-white border-[#101a3c] hover:border-[#101a3c]"
+                    style={{ backgroundColor: '#101a3c' }}
+                  >
+                    {expandedDivisions ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-2 text-white" />
+                        Show Less ({divisionsData.length - 4} hidden)
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-2 text-white" />
+                        Show More ({divisionsData.length - 4} more)
+                      </>
+                    )}
+                  </Button>
+                  </div>
+              )}
+                </div>
 
             {/* Aggregated Charts Section - Same as detail view */}
             {renderAggregatedCharts("All Punjab Divisions", aggregatedData)}
-          </div>
+                </div>
         )}
 
         {!selectedItemName && viewType === "districts" && aggregatedData && (
           <div className="space-y-6">
-                    <div>
+            <div>
               <h2 className="text-xl font-bold font-heading mb-1">All Punjab Districts</h2>
-              <p className="text-sm text-muted-foreground">Overall progress across all districts of Punjab</p>
-                    </div>
+              <p className="text-sm text-muted-foreground">Overall progress across all districts of Punjab (sorted by progress)</p>
+                      </div>
             
             {/* District Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {districtsData.map((dist) => (
-                <HierarchyCard
-                  key={dist.name}
-                  title={dist.name}
-                  overallProgress={dist.overall}
-                  color={dist.color}
-                  onClick={() => {
-                    setSelectedItemName(dist.name);
-                    setSelectedItemType("district");
-                  }}
-                />
-              ))}
-                  </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {(expandedDistricts ? districtsData : districtsData.slice(0, 4)).map((dist) => (
+                  <HierarchyCard
+                    key={dist.name}
+                    title={dist.name}
+                    overallProgress={dist.overall}
+                    color={dist.color}
+                    onClick={() => {
+                      setSelectedItemName(dist.name);
+                      setSelectedItemType("district");
+                    }}
+                  />
+                ))}
+                      </div>
+              
+              {districtsData.length > 4 && (
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setExpandedDistricts(!expandedDistricts)}
+                    className="rounded-xl text-white border-[#101a3c] hover:border-[#101a3c]"
+                    style={{ backgroundColor: '#101a3c' }}
+                  >
+                    {expandedDistricts ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-2 text-white" />
+                        Show Less ({districtsData.length - 4} hidden)
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-2 text-white" />
+                        Show More ({districtsData.length - 4} more)
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
 
             {/* Aggregated Charts Section */}
             {renderAggregatedCharts("All Punjab Districts", aggregatedData)}
-                      </div>
+                   </div>
         )}
 
-        {!selectedItemName && viewType === "tehsils" && aggregatedData && (
-          <div className="space-y-6">
-          <div>
-              <h2 className="text-xl font-bold font-heading mb-1">All Punjab Tehsils</h2>
-              <p className="text-sm text-muted-foreground">Overall progress across all tehsils of Punjab</p>
-                   </div>
+        {!selectedItemName && viewType === "tehsils" && aggregatedData && (() => {
+          // Default districts to show: Lahore and Sheikhupura
+          const DEFAULT_DISTRICTS = ['Lahore', 'Sheikhupura'];
           
-            {/* Tehsil Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {tehsilsData.map((teh) => (
-                <HierarchyCard
-                  key={teh.name}
-                  title={teh.name}
-                  overallProgress={teh.overall}
-                  color={teh.color}
-                  onClick={() => {
-                    setSelectedItemName(teh.name);
-                    setSelectedItemType("tehsil");
-                  }}
-                />
-              ))}
+          // Filter districts based on search query first
+          const allDistricts = Object.entries(tehsilsDataByDistrict).filter(([districtName]) => {
+            if (!tehsilSearchQuery.trim()) return true;
+            return districtName.toLowerCase().includes(tehsilSearchQuery.toLowerCase());
+          });
+
+          // Filter districts to show: by default only Lahore and Sheikhupura, unless all are expanded
+          const filteredDistricts = allDistricts.filter(([districtName]) => {
+            // If search query exists, show all matching districts
+            if (tehsilSearchQuery.trim()) return true;
+            // If all expanded, show all districts
+            if (allTehsilGroupsExpanded) return true;
+            // Otherwise, show only default districts
+            return DEFAULT_DISTRICTS.includes(districtName);
+          });
+
+
+          // Toggle all groups expand/collapse
+          const handleToggleAllGroups = () => {
+            const newState = !allTehsilGroupsExpanded;
+            setAllTehsilGroupsExpanded(newState);
+            
+            if (newState) {
+              // Expand All: show all districts and expand them
+              const allExpandedGroups: Record<string, boolean> = {};
+              allDistricts.forEach(([districtName]) => {
+                allExpandedGroups[districtName] = true;
+              });
+              setExpandedTehsilGroups(allExpandedGroups);
+            } else {
+              // Collapse All: collapse to only show default districts
+              const defaultState: Record<string, boolean> = {};
+              DEFAULT_DISTRICTS.forEach(districtName => {
+                if (tehsilsDataByDistrict[districtName]) {
+                  defaultState[districtName] = true;
+                }
+              });
+              setExpandedTehsilGroups(defaultState);
+            }
+          };
+
+          return (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold font-heading mb-1">All Punjab Tehsils</h2>
+                  <p className="text-sm text-muted-foreground">Tehsils grouped by district, sorted by progress</p>
+              </div>
+
+                {/* Search and Expand/Collapse Controls */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Search Input */}
+                  <div className="relative flex-1 sm:min-w-[250px]">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search by district name..."
+                      value={tehsilSearchQuery}
+                      onChange={(e) => setTehsilSearchQuery(e.target.value)}
+                      className="pl-9 h-9 rounded-xl border-border/50 bg-background"
+                    />
+                  </div>
+                  
+                  {/* Expand/Collapse All Button */}
+                  {filteredDistricts.length > 0 && (
+                    <Button
+                      variant="outline"
+                      onClick={handleToggleAllGroups}
+                      className="rounded-xl h-9 whitespace-nowrap text-white border-[#101a3c] hover:border-[#101a3c]"
+                      style={{ backgroundColor: '#101a3c' }}
+                    >
+                      {allTehsilGroupsExpanded ? (
+                        <>
+                          <ChevronUp className="h-4 w-4 mr-2 text-white" />
+                          Collapse All
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4 mr-2 text-white" />
+                          Expand All
+                        </>
+                      )}
+                    </Button>
+                  )}
+            </div>
           </div>
 
-            {/* Aggregated Charts Section */}
-            {renderAggregatedCharts("All Punjab Tehsils", aggregatedData)}
+              {/* Tehsil Cards Grouped by District */}
+              {filteredDistricts.length === 0 ? (
+                <Card className="border-border/50">
+                  <CardContent className="p-8 text-center">
+                    <p className="text-muted-foreground">
+                      No districts found matching "{tehsilSearchQuery}". Please try a different search term.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  {filteredDistricts.map(([districtName, tehsils]: [string, Array<{ name: string; overall: number; data: any; color: string }>]) => {
+                    const isExpanded = expandedTehsilGroups[districtName] ?? false;
+                    const visibleTehsils = isExpanded ? tehsils : tehsils.slice(0, 4);
+                    const hasMore = tehsils.length > 4;
+                
+                return (
+                  <div key={districtName} className="space-y-4">
+                    {/* District Header */}
+                    <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                      <div>
+                        <h3 className="text-lg font-bold font-heading">{districtName} District</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {tehsils.length} tehsil{tehsils.length !== 1 ? 's' : ''} • 
+                          Max Progress: {Math.max(...tehsils.map(t => t.overall))}%
+                        </p>
         </div>
-        )}
+                   </div>
+
+                    {/* Tehsil Cards for this District */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {visibleTehsils.map((teh) => (
+                        <HierarchyCard
+                          key={teh.name}
+                          title={teh.name}
+                          overallProgress={teh.overall}
+                          color={teh.color}
+                          onClick={() => {
+                            setSelectedItemName(teh.name);
+                            setSelectedItemType("tehsil");
+                          }}
+                        />
+                      ))}
+            </div>
+
+                    {/* Expand/Collapse Button for this District */}
+                    {hasMore && (
+                      <div className="flex justify-center">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setExpandedTehsilGroups(prev => {
+                              const newState = !isExpanded;
+                              // Update allTehsilGroupsExpanded based on whether all groups are expanded
+                              const updated = { ...prev, [districtName]: newState };
+                              const allExpanded = filteredDistricts.every(([name]) => updated[name] ?? false);
+                              setAllTehsilGroupsExpanded(allExpanded);
+                              return updated;
+                            });
+                          }}
+                          className="rounded-xl text-white border-[#101a3c] hover:border-[#101a3c]"
+                          style={{ backgroundColor: '#101a3c' }}
+                        >
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="h-4 w-4 mr-2 text-white" />
+                              Show Less ({tehsils.length - 4} hidden)
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4 mr-2 text-white" />
+                              Show More ({tehsils.length - 4} more)
+                            </>
+                          )}
+                        </Button>
+          </div>
+                    )}
+        </div>
+                  );
+                })}
+                </div>
+              )}
+
+              {/* Aggregated Charts Section */}
+              {renderAggregatedCharts("All Punjab Tehsils", aggregatedData)}
+            </div>
+          );
+        })()}
 
       </div>
 
