@@ -46,14 +46,14 @@ export function HeatmapChart({ data }: HeatmapChartProps) {
         <CardDescription className="text-sm">Visual comparison of all phases across all cities</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
+        <div className="-mx-4 sm:mx-0 overflow-x-auto">
           <div className="min-w-full">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
                   <th className="text-left p-3 font-semibold text-sm border-b sticky left-0 bg-card z-10">City</th>
                   {phases.map((phase) => (
-                    <th key={phase.key} className="text-center p-3 font-semibold text-sm border-b min-w-[100px]">
+                    <th key={phase.key} className="text-center p-3 font-semibold text-sm border-b min-w-[88px] sm:min-w-[100px]">
                       {phase.label}
                     </th>
                   ))}
@@ -68,9 +68,9 @@ export function HeatmapChart({ data }: HeatmapChartProps) {
                     {phases.map((phase) => {
                       const value = city[phase.key as keyof typeof city] as number;
                       return (
-                        <td key={phase.key} className="p-3 text-center border-b">
+                        <td key={phase.key} className="p-2 sm:p-3 text-center border-b">
                           <div className="flex flex-col items-center gap-1">
-                            <div className={`w-16 h-8 rounded ${getColorIntensity(value)} flex items-center justify-center`}>
+                            <div className={`w-14 sm:w-16 h-8 rounded ${getColorIntensity(value)} flex items-center justify-center`}>
                               <span className="text-white text-xs font-bold">{value}%</span>
                             </div>
                           </div>

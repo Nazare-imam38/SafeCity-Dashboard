@@ -74,7 +74,7 @@ export default function GISLayers() {
                       <Layers className="h-3 w-3" /> Spatial Inventory
                     </CardTitle>
                   </CardHeader>
-                  <ScrollArea className="h-[500px]">
+                  <ScrollArea className="h-[320px] sm:h-[420px] lg:h-[500px]">
                     <CardContent className="p-2 space-y-1">
                       {[
                         { icon: Camera, label: "CCTV Network", detail: "4,500 Cameras", status: "Active", color: "text-blue-500" },

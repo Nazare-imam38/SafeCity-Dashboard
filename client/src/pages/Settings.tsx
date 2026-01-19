@@ -14,7 +14,7 @@ export default function Settings() {
   return (
     <Layout title="System Settings">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold font-heading">Command Center Configuration</h2>
             <p className="text-muted-foreground">Manage your local monitoring preferences and system behavior.</p>
@@ -95,7 +95,7 @@ export default function Settings() {
               <CardDescription>Secure your command center session.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Officer ID</Label>
                   <Input defaultValue="PSCA-402-LHR" disabled />

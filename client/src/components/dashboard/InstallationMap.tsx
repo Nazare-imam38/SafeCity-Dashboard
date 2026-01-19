@@ -90,7 +90,7 @@ export function InstallationMap({ cityData, selectedCity, onCitySelect }: Instal
           <CardDescription>Geographic overview across Punjab</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[500px] w-full bg-muted animate-pulse rounded-xl" />
+          <div className="h-[320px] sm:h-[420px] lg:h-[500px] w-full bg-muted animate-pulse rounded-xl" />
         </CardContent>
       </Card>
     );
@@ -112,7 +112,7 @@ export function InstallationMap({ cityData, selectedCity, onCitySelect }: Instal
         <CardDescription className="text-sm">Geographic overview of camera installation across Punjab cities</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[500px] w-full rounded-xl overflow-hidden border relative z-0">
+        <div className="h-[320px] sm:h-[420px] lg:h-[500px] w-full rounded-xl overflow-hidden border relative z-0">
           <MapContainer
             center={center}
             zoom={zoom}

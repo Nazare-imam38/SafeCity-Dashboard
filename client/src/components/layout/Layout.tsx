@@ -13,7 +13,7 @@ export function Layout({ children, title = "Dashboard" }: LayoutProps) {
       <Sidebar />
       <div className="md:ml-64 flex flex-col min-h-screen">
         <Header title={title} />
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-4 sm:p-6 space-y-6 w-full max-w-[1600px] mx-auto">
           {children}
         </main>
         <Footer />

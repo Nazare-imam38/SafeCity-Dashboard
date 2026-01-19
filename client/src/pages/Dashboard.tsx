@@ -718,7 +718,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold font-heading mb-1">Project Milestones</h2>
             <p className="text-sm text-muted-foreground">Progress breakdown for {title}</p>
           </div>
-          <div className="grid grid-cols-6 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {installationPhases.map((phase) => {
               const progress = data[phase.key];
               const progressValue = getProgressValue(progress);
@@ -921,7 +921,7 @@ export default function Dashboard() {
           
           {/* Filter Bar Section - Radio Buttons */}
           <div className="relative border-b border-border/30 pb-3 px-6 pt-4">
-            <div className="flex items-center gap-6 flex-nowrap">
+            <div className="flex items-center gap-4 flex-wrap">
               {/* Filters Label */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Filter className="h-4 w-4 text-primary" />

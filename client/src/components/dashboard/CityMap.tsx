@@ -117,11 +117,11 @@ export function CityMap({ city = "lahore" }: { city?: string }) {
   }, []);
 
   if (!isMounted) {
-    return <div className="h-[600px] w-full bg-muted animate-pulse rounded-xl" />;
+    return <div className="h-[360px] sm:h-[520px] lg:h-[600px] w-full bg-muted animate-pulse rounded-xl" />;
   }
 
   return (
-    <div className="h-[650px] w-full rounded-xl overflow-hidden border shadow-2xl relative z-0 group">
+    <div className="h-[380px] sm:h-[560px] lg:h-[650px] w-full rounded-xl overflow-hidden border shadow-2xl relative z-0 group">
       <MapContainer 
         center={center} 
         zoom={12} 

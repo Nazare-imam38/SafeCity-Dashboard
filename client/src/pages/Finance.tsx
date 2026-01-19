@@ -333,7 +333,7 @@ export default function Finance() {
               <CardTitle>Planned vs Actual Budget</CardTitle>
               <CardDescription>Monthly budget comparison in PKR</CardDescription>
             </CardHeader>
-            <CardContent className="h-[400px]">
+            <CardContent className="h-[320px] sm:h-[380px] lg:h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={budgetData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
@@ -440,7 +440,7 @@ export default function Finance() {
             <CardTitle>Department Budget Analysis</CardTitle>
             <CardDescription>Planned vs Actual expenses by department</CardDescription>
           </CardHeader>
-          <CardContent className="h-[350px]">
+          <CardContent className="h-[300px] sm:h-[330px] lg:h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={expenseData} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
