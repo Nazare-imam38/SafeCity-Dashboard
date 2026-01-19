@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useWindowSize } from "@/hooks/use-window-size";
 
 interface PhaseData {
   phase: string;
@@ -31,9 +32,13 @@ const getColor = (phase: string): string => {
 };
 
 export function PhaseBreakdownChart({ data }: PhaseBreakdownChartProps) {
+  const { width } = useWindowSize();
+  const isMobile = width < 640;
+  const isTablet = width >= 640 && width < 1024;
+  
   const chartData = data.map(item => ({
     ...item,
-    phase: item.phase.length > 20 ? item.phase.substring(0, 20) + "..." : item.phase,
+    phase: item.phase.length > (isMobile ? 15 : 20) ? item.phase.substring(0, isMobile ? 15 : 20) + "..." : item.phase,
   }));
 
   // Create a unique key based on data to force re-render
@@ -46,27 +51,36 @@ export function PhaseBreakdownChart({ data }: PhaseBreakdownChartProps) {
         <CardDescription className="text-sm">Installation progress by phase</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }} key={dataKey}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-            <XAxis 
-              dataKey="phase" 
-              angle={-45}
-              textAnchor="end"
-              height={80}
-              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-            />
-            <YAxis 
-              domain={[0, 100]}
-              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-              axisLine={false}
-              tickLine={false}
-            />
+        <div className="w-full" style={{ height: isMobile ? '240px' : isTablet ? '280px' : '300px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ 
+              top: 10, 
+              right: isMobile ? 5 : 10, 
+              left: isMobile ? -10 : 0, 
+              bottom: isMobile ? 80 : 60 
+            }} key={dataKey}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="phase" 
+                angle={isMobile ? -60 : -45}
+                textAnchor="end"
+                height={isMobile ? 100 : 80}
+                tick={{ fontSize: isMobile ? 9 : isTablet ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+              />
+              <YAxis 
+                domain={[0, 100]}
+                tick={{ fontSize: isMobile ? 10 : isTablet ? 11 : 12, fill: "hsl(var(--muted-foreground))" }}
+                axisLine={false}
+                tickLine={false}
+                width={isMobile ? 35 : 50}
+              />
             <Tooltip 
               contentStyle={{ 
                 backgroundColor: "hsl(var(--card))", 
                 borderColor: "hsl(var(--border))", 
-                borderRadius: "8px" 
+                borderRadius: "8px",
+                fontSize: isMobile ? '10px' : '12px',
+                padding: isMobile ? '4px 6px' : '8px 12px'
               }}
               formatter={(value: number) => [`${value}%`, "Progress"]}
             />
@@ -77,6 +91,7 @@ export function PhaseBreakdownChart({ data }: PhaseBreakdownChartProps) {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

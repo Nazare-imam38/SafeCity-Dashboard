@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useWindowSize } from "@/hooks/use-window-size";
 
 interface PhaseComparisonPieChartProps {
   phaseName: string;
@@ -15,6 +16,10 @@ const COLORS = [
 ];
 
 export function PhaseComparisonPieChart({ phaseName, cityData }: PhaseComparisonPieChartProps) {
+  const { width } = useWindowSize();
+  const isMobile = width < 640;
+  const isTablet = width >= 640 && width < 1024;
+  
   const sortedData = [...cityData].sort((a, b) => b.value - a.value).slice(0, 6); // Top 6 cities
 
   return (
@@ -25,19 +30,20 @@ export function PhaseComparisonPieChart({ phaseName, cityData }: PhaseComparison
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Pie Chart */}
-        <ResponsiveContainer width="100%" height={280}>
-          <PieChart>
-            <Pie
-              data={sortedData}
-              cx="50%"
-              cy="50%"
-              label={false}
-              outerRadius={100}
-              innerRadius={40}
-              fill="#8884d8"
-              dataKey="value"
-              paddingAngle={3}
-            >
+        <div className="w-full" style={{ height: isMobile ? '220px' : isTablet ? '260px' : '280px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={sortedData}
+                cx="50%"
+                cy="50%"
+                label={false}
+                outerRadius={isMobile ? 60 : isTablet ? 80 : 100}
+                innerRadius={isMobile ? 20 : isTablet ? 30 : 40}
+                fill="#8884d8"
+                dataKey="value"
+                paddingAngle={3}
+              >
               {sortedData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="white" strokeWidth={2} />
               ))}
@@ -47,7 +53,8 @@ export function PhaseComparisonPieChart({ phaseName, cityData }: PhaseComparison
                 backgroundColor: "hsl(var(--card))", 
                 borderColor: "hsl(var(--border))", 
                 borderRadius: "8px",
-                padding: "8px 12px"
+                padding: isMobile ? "4px 6px" : "8px 12px",
+                fontSize: isMobile ? '10px' : '12px'
               }}
               formatter={(value: number, name: string, props: any) => [
                 `${props.payload.city}: ${value}%`,
@@ -56,6 +63,7 @@ export function PhaseComparisonPieChart({ phaseName, cityData }: PhaseComparison
             />
           </PieChart>
         </ResponsiveContainer>
+        </div>
 
         {/* Legend with City Names */}
         <div className="flex flex-wrap justify-center gap-3 text-xs">
