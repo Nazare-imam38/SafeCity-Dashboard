@@ -3,8 +3,8 @@ import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
-  // Use import.meta.dirname for ES modules (Node 20.11+)
-  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+  // Use process.cwd() so this works in both ESM and bundled CJS builds (e.g., Vercel/build).
+  const distPath = path.resolve(process.cwd(), "dist", "public");
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
