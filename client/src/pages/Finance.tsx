@@ -186,97 +186,99 @@ export default function Finance() {
     <Layout title="Financial & Budget Analytics">
       <div className="flex flex-col gap-6">
         {/* Filter Bar Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg p-6">
-          <div className="flex items-center gap-4 flex-nowrap">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             {/* Filters Label */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Filter className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold text-foreground">Filters:</span>
             </div>
 
-            {/* Division Filter */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Division:</label>
-              <Select value={selectedDivision} onValueChange={handleDivisionChange}>
-                <SelectTrigger className="w-[160px] h-9 border-border/50 bg-background rounded-md">
-                  <SelectValue placeholder="All Divisions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Divisions</SelectItem>
-                  {getAllDivisions().map(div => (
-                    <SelectItem key={div} value={div}>{div}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
+              {/* Division Filter */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 sm:flex-shrink-0">
+                <label className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">Division:</label>
+                <Select value={selectedDivision} onValueChange={handleDivisionChange}>
+                  <SelectTrigger className="w-full sm:w-[160px] h-9 border-border/50 bg-background rounded-md">
+                    <SelectValue placeholder="All Divisions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Divisions</SelectItem>
+                    {getAllDivisions().map(div => (
+                      <SelectItem key={div} value={div}>{div}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* District Filter */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">District:</label>
-              <Select 
-                value={selectedDistrict} 
-                onValueChange={handleDistrictChange}
-                disabled={selectedDivision === "all"}
-              >
-                <SelectTrigger 
-                  className={`w-[160px] h-9 border-border/50 bg-background rounded-md ${
-                    selectedDivision === "all" ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+              {/* District Filter */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 sm:flex-shrink-0">
+                <label className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">District:</label>
+                <Select 
+                  value={selectedDistrict} 
+                  onValueChange={handleDistrictChange}
                   disabled={selectedDivision === "all"}
                 >
-                  <SelectValue placeholder="All Districts" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Districts</SelectItem>
-                  {selectedDivision !== "all" && getDistrictsByDivision(selectedDivision).map(dist => (
-                    <SelectItem key={dist} value={dist}>{dist}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  <SelectTrigger 
+                    className={`w-full sm:w-[160px] h-9 border-border/50 bg-background rounded-md ${
+                      selectedDivision === "all" ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    disabled={selectedDivision === "all"}
+                  >
+                    <SelectValue placeholder="All Districts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Districts</SelectItem>
+                    {selectedDivision !== "all" && getDistrictsByDivision(selectedDivision).map(dist => (
+                      <SelectItem key={dist} value={dist}>{dist}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Tehsil Filter */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Tehsil:</label>
-              <Select 
-                value={selectedTehsil} 
-                onValueChange={setSelectedTehsil}
-                disabled={selectedDivision === "all" || selectedDistrict === "all"}
-              >
-                <SelectTrigger 
-                  className={`w-[160px] h-9 border-border/50 bg-background rounded-md ${
-                    selectedDivision === "all" || selectedDistrict === "all" ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+              {/* Tehsil Filter */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 sm:flex-shrink-0">
+                <label className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">Tehsil:</label>
+                <Select 
+                  value={selectedTehsil} 
+                  onValueChange={setSelectedTehsil}
                   disabled={selectedDivision === "all" || selectedDistrict === "all"}
                 >
-                  <SelectValue placeholder="All Tehsils" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Tehsils</SelectItem>
-                  {selectedDivision !== "all" && selectedDistrict !== "all" && 
-                    getTehsilsByDivisionAndDistrict(selectedDivision, selectedDistrict).map(teh => (
-                      <SelectItem key={teh} value={teh}>{teh}</SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
-            </div>
+                  <SelectTrigger 
+                    className={`w-full sm:w-[160px] h-9 border-border/50 bg-background rounded-md ${
+                      selectedDivision === "all" || selectedDistrict === "all" ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    disabled={selectedDivision === "all" || selectedDistrict === "all"}
+                  >
+                    <SelectValue placeholder="All Tehsils" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tehsils</SelectItem>
+                    {selectedDivision !== "all" && selectedDistrict !== "all" && 
+                      getTehsilsByDivisionAndDistrict(selectedDivision, selectedDistrict).map(teh => (
+                        <SelectItem key={teh} value={teh}>{teh}</SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Clear Filters Button */}
-            {(selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedDivision("all");
-                  setSelectedDistrict("all");
-                  setSelectedTehsil("all");
-                }}
-                className="h-9 px-2 text-xs font-medium flex-shrink-0"
-              >
-                Clear Filters
-              </Button>
-            )}
+              {/* Clear Filters Button */}
+              {(selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDivision("all");
+                    setSelectedDistrict("all");
+                    setSelectedTehsil("all");
+                  }}
+                  className="h-9 px-3 text-xs font-medium w-full sm:w-auto mt-2 sm:mt-0"
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
