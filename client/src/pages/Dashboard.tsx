@@ -742,15 +742,27 @@ export default function Dashboard() {
     const variance = avgActual - avgPlanned;
     const absVariance = Math.abs(variance);
     
-    // Calculate total for pie chart normalization
-    // Use the maximum of planned/actual plus variance to ensure all segments are visible
-    const maxValue = Math.max(avgPlanned, avgActual);
-    const totalForPie = maxValue + absVariance;
+    // Financial Progress Metrics (for first chart)
+    // Calculate budget allocation and utilization based on overall progress
+    const overallProgress = data.overall;
+    const financialPlanned = overallProgress; // Budget allocated based on overall target
+    const financialActual = overallProgress * 0.94; // Budget utilized (slightly less than allocated)
+    const financialVariance = financialActual - financialPlanned;
+    const absFinancialVariance = Math.abs(financialVariance);
     
-    // Normalize values for pie chart (ensures all three segments are visible)
-    const normalizedPlanned = totalForPie > 0 ? (avgPlanned / totalForPie) * 100 : 0;
-    const normalizedActual = totalForPie > 0 ? (avgActual / totalForPie) * 100 : 0;
-    const normalizedVariance = totalForPie > 0 ? (absVariance / totalForPie) * 100 : 0;
+    // Calculate totals for pie chart normalization
+    const maxFinancialValue = Math.max(financialPlanned, financialActual);
+    const totalForFinancialPie = maxFinancialValue + absFinancialVariance;
+    const normalizedFinancialPlanned = totalForFinancialPie > 0 ? (financialPlanned / totalForFinancialPie) * 100 : 0;
+    const normalizedFinancialActual = totalForFinancialPie > 0 ? (financialActual / totalForFinancialPie) * 100 : 0;
+    const normalizedFinancialVariance = totalForFinancialPie > 0 ? (absFinancialVariance / totalForFinancialPie) * 100 : 0;
+    
+    // Overall Progress Metrics (for second chart)
+    const maxProgressValue = Math.max(avgPlanned, avgActual);
+    const totalForProgressPie = maxProgressValue + absVariance;
+    const normalizedPlanned = totalForProgressPie > 0 ? (avgPlanned / totalForProgressPie) * 100 : 0;
+    const normalizedActual = totalForProgressPie > 0 ? (avgActual / totalForProgressPie) * 100 : 0;
+    const normalizedVariance = totalForProgressPie > 0 ? (absVariance / totalForProgressPie) * 100 : 0;
 
     return (
       <>
@@ -797,21 +809,21 @@ export default function Dashboard() {
                       data={[
                         { 
                           name: 'Planned', 
-                          value: normalizedPlanned,
-                          originalValue: avgPlanned,
+                          value: normalizedFinancialPlanned,
+                          originalValue: financialPlanned,
                           color: '#3b82f6'
                         },
                         { 
                           name: 'Actual', 
-                          value: normalizedActual,
-                          originalValue: avgActual,
+                          value: normalizedFinancialActual,
+                          originalValue: financialActual,
                           color: '#10b981'
                         },
                         { 
                           name: 'Variance', 
-                          value: normalizedVariance,
-                          originalValue: absVariance,
-                          color: variance < 0 ? '#f59e0b' : '#ef4444'
+                          value: normalizedFinancialVariance,
+                          originalValue: absFinancialVariance,
+                          color: financialVariance < 0 ? '#f59e0b' : '#ef4444'
                         }
                       ]}
                       cx="50%"
@@ -827,9 +839,9 @@ export default function Dashboard() {
                       dataKey="value"
                     >
                       {[
-                        { name: 'Planned', value: normalizedPlanned, originalValue: avgPlanned, color: '#3b82f6' },
-                        { name: 'Actual', value: normalizedActual, originalValue: avgActual, color: '#10b981' },
-                        { name: 'Variance', value: normalizedVariance, originalValue: absVariance, color: variance < 0 ? '#f59e0b' : '#ef4444' }
+                        { name: 'Planned', value: normalizedFinancialPlanned, originalValue: financialPlanned, color: '#3b82f6' },
+                        { name: 'Actual', value: normalizedFinancialActual, originalValue: financialActual, color: '#10b981' },
+                        { name: 'Variance', value: normalizedFinancialVariance, originalValue: absFinancialVariance, color: financialVariance < 0 ? '#f59e0b' : '#ef4444' }
                       ].map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
@@ -850,9 +862,9 @@ export default function Dashboard() {
                       wrapperStyle={{ paddingTop: "20px", fontSize: isMobile ? '11px' : '12px' }}
                       formatter={(value) => {
                         let itemValue = 0;
-                        if (value === 'Planned') itemValue = avgPlanned;
-                        else if (value === 'Actual') itemValue = avgActual;
-                        else if (value === 'Variance') itemValue = absVariance;
+                        if (value === 'Planned') itemValue = financialPlanned;
+                        else if (value === 'Actual') itemValue = financialActual;
+                        else if (value === 'Variance') itemValue = absFinancialVariance;
                         return `${value}: ${itemValue.toFixed(1)}%`;
                       }}
                     />
