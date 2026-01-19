@@ -369,7 +369,7 @@ const CITY_NAMES: Record<string, string> = {
 const CARD_COLORS = ["emerald", "blue", "orange", "purple", "indigo", "teal", "pink", "cyan", "amber", "red"];
 
 export default function Dashboard() {
-  const [viewType, setViewType] = useState<"divisions" | "districts" | "tehsils" | "">("");
+  const [viewType, setViewType] = useState<"divisions" | "districts" | "tehsils" | "">("divisions");
   const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
   const [selectedItemType, setSelectedItemType] = useState<"division" | "district" | "tehsil" | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -1016,24 +1016,16 @@ export default function Dashboard() {
               className="rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm font-semibold"
               onClick={async () => {
                 try {
+                  // Pass the full data structure including PhaseProgress objects with timeline
                   await exportDashboardToPPTX({
                         cityName: viewType === "divisions" ? "All Punjab Divisions" : 
                                  viewType === "districts" ? "All Punjab Districts" : 
                                  "All Punjab Tehsils",
-                        cityData: {
-                          surveys: getProgressValue(aggregatedData.surveys),
-                          foundations: getProgressValue(aggregatedData.foundations),
-                          cabinet: getProgressValue(aggregatedData.cabinet),
-                          cable: getProgressValue(aggregatedData.cable),
-                          controlRoom: getProgressValue(aggregatedData.controlRoom),
-                          ppic3: getProgressValue(aggregatedData.ppic3),
-                          overall: aggregatedData.overall,
-                          timeline: aggregatedData.timeline,
-                        },
+                        cityData: aggregatedData as any, // Type assertion needed due to PhaseProgress union type
                     installationPhases: installationPhases.map(phase => ({
                       key: phase.key,
                       title: phase.title,
-                          percentage: getProgressValue(aggregatedData[phase.key]),
+                      percentage: getProgressValue(aggregatedData[phase.key]),
                     })),
                   });
                   setShowSuccessDialog(true);
@@ -1062,7 +1054,7 @@ export default function Dashboard() {
                   setSelectedItemName(null);
                   setSelectedItemType(null);
                 }}
-                className="rounded-xl"
+                className="rounded-xl cursor-pointer"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to {viewType === "divisions" ? "Divisions" : viewType === "districts" ? "Districts" : "Tehsils"}
@@ -1081,51 +1073,50 @@ export default function Dashboard() {
         {/* Hierarchy Cards View with Charts */}
         {!selectedItemName && viewType === "divisions" && aggregatedData && (
           <div className="space-y-6">
-                    <div>
-              <h2 className="text-xl font-bold font-heading mb-1">All Punjab Divisions</h2>
-              <p className="text-sm text-muted-foreground">Overall progress across all divisions of Punjab (sorted by progress)</p>
-                    </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold font-heading mb-1">All Punjab Divisions</h2>
+                <p className="text-sm text-muted-foreground">Overall progress across all divisions of Punjab (sorted by progress)</p>
+              </div>
+              
+              {/* Show More/Less Button */}
+              {divisionsData.length > 4 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setExpandedDivisions(!expandedDivisions)}
+                  className="rounded-xl h-9 whitespace-nowrap text-white border-[#101a3c] hover:border-[#101a3c] cursor-pointer"
+                  style={{ backgroundColor: '#101a3c' }}
+                >
+                  {expandedDivisions ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-2 text-white" />
+                      Show Less ({divisionsData.length - 4} hidden)
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-2 text-white" />
+                      Show More ({divisionsData.length - 4} more)
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
             
             {/* Division Cards */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {(expandedDivisions ? divisionsData : divisionsData.slice(0, 4)).map((div) => (
-                  <HierarchyCard
-                    key={div.name}
-                    title={div.name}
-                    overallProgress={div.overall}
-                    color={div.color}
-                    onClick={() => {
-                      setSelectedItemName(div.name);
-                      setSelectedItemType("division");
-                    }}
-                  />
-                ))}
-                  </div>
-              
-              {divisionsData.length > 4 && (
-                <div className="flex justify-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => setExpandedDivisions(!expandedDivisions)}
-                    className="rounded-xl text-white border-[#101a3c] hover:border-[#101a3c]"
-                    style={{ backgroundColor: '#101a3c' }}
-                  >
-                    {expandedDivisions ? (
-                      <>
-                        <ChevronUp className="h-4 w-4 mr-2 text-white" />
-                        Show Less ({divisionsData.length - 4} hidden)
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4 mr-2 text-white" />
-                        Show More ({divisionsData.length - 4} more)
-                      </>
-                    )}
-                  </Button>
-                  </div>
-              )}
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {(expandedDivisions ? divisionsData : divisionsData.slice(0, 4)).map((div) => (
+                <HierarchyCard
+                  key={div.name}
+                  title={div.name}
+                  overallProgress={div.overall}
+                  color={div.color}
+                  onClick={() => {
+                    setSelectedItemName(div.name);
+                    setSelectedItemType("division");
+                  }}
+                />
+              ))}
+            </div>
 
             {/* Aggregated Charts Section - Same as detail view */}
             {renderAggregatedCharts("All Punjab Divisions", aggregatedData)}
@@ -1134,50 +1125,49 @@ export default function Dashboard() {
 
         {!selectedItemName && viewType === "districts" && aggregatedData && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold font-heading mb-1">All Punjab Districts</h2>
-              <p className="text-sm text-muted-foreground">Overall progress across all districts of Punjab (sorted by progress)</p>
-                      </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold font-heading mb-1">All Punjab Districts</h2>
+                <p className="text-sm text-muted-foreground">Overall progress across all districts of Punjab (sorted by progress)</p>
+              </div>
+              
+              {/* Show More/Less Button */}
+              {districtsData.length > 4 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setExpandedDistricts(!expandedDistricts)}
+                  className="rounded-xl h-9 whitespace-nowrap text-white border-[#101a3c] hover:border-[#101a3c] cursor-pointer"
+                  style={{ backgroundColor: '#101a3c' }}
+                >
+                  {expandedDistricts ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-2 text-white" />
+                      Show Less ({districtsData.length - 4} hidden)
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-2 text-white" />
+                      Show More ({districtsData.length - 4} more)
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
             
             {/* District Cards */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {(expandedDistricts ? districtsData : districtsData.slice(0, 4)).map((dist) => (
-                  <HierarchyCard
-                    key={dist.name}
-                    title={dist.name}
-                    overallProgress={dist.overall}
-                    color={dist.color}
-                    onClick={() => {
-                      setSelectedItemName(dist.name);
-                      setSelectedItemType("district");
-                    }}
-                  />
-                ))}
-                      </div>
-              
-              {districtsData.length > 4 && (
-                <div className="flex justify-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => setExpandedDistricts(!expandedDistricts)}
-                    className="rounded-xl text-white border-[#101a3c] hover:border-[#101a3c]"
-                    style={{ backgroundColor: '#101a3c' }}
-                  >
-                    {expandedDistricts ? (
-                      <>
-                        <ChevronUp className="h-4 w-4 mr-2 text-white" />
-                        Show Less ({districtsData.length - 4} hidden)
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4 mr-2 text-white" />
-                        Show More ({districtsData.length - 4} more)
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {(expandedDistricts ? districtsData : districtsData.slice(0, 4)).map((dist) => (
+                <HierarchyCard
+                  key={dist.name}
+                  title={dist.name}
+                  overallProgress={dist.overall}
+                  color={dist.color}
+                  onClick={() => {
+                    setSelectedItemName(dist.name);
+                    setSelectedItemType("district");
+                  }}
+                />
+              ))}
             </div>
 
             {/* Aggregated Charts Section */}
@@ -1257,7 +1247,7 @@ export default function Dashboard() {
                     <Button
                       variant="outline"
                       onClick={handleToggleAllGroups}
-                      className="rounded-xl h-9 whitespace-nowrap text-white border-[#101a3c] hover:border-[#101a3c]"
+                      className="rounded-xl h-9 whitespace-nowrap text-white border-[#101a3c] hover:border-[#101a3c] cursor-pointer"
                       style={{ backgroundColor: '#101a3c' }}
                     >
                       {allTehsilGroupsExpanded ? (
@@ -1336,7 +1326,7 @@ export default function Dashboard() {
                               return updated;
                             });
                           }}
-                          className="rounded-xl text-white border-[#101a3c] hover:border-[#101a3c]"
+                          className="rounded-xl text-white border-[#101a3c] hover:border-[#101a3c] cursor-pointer"
                           style={{ backgroundColor: '#101a3c' }}
                         >
                           {isExpanded ? (
