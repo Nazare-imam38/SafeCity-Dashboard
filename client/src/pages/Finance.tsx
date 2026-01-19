@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, LucideBanknote, Wallet, AlertCircle, CheckCircle2, Filter } from "lucide-react";
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
@@ -330,133 +330,6 @@ export default function Finance() {
               </Card>
             );
           })}
-        </div>
-
-        {/* Financial Progress Pie Charts */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Financial Progress Pie Chart */}
-          <Card className="border-2 transition-colors hover:border-[#101a3c]">
-            <CardHeader>
-              <CardTitle>Financial Progress Overview</CardTitle>
-              <CardDescription>Planned vs Actual vs Variance breakdown</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full" style={{ height: 'clamp(280px, 40vh, 400px)' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { 
-                          name: 'Planned', 
-                          value: totalPlanned,
-                          color: '#3b82f6'
-                        },
-                        { 
-                          name: 'Actual', 
-                          value: Math.max(0, totalActual),
-                          color: '#10b981'
-                        },
-                        { 
-                          name: 'Variance', 
-                          value: Math.abs(totalActual - totalPlanned),
-                          color: totalActual < totalPlanned ? '#f59e0b' : '#ef4444'
-                        }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => {
-                        if (percent < 0.03) return ''; // Hide labels for very small slices
-                        return `${name}: ${(percent * 100).toFixed(1)}%`;
-                      }}
-                      outerRadius={isMobile ? 80 : isTablet ? 100 : 120}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {[
-                        { name: 'Planned', value: totalPlanned, color: '#3b82f6' },
-                        { name: 'Actual', value: Math.max(0, totalActual), color: '#10b981' },
-                        { name: 'Variance', value: Math.abs(totalActual - totalPlanned), color: totalActual < totalPlanned ? '#f59e0b' : '#ef4444' }
-                      ].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "8px"
-                      }}
-                      formatter={(value: number) => formatPKR(value)}
-                    />
-                    <Legend
-                      wrapperStyle={{ paddingTop: "20px", fontSize: isMobile ? '11px' : '12px' }}
-                      formatter={(value) => {
-                        let itemValue = 0;
-                        if (value === 'Planned') itemValue = totalPlanned;
-                        else if (value === 'Actual') itemValue = totalActual;
-                        else if (value === 'Variance') itemValue = Math.abs(totalActual - totalPlanned);
-                        
-                        return `${value}: ${formatPKR(itemValue)}`;
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Department Budget Pie Chart */}
-          <Card className="border-2 transition-colors hover:border-[#101a3c]">
-            <CardHeader>
-              <CardTitle>Department Budget Distribution</CardTitle>
-              <CardDescription>Budget allocation by department</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full" style={{ height: 'clamp(280px, 40vh, 400px)' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={expenseData.map(dept => ({
-                        name: dept.department,
-                        value: dept.planned,
-                        color: dept.color
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => {
-                        if (percent < 0.05) return ''; // Hide labels for very small slices
-                        return `${name}: ${(percent * 100).toFixed(1)}%`;
-                      }}
-                      outerRadius={isMobile ? 80 : isTablet ? 100 : 120}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {expenseData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "8px"
-                      }}
-                      formatter={(value: number) => formatPKR(value)}
-                    />
-                    <Legend
-                      wrapperStyle={{ paddingTop: "20px", fontSize: isMobile ? '11px' : '12px' }}
-                      formatter={(value) => {
-                        const item = expenseData.find(d => d.department === value);
-                        return `${value}: ${item ? formatPKR(item.planned) : ''}`;
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Budget vs Actual Charts */}

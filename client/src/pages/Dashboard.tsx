@@ -9,6 +9,9 @@ import { PlannedVsActualChart } from "@/components/dashboard/PlannedVsActualChar
 import { HierarchyCard } from "@/components/dashboard/HierarchyCard";
 import { SubProject } from "@/components/dashboard/SubProjectCard";
 import { exportDashboardToPPTX } from "@/utils/exportToPPTX";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { useWindowSize } from "@/hooks/use-window-size";
+import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
   getAllDivisions,
   getDistrictsByDivision,
@@ -710,6 +713,45 @@ export default function Dashboard() {
 
   // Render aggregated charts function
   const renderAggregatedCharts = (title: string, data: CityInstallationData) => {
+    const { width } = useWindowSize();
+    const isMobile = width < 640;
+    const isTablet = width >= 640 && width < 1024;
+
+    // Calculate overall planned and actual from all phases
+    let totalPlanned = 0;
+    let totalActual = 0;
+    let phaseCount = 0;
+
+    installationPhases.forEach((phase) => {
+      const progress = data[phase.key];
+      if (hasDetailedProgress(progress)) {
+        totalPlanned += progress.planned;
+        totalActual += progress.actual;
+        phaseCount++;
+      } else {
+        // If no detailed progress, use the number value as both planned and actual
+        const value = getProgressValue(progress);
+        totalPlanned += value;
+        totalActual += value;
+        phaseCount++;
+      }
+    });
+
+    const avgPlanned = phaseCount > 0 ? totalPlanned / phaseCount : 0;
+    const avgActual = phaseCount > 0 ? totalActual / phaseCount : 0;
+    const variance = avgActual - avgPlanned;
+    const absVariance = Math.abs(variance);
+    
+    // Calculate total for pie chart normalization
+    // Use the maximum of planned/actual plus variance to ensure all segments are visible
+    const maxValue = Math.max(avgPlanned, avgActual);
+    const totalForPie = maxValue + absVariance;
+    
+    // Normalize values for pie chart (ensures all three segments are visible)
+    const normalizedPlanned = totalForPie > 0 ? (avgPlanned / totalForPie) * 100 : 0;
+    const normalizedActual = totalForPie > 0 ? (avgActual / totalForPie) * 100 : 0;
+    const normalizedVariance = totalForPie > 0 ? (absVariance / totalForPie) * 100 : 0;
+
     return (
       <>
         {/* Installation Phase Cards */}
@@ -737,6 +779,167 @@ export default function Dashboard() {
               );
             })}
           </div>
+        </div>
+
+        {/* Financial Progress Pie Charts */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Financial Progress Pie Chart */}
+          <Card className="border-2 transition-colors hover:border-[#101a3c]">
+            <CardHeader>
+              <CardTitle>Financial Progress Overview</CardTitle>
+              <CardDescription>Planned vs Actual vs Variance breakdown</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full" style={{ height: isMobile ? '280px' : isTablet ? '320px' : '400px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { 
+                          name: 'Planned', 
+                          value: normalizedPlanned,
+                          originalValue: avgPlanned,
+                          color: '#3b82f6'
+                        },
+                        { 
+                          name: 'Actual', 
+                          value: normalizedActual,
+                          originalValue: avgActual,
+                          color: '#10b981'
+                        },
+                        { 
+                          name: 'Variance', 
+                          value: normalizedVariance,
+                          originalValue: absVariance,
+                          color: variance < 0 ? '#f59e0b' : '#ef4444'
+                        }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, payload }) => {
+                        const percent = (payload.value / 100) * 100;
+                        if (percent < 2) return ''; // Hide very small labels
+                        return `${name}: ${payload.originalValue.toFixed(1)}%`;
+                      }}
+                      outerRadius={isMobile ? 60 : isTablet ? 75 : 90}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Planned', value: normalizedPlanned, originalValue: avgPlanned, color: '#3b82f6' },
+                        { name: 'Actual', value: normalizedActual, originalValue: avgActual, color: '#10b981' },
+                        { name: 'Variance', value: normalizedVariance, originalValue: absVariance, color: variance < 0 ? '#f59e0b' : '#ef4444' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        borderColor: "hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: isMobile ? '11px' : '12px'
+                      }}
+                      formatter={(value: number, name: string, props: any) => {
+                        const originalValue = props.payload?.originalValue ?? value;
+                        return [`${originalValue.toFixed(1)}%`, name];
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ paddingTop: "20px", fontSize: isMobile ? '11px' : '12px' }}
+                      formatter={(value) => {
+                        let itemValue = 0;
+                        if (value === 'Planned') itemValue = avgPlanned;
+                        else if (value === 'Actual') itemValue = avgActual;
+                        else if (value === 'Variance') itemValue = absVariance;
+                        return `${value}: ${itemValue.toFixed(1)}%`;
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Overall Progress Pie Chart */}
+          <Card className="border-2 transition-colors hover:border-[#101a3c]">
+            <CardHeader>
+              <CardTitle>Overall Progress</CardTitle>
+              <CardDescription>Planned vs Actual progress with variance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full" style={{ height: isMobile ? '280px' : isTablet ? '320px' : '400px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { 
+                          name: 'Planned Progress', 
+                          value: normalizedPlanned,
+                          originalValue: avgPlanned,
+                          color: '#3b82f6'
+                        },
+                        { 
+                          name: 'Actual Progress', 
+                          value: normalizedActual,
+                          originalValue: avgActual,
+                          color: '#10b981'
+                        },
+                        { 
+                          name: 'Variance', 
+                          value: normalizedVariance,
+                          originalValue: absVariance,
+                          color: variance < 0 ? '#f59e0b' : '#ef4444'
+                        }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, payload }) => {
+                        const percent = (payload.value / 100) * 100;
+                        if (percent < 2) return ''; // Hide very small labels
+                        return `${name}: ${payload.originalValue.toFixed(1)}%`;
+                      }}
+                      outerRadius={isMobile ? 60 : isTablet ? 75 : 90}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Planned Progress', value: normalizedPlanned, originalValue: avgPlanned, color: '#3b82f6' },
+                        { name: 'Actual Progress', value: normalizedActual, originalValue: avgActual, color: '#10b981' },
+                        { name: 'Variance', value: normalizedVariance, originalValue: absVariance, color: variance < 0 ? '#f59e0b' : '#ef4444' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        borderColor: "hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: isMobile ? '11px' : '12px'
+                      }}
+                      formatter={(value: number, name: string, props: any) => {
+                        const originalValue = props.payload?.originalValue ?? value;
+                        return [`${originalValue.toFixed(1)}%`, name];
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ paddingTop: "20px", fontSize: isMobile ? '11px' : '12px' }}
+                      formatter={(value) => {
+                        let itemValue = 0;
+                        if (value === 'Planned Progress') itemValue = avgPlanned;
+                        else if (value === 'Actual Progress') itemValue = avgActual;
+                        else if (value === 'Variance') itemValue = absVariance;
+                        return `${value}: ${itemValue.toFixed(1)}%`;
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Overall Progress Card */}
