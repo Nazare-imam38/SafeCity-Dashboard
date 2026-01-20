@@ -124,7 +124,29 @@ export function InstallationCard({
           {/* Show dual progress bars if actual/planned provided */}
           {showDualProgress ? (
             <div className="space-y-1.5">
-              {/* Actual Progress */}
+              {/* Planned Progress - Above */}
+              <div>
+                <div className="flex justify-between text-[7px] mb-0.5 text-muted-foreground">
+                  <span>Planned</span>
+                  <span className="font-semibold">{plannedProgress.toFixed(1)}%</span>
+                  {variance !== null && (
+                    <span className={cn(
+                      "font-semibold ml-1",
+                      variance >= 0 ? "text-emerald-600" : "text-red-600"
+                    )}>
+                      {variance >= 0 ? "+" : ""}{variance.toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+                <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/50 shadow-inner">
+                  <div 
+                    className={cn("h-full rounded-full transition-all duration-1000 ease-out opacity-40", colors.progress)}
+                    style={{ width: `${Math.min(100, plannedProgress)}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* Actual Progress - Below */}
               <div>
                 <div className="flex justify-between text-[7px] mb-0.5 text-muted-foreground">
                   <span>Actual</span>
@@ -134,32 +156,6 @@ export function InstallationCard({
                   <div 
                     className={cn("h-full rounded-full transition-all duration-1000 ease-out", colors.progress)}
                     style={{ width: `${Math.min(100, actualProgress)}%` }}
-                  />
-                </div>
-              </div>
-              
-              {/* Planned Progress */}
-              <div>
-                <div className="flex justify-between text-[7px] mb-0.5 text-muted-foreground">
-                  <span>Planned</span>
-                  <span className="font-semibold">{plannedProgress.toFixed(1)}%</span>
-                  {variance !== null && (
-                    <span className={cn(
-                      "font-semibold",
-                      variance >= 0 ? "text-emerald-600" : "text-red-600"
-                    )}>
-                      {variance >= 0 ? "+" : ""}{variance.toFixed(1)}%
-                    </span>
-                  )}
-                </div>
-                <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/50 shadow-inner">
-                  <div 
-                    className="h-full rounded-full transition-all duration-1000 ease-out border border-dashed opacity-60"
-                    style={{ 
-                      width: `${Math.min(100, plannedProgress)}%`,
-                      borderColor: colors.progress.replace("bg-", "").replace("-500", "-600"),
-                      backgroundColor: "transparent"
-                    }}
                   />
                 </div>
               </div>
