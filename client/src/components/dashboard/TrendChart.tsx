@@ -43,24 +43,24 @@ export function TrendChart({ cityData, cityKey = "default" }: TrendChartProps) {
       </CardHeader>
       <CardContent>
         <div className="w-full" style={{ height: isMobile ? '240px' : isTablet ? '280px' : '320px' }}>
-          <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ 
               top: 10, 
               right: isMobile ? 5 : 10, 
               left: isMobile ? -10 : 0, 
               bottom: isMobile ? 5 : 0 
             }} key={cityKey}>
-              <defs>
-                <linearGradient id={gradientId1} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id={gradientId2} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+            <defs>
+              <linearGradient id={gradientId1} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id={gradientId2} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0}/>
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="month" 
                 axisLine={false} 
@@ -74,7 +74,7 @@ export function TrendChart({ cityData, cityKey = "default" }: TrendChartProps) {
                 tick={{ fontSize: isMobile ? 10 : isTablet ? 11 : 12, fill: "hsl(var(--muted-foreground))" }} 
                 domain={[0, 100]} 
               />
-              <Tooltip 
+            <Tooltip 
                 contentStyle={{ 
                   backgroundColor: "hsl(var(--card))", 
                   borderColor: "hsl(var(--border))", 
@@ -82,12 +82,12 @@ export function TrendChart({ cityData, cityKey = "default" }: TrendChartProps) {
                   fontSize: isMobile ? '10px' : '12px',
                   padding: isMobile ? '4px 6px' : '8px 12px'
                 }}
-                itemStyle={{ color: "hsl(var(--foreground))" }}
-              />
+              itemStyle={{ color: "hsl(var(--foreground))" }}
+            />
               <Area type="monotone" dataKey="overall" stroke="hsl(var(--primary))" fillOpacity={0} fill={`url(#${gradientId1})`} strokeWidth={isMobile ? 1.5 : 2} />
               <Area type="monotone" dataKey="surveys" stroke="#3b82f6" fillOpacity={0} fill={`url(#${gradientId2})`} strokeWidth={isMobile ? 1 : 1.5} strokeDasharray="5 5" />
-            </AreaChart>
-          </ResponsiveContainer>
+          </AreaChart>
+        </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>

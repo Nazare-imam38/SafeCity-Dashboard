@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useWindowSize } from "@/hooks/use-window-size";
 
 interface PhaseDistributionChartProps {
   data: {
@@ -11,6 +12,10 @@ interface PhaseDistributionChartProps {
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#a855f7", "#ef4444", "#eab308"];
 
 export function PhaseDistributionChart({ data }: PhaseDistributionChartProps) {
+  const { width } = useWindowSize();
+  const isMobile = width < 640;
+  const isTablet = width >= 640 && width < 1024;
+  
   const chartData = data.map((item, index) => ({
     name: item.phase,
     value: item.percentage,
@@ -69,7 +74,8 @@ export function PhaseDistributionChart({ data }: PhaseDistributionChartProps) {
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Pie Chart */}
           <div className="flex-1">
-            <ResponsiveContainer width="100%" height={280}>
+            <div className="w-full" style={{ height: isMobile ? '220px' : isTablet ? '260px' : '280px' }}>
+              <ResponsiveContainer width="100%" height="100%">
               <PieChart key={dataKey}>
                 <Pie
                   data={chartData}
@@ -77,8 +83,8 @@ export function PhaseDistributionChart({ data }: PhaseDistributionChartProps) {
                   cy="50%"
                   labelLine={false}
                   label={renderCustomLabel}
-                  outerRadius={90}
-                  innerRadius={30}
+                    outerRadius={isMobile ? 60 : isTablet ? 75 : 90}
+                    innerRadius={isMobile ? 20 : isTablet ? 25 : 30}
                   fill="#8884d8"
                   dataKey="value"
                   paddingAngle={2}
@@ -90,10 +96,11 @@ export function PhaseDistributionChart({ data }: PhaseDistributionChartProps) {
                 <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
+            </div>
           </div>
 
           {/* Custom Legend */}
-          <div className="flex flex-col justify-center gap-2 min-w-[200px]">
+          <div className="flex flex-col justify-center gap-2 min-w-[150px] sm:min-w-[200px]">
             {chartData.map((entry, index) => (
               <div
                 key={index}

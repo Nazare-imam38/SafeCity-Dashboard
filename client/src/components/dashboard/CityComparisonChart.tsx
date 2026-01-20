@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useWindowSize } from "@/hooks/use-window-size";
 
 interface CityComparisonChartProps {
   cityData: Record<string, { overall: number; name: string }>;
@@ -7,6 +8,10 @@ interface CityComparisonChartProps {
 }
 
 export function CityComparisonChart({ cityData, selectedCity }: CityComparisonChartProps) {
+  const { width } = useWindowSize();
+  const isMobile = width < 640;
+  const isTablet = width >= 640 && width < 1024;
+  
   const chartData = Object.entries(cityData)
     .map(([key, data]) => ({
       city: data.name,
@@ -28,27 +33,36 @@ export function CityComparisonChart({ cityData, selectedCity }: CityComparisonCh
         <CardDescription className="text-sm">Overall installation progress across all cities</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }} key={selectedCity}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-            <XAxis 
-              dataKey="city" 
-              angle={-45}
-              textAnchor="end"
-              height={80}
-              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-            />
-            <YAxis 
-              domain={[0, 100]}
-              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-              axisLine={false}
-              tickLine={false}
-            />
+        <div className="w-full" style={{ height: isMobile ? '280px' : isTablet ? '320px' : '350px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ 
+              top: 10, 
+              right: isMobile ? 5 : 10, 
+              left: isMobile ? -10 : 0, 
+              bottom: isMobile ? 80 : 20 
+            }} key={selectedCity}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="city" 
+                angle={isMobile ? -60 : -45}
+                textAnchor="end"
+                height={isMobile ? 100 : 80}
+                tick={{ fontSize: isMobile ? 9 : isTablet ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+              />
+              <YAxis 
+                domain={[0, 100]}
+                tick={{ fontSize: isMobile ? 10 : isTablet ? 11 : 12, fill: "hsl(var(--muted-foreground))" }}
+                axisLine={false}
+                tickLine={false}
+                width={isMobile ? 35 : 50}
+              />
             <Tooltip 
               contentStyle={{ 
                 backgroundColor: "hsl(var(--card))", 
                 borderColor: "hsl(var(--border))", 
-                borderRadius: "8px" 
+                borderRadius: "8px",
+                fontSize: isMobile ? '10px' : '12px',
+                padding: isMobile ? '4px 6px' : '8px 12px'
               }}
               formatter={(value: number) => [`${value}%`, "Overall Progress"]}
             />
@@ -59,6 +73,7 @@ export function CityComparisonChart({ cityData, selectedCity }: CityComparisonCh
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

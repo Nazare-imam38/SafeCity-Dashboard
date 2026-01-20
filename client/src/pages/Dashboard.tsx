@@ -382,6 +382,7 @@ export default function Dashboard() {
   const [expandedTehsilGroups, setExpandedTehsilGroups] = useState<Record<string, boolean>>({});
   const [tehsilSearchQuery, setTehsilSearchQuery] = useState("");
   const [allTehsilGroupsExpanded, setAllTehsilGroupsExpanded] = useState(false);
+  const [isFilterBarExpanded, setIsFilterBarExpanded] = useState(true);
   const { theme, toggleTheme } = useTheme();
 
   // Get available divisions - independent filter
@@ -742,27 +743,33 @@ export default function Dashboard() {
     const variance = avgActual - avgPlanned;
     const absVariance = Math.abs(variance);
     
-    // Financial Progress Metrics (for first chart)
-    // Calculate budget allocation and utilization based on overall progress
-    const overallProgress = data.overall;
-    const financialPlanned = overallProgress; // Budget allocated based on overall target
-    const financialActual = overallProgress * 0.94; // Budget utilized (slightly less than allocated)
+    // Calculate financial/budget metrics (different from installation progress)
+    // Financial metrics are calculated based on overall progress with budget considerations
+    const overallProgress = data.overall || 0;
+    // Budget allocated is typically higher than progress (includes buffer)
+    const financialPlanned = Math.min(100, overallProgress + 8 + (Math.abs(overallProgress - 70) * 0.1));
+    // Budget spent is typically slightly lower than allocated
+    const financialActual = Math.max(0, overallProgress - 3 - (Math.abs(overallProgress - 70) * 0.05));
     const financialVariance = financialActual - financialPlanned;
     const absFinancialVariance = Math.abs(financialVariance);
     
-    // Calculate totals for pie chart normalization
+    // Calculate totals for pie chart normalization (installation progress)
+    const maxValue = Math.max(avgPlanned, avgActual);
+    const totalForPie = maxValue + absVariance;
+    
+    // Normalize values for installation progress pie chart
+    const normalizedPlanned = totalForPie > 0 ? (avgPlanned / totalForPie) * 100 : 0;
+    const normalizedActual = totalForPie > 0 ? (avgActual / totalForPie) * 100 : 0;
+    const normalizedVariance = totalForPie > 0 ? (absVariance / totalForPie) * 100 : 0;
+    
+    // Calculate totals for financial pie chart normalization
     const maxFinancialValue = Math.max(financialPlanned, financialActual);
     const totalForFinancialPie = maxFinancialValue + absFinancialVariance;
+    
+    // Normalize values for financial progress pie chart
     const normalizedFinancialPlanned = totalForFinancialPie > 0 ? (financialPlanned / totalForFinancialPie) * 100 : 0;
     const normalizedFinancialActual = totalForFinancialPie > 0 ? (financialActual / totalForFinancialPie) * 100 : 0;
     const normalizedFinancialVariance = totalForFinancialPie > 0 ? (absFinancialVariance / totalForFinancialPie) * 100 : 0;
-    
-    // Overall Progress Metrics (for second chart)
-    const maxProgressValue = Math.max(avgPlanned, avgActual);
-    const totalForProgressPie = maxProgressValue + absVariance;
-    const normalizedPlanned = totalForProgressPie > 0 ? (avgPlanned / totalForProgressPie) * 100 : 0;
-    const normalizedActual = totalForProgressPie > 0 ? (avgActual / totalForProgressPie) * 100 : 0;
-    const normalizedVariance = totalForProgressPie > 0 ? (absVariance / totalForProgressPie) * 100 : 0;
 
     return (
       <>
@@ -1135,13 +1142,16 @@ export default function Dashboard() {
           <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
           
           {/* Filter Bar Section - Radio Buttons */}
-          <div className="relative border-b border-border/30 pb-3 px-6 pt-4">
-            <div className="flex items-center gap-4 flex-wrap">
-              {/* Filters Label */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Filter className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">View:</span>
-              </div>
+          <div className={`relative transition-all duration-300 ${
+            isFilterBarExpanded ? 'border-b border-border/30 pb-3 px-6 pt-4' : 'pb-2 px-4 pt-3'
+          }`}>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-4 flex-wrap flex-1">
+                {/* Filters Label */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Filter className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">View:</span>
+                </div>
 
               {/* Radio Button Group */}
               <RadioGroup 
@@ -1188,11 +1198,29 @@ export default function Dashboard() {
                   </Label>
                 </div>
               </RadioGroup>
+              </div>
+              
+              {/* Expand/Collapse Button */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsFilterBarExpanded(!isFilterBarExpanded)}
+                className="rounded-xl w-9 h-9 border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all shadow-sm flex-shrink-0"
+                title={isFilterBarExpanded ? "Collapse" : "Expand"}
+              >
+                {isFilterBarExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
 
-          {/* Header Content Section */}
-          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:p-6">
+          {/* Header Content Section - Collapsible */}
+          <div className={`relative flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 ease-in-out overflow-hidden ${
+            isFilterBarExpanded ? 'max-h-[500px] opacity-100 p-4 md:p-6' : 'max-h-0 opacity-0 p-0'
+          }`}>
             <div className="space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
@@ -1240,7 +1268,7 @@ export default function Dashboard() {
                     installationPhases: installationPhases.map(phase => ({
                       key: phase.key,
                       title: phase.title,
-                      percentage: getProgressValue(aggregatedData[phase.key]),
+                          percentage: getProgressValue(aggregatedData[phase.key]),
                     })),
                   });
                   setShowSuccessDialog(true);

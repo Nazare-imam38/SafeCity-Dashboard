@@ -1215,14 +1215,14 @@ ${imageOverrides}
     slidesFolder?.file(`slide${currentSlideNum}.xml`, createSlideXML(currentSlideNum, 'Milestone Progress', kpiImageFile, 1600, 500));
     currentSlideNum++;
     slideImageIndex++;
-
+    
     // Slide 3: Bar Chart
     const barImageFile = `image${slideImageIndex}.png`;
     slideImageMap[currentSlideNum] = barImageFile;
     slidesFolder?.file(`slide${currentSlideNum}.xml`, createSlideXML(currentSlideNum, 'Phase Breakdown Analysis', barImageFile, 1200, 700));
     currentSlideNum++;
     slideImageIndex++;
-
+    
     // Slide 4: Pie Chart
     const pieImageFile = `image${slideImageIndex}.png`;
     slideImageMap[currentSlideNum] = pieImageFile;
