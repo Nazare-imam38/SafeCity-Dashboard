@@ -28,10 +28,28 @@ export function StackedPhaseChart({ data }: StackedPhaseChartProps) {
   const isMobile = width < 640;
   const isTablet = width >= 640 && width < 1024;
 
-  const sortedData = [...data].sort((a, b) => {
-    const totalA = a.surveys + a.foundations + a.cabinet + a.cable + a.controlRoom + a.ppic3;
-    const totalB = b.surveys + b.foundations + b.cabinet + b.cable + b.controlRoom + b.ppic3;
-    return totalB - totalA;
+  // Calculate average progress for each city and transform data
+  // Each phase segment will be proportional to its value, but total bar height = average (0-100)
+  const transformedData = data.map(city => {
+    const average = (city.surveys + city.foundations + city.cabinet + city.cable + city.controlRoom + city.ppic3) / 6;
+    const total = city.surveys + city.foundations + city.cabinet + city.cable + city.controlRoom + city.ppic3;
+    
+    // Scale each phase proportionally so total equals average
+    // Each segment = (phase_value / total) * average
+    return {
+      city: city.city,
+      surveys: total > 0 ? (city.surveys / total) * average : 0,
+      foundations: total > 0 ? (city.foundations / total) * average : 0,
+      cabinet: total > 0 ? (city.cabinet / total) * average : 0,
+      cable: total > 0 ? (city.cable / total) * average : 0,
+      controlRoom: total > 0 ? (city.controlRoom / total) * average : 0,
+      ppic3: total > 0 ? (city.ppic3 / total) * average : 0,
+      average: average // Store for sorting
+    };
+  });
+
+  const sortedData = [...transformedData].sort((a, b) => {
+    return b.average - a.average;
   });
 
   return (
@@ -65,7 +83,7 @@ export function StackedPhaseChart({ data }: StackedPhaseChartProps) {
                 interval={0}
               />
               <YAxis 
-                domain={[0, 600]}
+                domain={[0, 100]}
                 tick={{ 
                   fontSize: isMobile ? 9 : isTablet ? 10 : 12, 
                   fill: "hsl(var(--muted-foreground))" 
@@ -74,7 +92,7 @@ export function StackedPhaseChart({ data }: StackedPhaseChartProps) {
                 tickLine={false}
                 width={isMobile ? 30 : isTablet ? 40 : 50}
                 label={{ 
-                  value: "Total Progress", 
+                  value: "Average Progress (%)", 
                   angle: -90, 
                   position: "insideLeft",
                   style: { fontSize: isMobile ? '9px' : isTablet ? '10px' : '12px' }
