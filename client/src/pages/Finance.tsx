@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
 import { useWindowSize } from "@/hooks/use-window-size";
+import { cn } from "@/lib/utils";
 import { 
   getAllDivisions,
   getDistrictsByDivision,
@@ -187,6 +188,61 @@ export default function Finance() {
     remaining: { value: kpiData.remaining, label: "Remaining Budget", icon: CheckCircle2, trend: (kpiData.remaining / kpiData.totalBudget) * 100 },
   };
 
+  const kpiCardVariants = {
+    totalBudget: {
+      accent: "border-l-blue-500",
+      bg: "bg-gradient-to-br from-card via-card to-blue-50/40 dark:to-blue-950/20",
+      blob: "bg-blue-500/10",
+      iconWrap: "bg-blue-50 dark:bg-blue-950/40",
+      icon: "text-blue-700 dark:text-blue-300",
+      value: "text-blue-900 dark:text-blue-100",
+      trend: "text-emerald-600 dark:text-emerald-400",
+    },
+    ytdUtilization: {
+      accent: "border-l-emerald-500",
+      bg: "bg-gradient-to-br from-card via-card to-emerald-50/40 dark:to-emerald-950/20",
+      blob: "bg-emerald-500/10",
+      iconWrap: "bg-emerald-50 dark:bg-emerald-950/40",
+      icon: "text-emerald-700 dark:text-emerald-300",
+      value: "text-emerald-900 dark:text-emerald-100",
+      trend: "text-emerald-600 dark:text-emerald-400",
+    },
+    remaining: {
+      accent: "border-l-violet-500",
+      bg: "bg-gradient-to-br from-card via-card to-violet-50/40 dark:to-violet-950/20",
+      blob: "bg-violet-500/10",
+      iconWrap: "bg-violet-50 dark:bg-violet-950/40",
+      icon: "text-violet-700 dark:text-violet-300",
+      value: "text-violet-900 dark:text-violet-100",
+      trend: "text-rose-600 dark:text-rose-400",
+    },
+    varianceGood: {
+      accent: "border-l-emerald-500",
+      bg: "bg-gradient-to-br from-card via-card to-emerald-50/40 dark:to-emerald-950/20",
+      blob: "bg-emerald-500/10",
+      iconWrap: "bg-emerald-50 dark:bg-emerald-950/40",
+      icon: "text-emerald-700 dark:text-emerald-300",
+      value: "text-emerald-600 dark:text-emerald-400",
+      trend: "text-emerald-600 dark:text-emerald-400",
+    },
+    varianceBad: {
+      accent: "border-l-rose-500",
+      bg: "bg-gradient-to-br from-card via-card to-rose-50/40 dark:to-rose-950/20",
+      blob: "bg-rose-500/10",
+      iconWrap: "bg-rose-50 dark:bg-rose-950/40",
+      icon: "text-rose-700 dark:text-rose-300",
+      value: "text-rose-600 dark:text-rose-400",
+      trend: "text-rose-600 dark:text-rose-400",
+    },
+  } as const;
+
+  const getKpiVariant = (key: string, value: number) => {
+    if (key === "variance") return value < 0 ? kpiCardVariants.varianceGood : kpiCardVariants.varianceBad;
+    if (key === "totalBudget") return kpiCardVariants.totalBudget;
+    if (key === "ytdUtilization") return kpiCardVariants.ytdUtilization;
+    return kpiCardVariants.remaining;
+  };
+
   return (
     <Layout title="Financial & Budget Analytics">
       <div className="flex flex-col gap-6">
@@ -295,35 +351,52 @@ export default function Finance() {
             const Icon = kpi.icon;
             const isPositive = kpi.trend >= 0;
             const isVariance = key === 'variance';
+            const variant = getKpiVariant(key, kpi.value);
             
             return (
-              <Card key={key} className="relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -mr-12 -mt-12"></div>
+              <Card
+                key={key}
+                className={cn(
+                  "relative overflow-hidden rounded-2xl border border-border/50 shadow-sm transition-all hover:shadow-lg",
+                  "border-l-4",
+                  variant.accent,
+                  variant.bg
+                )}
+              >
+                <div className={cn("absolute top-0 right-0 h-28 w-28 rounded-full blur-2xl -mr-12 -mt-12", variant.blob)} />
                 <CardHeader className="pb-2 relative">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
-                    <Icon className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex items-start justify-between gap-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground leading-tight">
+                      {kpi.label}
+                    </CardTitle>
+                    <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center border border-border/40 shadow-sm", variant.iconWrap)}>
+                      <Icon className={cn("h-5 w-5", variant.icon)} />
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="relative">
-                  <div className={`text-2xl font-bold font-heading ${isVariance && kpi.value < 0 ? 'text-emerald-500' : isVariance ? 'text-red-500' : ''}`}>
+                  <div className={cn("text-2xl font-bold font-heading", isVariance ? variant.value : "text-foreground")}>
                     {formatPKR(Math.abs(kpi.value))}
                   </div>
+
                   {!isVariance && (
                     <div className="flex items-center gap-1 mt-2">
                       {isPositive ? (
-                        <TrendingUp className="h-3 w-3 text-emerald-500" />
+                        <TrendingUp className={cn("h-3 w-3", variant.trend)} />
                       ) : (
-                        <TrendingDown className="h-3 w-3 text-red-500" />
+                        <TrendingDown className={cn("h-3 w-3", variant.trend)} />
                       )}
-                      <p className={`text-xs ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {key === 'ytdUtilization' ? `${kpi.trend.toFixed(1)}% Utilized` : `${Math.abs(kpi.trend).toFixed(1)}% from last year`}
+                      <p className={cn("text-xs", variant.trend)}>
+                        {key === 'ytdUtilization'
+                          ? `${kpi.trend.toFixed(1)}% Utilized`
+                          : `${Math.abs(kpi.trend).toFixed(1)}% from last year`}
                       </p>
                     </div>
                   )}
+
                   {isVariance && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {kpi.value < 0 ? 'Under budget (Good)' : 'Over budget'}
+                      {kpi.value < 0 ? "Under budget (Good)" : "Over budget"}
                     </p>
                   )}
                 </CardContent>

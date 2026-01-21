@@ -1,13 +1,12 @@
 import { Layout } from "@/components/layout/Layout";
 import { InstallationCard } from "@/components/dashboard/InstallationCard";
-import { TrendChart } from "@/components/dashboard/TrendChart";
 import { InstallationMap } from "@/components/dashboard/InstallationMap";
-import { PhaseBreakdownChart } from "@/components/dashboard/PhaseBreakdownChart";
 import { PhaseDistributionChart } from "@/components/dashboard/PhaseDistributionChart";
 import { PhaseTimelineChart } from "@/components/dashboard/PhaseTimelineChart";
 import { PlannedVsActualChart } from "@/components/dashboard/PlannedVsActualChart";
 import { HierarchyCard } from "@/components/dashboard/HierarchyCard";
 import { SubProject } from "@/components/dashboard/SubProjectCard";
+import { MilestoneDetailsPanel } from "@/components/dashboard/MilestoneDetailsPanel";
 import { exportDashboardToPPTX } from "@/utils/exportToPPTX";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useWindowSize } from "@/hooks/use-window-size";
@@ -86,6 +85,8 @@ interface CityInstallationData {
     overall: number;
   }[];
 }
+
+type PhaseKey = "surveys" | "foundations" | "cabinet" | "cable" | "controlRoom" | "ppic3";
 
 // Helper function to get progress value (backward compatible)
 const getProgressValue = (progress: number | PhaseProgress): number => {
@@ -383,6 +384,7 @@ export default function Dashboard() {
   const [tehsilSearchQuery, setTehsilSearchQuery] = useState("");
   const [allTehsilGroupsExpanded, setAllTehsilGroupsExpanded] = useState(false);
   const [isFilterBarExpanded, setIsFilterBarExpanded] = useState(true);
+  const [selectedMilestoneKey, setSelectedMilestoneKey] = useState<PhaseKey | null>(null);
   const { theme, toggleTheme } = useTheme();
 
   // Get available divisions - independent filter
@@ -771,6 +773,21 @@ export default function Dashboard() {
     const normalizedFinancialActual = totalForFinancialPie > 0 ? (financialActual / totalForFinancialPie) * 100 : 0;
     const normalizedFinancialVariance = totalForFinancialPie > 0 ? (absFinancialVariance / totalForFinancialPie) * 100 : 0;
 
+    // Selected milestone (if any) for this current view
+    const selectedPhaseMeta = selectedMilestoneKey
+      ? installationPhases.find(p => p.key === selectedMilestoneKey)
+      : null;
+    const selectedProgress = selectedMilestoneKey ? data[selectedMilestoneKey] : null;
+
+    const colorMap: Record<string, string> = {
+      blue: "#3b82f6",
+      green: "#10b981",
+      orange: "#f59e0b",
+      purple: "#a855f7",
+      red: "#ef4444",
+      yellow: "#eab308",
+    };
+
     return (
       <>
         {/* Installation Phase Cards */}
@@ -794,14 +811,19 @@ export default function Dashboard() {
                   color={phase.color}
                   actualProgress={hasDetails ? progress.actual : undefined}
                   plannedProgress={hasDetails ? progress.planned : undefined}
+                  selected={selectedMilestoneKey === phase.key}
+                  onClick={() => {
+                    setSelectedMilestoneKey(prev => (prev === phase.key ? null : phase.key));
+                  }}
                 />
               );
             })}
           </div>
         </div>
 
-        {/* Financial Progress Pie Charts */}
-        <div className="grid gap-6 md:grid-cols-2">
+        {/* Financial Progress Pie Charts (hide when a milestone KPI is selected) */}
+        {!selectedMilestoneKey && (
+          <div className="grid gap-6 md:grid-cols-2">
           {/* Financial Progress Pie Chart */}
           <Card className="border-2 transition-colors hover:border-[#101a3c]">
             <CardHeader>
@@ -959,7 +981,8 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-        </div>
+          </div>
+        )}
 
         {/* Overall Progress Card */}
         <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-card/95">
@@ -1013,28 +1036,33 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* Milestone details should appear beneath Overall Progress (and replace the old charts when selected) */}
+        {selectedMilestoneKey && selectedPhaseMeta && selectedProgress && hasDetailedProgress(selectedProgress) && (
+          <div className="space-y-4">
+            <MilestoneDetailsPanel
+              milestoneTitle={selectedPhaseMeta.title}
+              phase={{
+                actual: selectedProgress.actual,
+                planned: selectedProgress.planned,
+                subProjects: selectedProgress.subProjects,
+                timeline: selectedProgress.timeline,
+              }}
+              phaseColor={colorMap[selectedPhaseMeta.color] || "#6b7280"}
+              onClear={() => setSelectedMilestoneKey(null)}
+            />
+          </div>
+        )}
+
         {/* Charts Grid */}
-        <div className="space-y-4">
+        {!selectedMilestoneKey && (
+          <div className="space-y-4">
           <div>
             <h2 className="text-xl font-bold font-heading mb-1">Analytics & Insights</h2>
             <p className="text-sm text-muted-foreground">Detailed progress analysis for {title}</p>
           </div>
           
           <div className="grid gap-4 lg:grid-cols-12">
-            {/* Progress Timeline Chart */}
-            <div className="lg:col-span-7">
-              <TrendChart cityData={data.timeline} cityKey={title} />
-            </div>
-
-            {/* Phase Breakdown Chart */}
-            <div className="lg:col-span-5">
-              <PhaseBreakdownChart 
-                data={installationPhases.map(phase => ({
-                  phase: phase.title,
-                  percentage: getProgressValue(data[phase.key]),
-                }))}
-              />
-            </div>
+            {/* (Removed) Installation Progress Timeline + Phase Breakdown charts */}
           </div>
 
           {/* Phase Distribution Pie Chart */}
@@ -1090,7 +1118,8 @@ export default function Dashboard() {
               />
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </>
     );
   };

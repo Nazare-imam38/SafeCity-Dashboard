@@ -10,6 +10,8 @@ interface InstallationCardProps {
   color?: "blue" | "green" | "orange" | "purple" | "red" | "yellow" | "primary";
   actualProgress?: number;
   plannedProgress?: number;
+  onClick?: () => void;
+  selected?: boolean;
 }
 
 export function InstallationCard({ 
@@ -19,7 +21,9 @@ export function InstallationCard({
   className, 
   color = "primary",
   actualProgress,
-  plannedProgress
+  plannedProgress,
+  onClick,
+  selected = false,
 }: InstallationCardProps) {
   const showDualProgress = actualProgress !== undefined && plannedProgress !== undefined;
   
@@ -88,8 +92,21 @@ export function InstallationCard({
       colors.border,
       "border-r border-t border-b border-border/40 hover:border-border",
       "bg-gradient-to-br from-card to-card/95",
+      onClick && "cursor-pointer select-none",
+      selected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl",
       className
-    )}>
+    )}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (!onClick) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+    >
       {/* Subtle background gradient */}
       <div className={cn(
         "absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-20 -mr-12 -mt-12 transition-opacity group-hover:opacity-30",
