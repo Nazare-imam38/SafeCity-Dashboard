@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { PlannedVsActualChart } from "@/components/dashboard/PlannedVsActualChart";
 import type { SubProject } from "@/components/dashboard/SubProjectCard";
+import { useWindowSize } from "@/hooks/use-window-size";
 
 type PhaseTimelinePoint = {
   month: string;
@@ -218,31 +219,35 @@ function GanttMini({
 }) {
   const n = months.length || 1;
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const { width } = useWindowSize();
+  const isMobile = width < 640;
+  const isTablet = width >= 640 && width < 1024;
 
   const toggle = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Calculate grid columns: left label column + one column per month
-  const gridCols = `240px repeat(${n}, 1fr)`;
+  // Calculate grid columns: responsive left label column + one column per month
+  const labelColWidth = isMobile ? '140px' : isTablet ? '180px' : '240px';
+  const gridCols = `${labelColWidth} repeat(${n}, 1fr)`;
 
   return (
     <div className="space-y-4">
       {/* Header row with month labels */}
-      <div className="grid border-b-2 border-border" style={{ gridTemplateColumns: gridCols }}>
-        <div className="p-2 text-xs font-bold text-muted-foreground border-r border-border">WBS Subprocess</div>
+      <div className={`grid border-b-2 border-border ${isMobile ? 'overflow-x-auto min-w-full' : ''}`} style={{ gridTemplateColumns: gridCols }}>
+        <div className={`${isMobile ? 'p-1.5 text-[10px]' : 'p-2 text-xs'} font-bold text-muted-foreground border-r border-border`}>WBS Subprocess</div>
         {months.map((m, idx) => (
           <div
             key={m}
-            className="p-2 text-xs font-semibold text-center text-muted-foreground border-r border-border last:border-r-0"
+            className={`${isMobile ? 'p-1.5 text-[10px]' : 'p-2 text-xs'} font-semibold text-center text-muted-foreground border-r border-border last:border-r-0`}
           >
-            {m}
+            {isMobile ? m.substring(0, 3) : m}
           </div>
         ))}
       </div>
 
       {/* Task rows */}
-      <div className="space-y-1">
+      <div className={`space-y-1 ${isMobile ? 'overflow-x-auto min-w-full' : ''}`}>
         {tasks.map((t) => {
           const isExpanded = expanded[t.id] ?? true;
           const hasChildren = (t.children?.length ?? 0) > 0;
@@ -253,7 +258,7 @@ function GanttMini({
           return (
             <div key={t.id} className="space-y-1">
               {/* Parent task row */}
-              <div className="grid border-b border-border/50 relative overflow-hidden" style={{ gridTemplateColumns: gridCols }}>
+              <div className={`grid border-b border-border/50 relative ${isMobile ? 'min-w-full' : 'overflow-hidden'}`} style={{ gridTemplateColumns: gridCols }}>
                 {/* Left label column */}
                 <div className="p-2 border-r border-border flex items-center gap-2 min-w-0 relative z-10 bg-background">
                   {hasChildren && (
@@ -267,8 +272,8 @@ function GanttMini({
                     </button>
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold text-foreground truncate">{t.name}</div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold text-foreground truncate`}>{t.name}</div>
+                    <div className={`${isMobile ? 'text-[9px]' : 'text-[10px]'} text-muted-foreground`}>
                       Weight {(t.weight * 100).toFixed(0)}% •{" "}
                       <span
                         className={
@@ -307,9 +312,9 @@ function GanttMini({
                       backgroundColor: statusColor(t.status, baseColor),
                     }}
                   >
-                    <div className="text-[9px] font-semibold text-white truncate flex-1 pointer-events-auto">
+                    <div className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-semibold text-white truncate flex-1 pointer-events-auto`}>
                       <div className="truncate">{responsible}</div>
-                      <div className="text-[8px] opacity-90">{progress}% Done</div>
+                      <div className={`${isMobile ? 'text-[7px]' : 'text-[8px]'} opacity-90`}>{progress}% Done</div>
                     </div>
                   </div>
                 </div>
@@ -326,13 +331,13 @@ function GanttMini({
                     return (
                       <div
                         key={c.id}
-                        className="grid border-b border-border/30 relative overflow-hidden"
+                        className={`grid border-b border-border/30 relative ${isMobile ? 'min-w-full' : 'overflow-hidden'}`}
                         style={{ gridTemplateColumns: gridCols }}
                       >
                         {/* Left label column */}
                         <div className="p-1.5 border-r border-border min-w-0 relative z-10 bg-background">
-                          <div className="text-xs font-medium text-foreground/90 truncate">{c.name}</div>
-                          <div className="text-[9px] text-muted-foreground">
+                          <div className={`${isMobile ? 'text-[11px]' : 'text-xs'} font-medium text-foreground/90 truncate`}>{c.name}</div>
+                          <div className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} text-muted-foreground`}>
                             Weight {(c.weight * 100).toFixed(0)}%
                           </div>
                         </div>
@@ -360,9 +365,9 @@ function GanttMini({
                               opacity: 0.75,
                             }}
                           >
-                            <div className="text-[8px] font-medium text-white truncate flex-1 pointer-events-auto">
+                            <div className={`${isMobile ? 'text-[7px]' : 'text-[8px]'} font-medium text-white truncate flex-1 pointer-events-auto`}>
                               <div className="truncate">{childResponsible}</div>
-                              <div className="text-[7px] opacity-90">{childProgress}%</div>
+                              <div className={`${isMobile ? 'text-[6px]' : 'text-[7px]'} opacity-90`}>{childProgress}%</div>
                             </div>
                           </div>
                         </div>
@@ -391,6 +396,9 @@ export function MilestoneDetailsPanel({
   onClear?: () => void;
 }) {
   const [tab, setTab] = useState<"gantt" | "wbs" | "scurves">("gantt");
+  const { width } = useWindowSize();
+  const isMobile = width < 640;
+  const isTablet = width >= 640 && width < 1024;
 
   const subProjects = phase.subProjects ?? [];
   const timeline = phase.timeline ?? [];
@@ -431,10 +439,10 @@ export function MilestoneDetailsPanel({
   return (
     <Card className="border-2 border-primary/10">
       <CardHeader>
-        <div className="flex items-start justify-between gap-3">
+        <div className={`flex ${isMobile ? 'flex-col' : 'items-start justify-between'} gap-3`}>
           <div>
-            <CardTitle>{milestoneTitle} — Milestone KPIs</CardTitle>
-            <CardDescription>
+            <CardTitle className={isMobile ? 'text-base' : ''}>{milestoneTitle} — Milestone KPIs</CardTitle>
+            <CardDescription className={isMobile ? 'text-xs' : ''}>
               Gantt plan, WBS breakdown, and S-curves (planned vs actual) for this milestone.
             </CardDescription>
           </div>
@@ -442,7 +450,7 @@ export function MilestoneDetailsPanel({
             <button
               type="button"
               onClick={onClear}
-              className="h-9 px-3 rounded-xl border border-border/60 bg-background hover:bg-muted/40 text-sm font-semibold transition-colors"
+              className={`${isMobile ? 'w-full' : ''} h-9 px-3 rounded-xl border border-border/60 bg-background hover:bg-muted/40 ${isMobile ? 'text-xs' : 'text-sm'} font-semibold transition-colors`}
             >
               Clear
             </button>
@@ -451,10 +459,10 @@ export function MilestoneDetailsPanel({
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-          <TabsList className="w-full justify-start">
-            <TabsTrigger value="gantt">Gantt</TabsTrigger>
-            <TabsTrigger value="wbs">WBS Breakdown</TabsTrigger>
-            <TabsTrigger value="scurves">S-Curves</TabsTrigger>
+          <TabsList className={`w-full ${isMobile ? 'grid grid-cols-3' : 'justify-start'}`}>
+            <TabsTrigger value="gantt" className={isMobile ? 'text-xs' : ''}>Gantt</TabsTrigger>
+            <TabsTrigger value="wbs" className={isMobile ? 'text-xs' : ''}>WBS Breakdown</TabsTrigger>
+            <TabsTrigger value="scurves" className={isMobile ? 'text-xs' : ''}>S-Curves</TabsTrigger>
           </TabsList>
 
           <TabsContent value="gantt" className="mt-4">
@@ -464,8 +472,8 @@ export function MilestoneDetailsPanel({
           <TabsContent value="wbs" className="mt-4">
             <div className="space-y-6">
               <div>
-                <div className="text-sm font-semibold mb-2">WBS Weight Distribution</div>
-                <div className="h-[340px] w-full">
+                <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold mb-2`}>WBS Weight Distribution</div>
+                <div className={`w-full ${isMobile ? 'h-[280px]' : isTablet ? 'h-[320px]' : 'h-[340px]'}`}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -474,7 +482,7 @@ export function MilestoneDetailsPanel({
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        outerRadius={110}
+                        outerRadius={isMobile ? 70 : isTablet ? 90 : 110}
                         labelLine={false}
                         label={({ name, value, cx, cy, midAngle, innerRadius, outerRadius, index }) => {
                           const pct = value * 100;
@@ -486,6 +494,7 @@ export function MilestoneDetailsPanel({
                           
                           // Calculate the same color as the segment
                           const segmentColor = `hsl(${Math.round((index / Math.max(1, wbsPieData.length)) * 280)} 75% 55%)`;
+                          const fontSize = isMobile ? '10px' : isTablet ? '11px' : '12px';
                           
                           return (
                             <text
@@ -495,7 +504,7 @@ export function MilestoneDetailsPanel({
                               textAnchor={x > cx ? 'start' : 'end'}
                               dominantBaseline="central"
                               style={{ 
-                                fontSize: '12px', 
+                                fontSize, 
                                 fontWeight: 600,
                                 filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))'
                               }}
@@ -518,33 +527,39 @@ export function MilestoneDetailsPanel({
                           backgroundColor: "hsl(var(--card))",
                           borderColor: "hsl(var(--border))",
                           borderRadius: "8px",
+                          fontSize: isMobile ? '10px' : '12px',
+                          padding: isMobile ? '4px 6px' : '8px 12px'
                         }}
                       />
                       <Legend 
-                        wrapperStyle={{ fontSize: '12px' }}
-                        iconSize={12}
+                        wrapperStyle={{ 
+                          fontSize: isMobile ? '10px' : isTablet ? '11px' : '12px' 
+                        }}
+                        iconSize={isMobile ? 10 : isTablet ? 11 : 12}
+                        layout={isMobile ? 'vertical' : 'horizontal'}
+                        verticalAlign={isMobile ? 'bottom' : 'top'}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
               <div>
-                <div className="text-sm font-semibold mb-2">WBS Subprocess KPIs</div>
+                <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold mb-2`}>WBS Subprocess KPIs</div>
                 <div className="space-y-2">
                   {subProjects.map((s) => {
                     const variance = s.actualProgress - s.plannedProgress;
                     return (
-                      <div key={s.id} className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/50">
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold truncate">{s.name}</div>
-                          <div className="text-xs text-muted-foreground">Weight {(s.weight * 100).toFixed(0)}%</div>
+                      <div key={s.id} className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center justify-between'} rounded-lg border border-border/50 ${isMobile ? 'p-2' : 'p-3'} bg-card/50`}>
+                        <div className="min-w-0 flex-1">
+                          <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold truncate`}>{s.name}</div>
+                          <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground`}>Weight {(s.weight * 100).toFixed(0)}%</div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs text-muted-foreground">Actual / Planned</div>
-                          <div className="text-sm font-bold tabular-nums">
+                        <div className={`${isMobile ? 'text-left' : 'text-right'}`}>
+                          <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground`}>Actual / Planned</div>
+                          <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold tabular-nums`}>
                             {s.actualProgress.toFixed(1)}% / {s.plannedProgress.toFixed(1)}%
                           </div>
-                          <div className={`text-xs font-semibold ${variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                          <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} font-semibold ${variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                             {variance >= 0 ? "+" : ""}
                             {variance.toFixed(1)}%
                           </div>
