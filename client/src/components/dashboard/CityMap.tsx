@@ -1,11 +1,12 @@
-import { MapContainer, TileLayer, Marker, Popup, Circle, LayersControl, LayerGroup, Polyline } from "react-leaflet";
-import { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Circle, LayersControl, LayerGroup, Polyline, useMap } from "react-leaflet";
+import { useEffect, useState, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import { Camera, AlertTriangle, Truck, Shield, Activity, Landmark, Construction, Upload, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { LayerType } from "@/pages/GISLayers";
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -95,10 +96,30 @@ const CITY_COORDINATES: Record<string, [number, number]> = {
   gujranwala: [32.1877, 74.1945],
 };
 
-export function CityMap({ city = "lahore" }: { city?: string }) {
+// Component to handle map center changes
+function MapCenterHandler({ center }: { center: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center, map]);
+  return null;
+}
+
+export function CityMap({ 
+  city = "lahore", 
+  activeLayers = new Set(["cameras", "incidents", "patrols", "construction", "traffic"]),
+  searchQuery = "",
+  onMapReady
+}: { 
+  city?: string;
+  activeLayers?: Set<LayerType>;
+  searchQuery?: string;
+  onMapReady?: (map: any) => void;
+}) {
   const [isMounted, setIsMounted] = useState(false);
   const [constructionSites, setConstructionSites] = useState(MOCK_DATA.construction);
   const center = CITY_COORDINATES[city.toLowerCase()] || CITY_COORDINATES.lahore;
+  const mapRef = useRef<L.Map | null>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
     if (e.target.files && e.target.files[0]) {
@@ -112,9 +133,26 @@ export function CityMap({ city = "lahore" }: { city?: string }) {
     }
   };
 
+  // Filter data based on search query
+  const filteredCameras = MOCK_DATA.cameras.filter(cam => 
+    !searchQuery || cam.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredIncidents = MOCK_DATA.incidents.filter(inc => 
+    !searchQuery || inc.type.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredPatrols = MOCK_DATA.patrols.filter(unit => 
+    !searchQuery || unit.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mapRef.current && onMapReady) {
+      onMapReady(mapRef.current);
+    }
+  }, [onMapReady]);
 
   if (!isMounted) {
     return <div className="h-[360px] sm:h-[520px] lg:h-[600px] w-full bg-muted animate-pulse rounded-xl" />;
@@ -125,21 +163,35 @@ export function CityMap({ city = "lahore" }: { city?: string }) {
       <MapContainer 
         center={center} 
         zoom={12} 
-        scrollWheelZoom={false} 
+        scrollWheelZoom={true} 
         style={{ height: "100%", width: "100%" }}
-        key={city} // Force re-render on city change to fly to center
+        ref={mapRef}
       >
+        <MapCenterHandler center={center} />
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Operational Dark">
-            <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+            <TileLayer 
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Street View">
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <TileLayer 
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Satellite">
+            <TileLayer 
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
+            />
           </LayersControl.BaseLayer>
 
-          <LayersControl.Overlay checked name="CCTV Coverage">
-            <LayerGroup>
-              {MOCK_DATA.cameras.map(cam => (
+          {activeLayers.has("cameras") && (
+            <LayersControl.Overlay checked name="CCTV Coverage">
+              <LayerGroup>
+                {filteredCameras.map(cam => (
                 <Circle 
                   key={cam.id} 
                   center={cam.pos as [number, number]} 
@@ -160,13 +212,15 @@ export function CityMap({ city = "lahore" }: { city?: string }) {
                     </div>
                   </Popup>
                 </Circle>
-              ))}
-            </LayerGroup>
+                ))}
+              </LayerGroup>
           </LayersControl.Overlay>
+          )}
 
-          <LayersControl.Overlay checked name="Live Incidents">
-            <LayerGroup>
-              {MOCK_DATA.incidents.map(inc => (
+          {activeLayers.has("incidents") && (
+            <LayersControl.Overlay checked name="Live Incidents">
+              <LayerGroup>
+                {filteredIncidents.map(inc => (
                 <Marker key={inc.id} position={inc.pos as [number, number]} icon={getIncidentIcon(inc.severity)}>
                   <Popup>
                     <div className="p-2 w-48 font-sans">
@@ -183,13 +237,15 @@ export function CityMap({ city = "lahore" }: { city?: string }) {
                     </div>
                   </Popup>
                 </Marker>
-              ))}
-            </LayerGroup>
+                ))}
+              </LayerGroup>
           </LayersControl.Overlay>
+          )}
 
-          <LayersControl.Overlay checked name="Patrol Units">
-            <LayerGroup>
-              {MOCK_DATA.patrols.map(unit => (
+          {activeLayers.has("patrols") && (
+            <LayersControl.Overlay checked name="Patrol Units">
+              <LayerGroup>
+                {filteredPatrols.map(unit => (
                 <Marker key={unit.id} position={unit.pos as [number, number]} icon={getPatrolIcon(unit.color)}>
                   <Popup>
                     <div className="p-2 text-xs font-sans">
@@ -198,13 +254,15 @@ export function CityMap({ city = "lahore" }: { city?: string }) {
                     </div>
                   </Popup>
                 </Marker>
-              ))}
-            </LayerGroup>
+                ))}
+              </LayerGroup>
           </LayersControl.Overlay>
+          )}
 
-          <LayersControl.Overlay checked name="Construction Projects">
-            <LayerGroup>
-              {constructionSites.map(site => (
+          {activeLayers.has("construction") && (
+            <LayersControl.Overlay checked name="Construction Projects">
+              <LayerGroup>
+                {constructionSites.map(site => (
                 <Marker key={site.id} position={site.pos as [number, number]} icon={getConstructionIcon()}>
                   <Popup>
                     <div className="p-2 w-52 font-sans">
@@ -229,13 +287,15 @@ export function CityMap({ city = "lahore" }: { city?: string }) {
                     </div>
                   </Popup>
                 </Marker>
-              ))}
-            </LayerGroup>
+                ))}
+              </LayerGroup>
           </LayersControl.Overlay>
+          )}
 
-          <LayersControl.Overlay name="Police Stations">
-            <LayerGroup>
-              {MOCK_DATA.stations.map(station => (
+          {activeLayers.has("stations") && (
+            <LayersControl.Overlay name="Police Stations">
+              <LayerGroup>
+                {MOCK_DATA.stations.map(station => (
                 <LayerGroup key={station.id}>
                   <Marker position={station.pos as [number, number]} icon={getPoliceIcon()}>
                     <Popup>
@@ -247,13 +307,15 @@ export function CityMap({ city = "lahore" }: { city?: string }) {
                   </Marker>
                   <Circle center={station.pos as [number, number]} radius={station.radius} pathOptions={{ color: 'rgba(30, 58, 138, 0.2)', dashArray: '5, 10' }} />
                 </LayerGroup>
-              ))}
-            </LayerGroup>
+                ))}
+              </LayerGroup>
           </LayersControl.Overlay>
+          )}
 
-          <LayersControl.Overlay checked name="Traffic Density">
-            <LayerGroup>
-              {MOCK_DATA.traffic.map(route => (
+          {activeLayers.has("traffic") && (
+            <LayersControl.Overlay checked name="Traffic Density">
+              <LayerGroup>
+                {MOCK_DATA.traffic.map(route => (
                 <Polyline 
                   key={route.id} 
                   positions={route.path as [number, number][]} 
@@ -270,9 +332,38 @@ export function CityMap({ city = "lahore" }: { city?: string }) {
                     </div>
                   </Popup>
                 </Polyline>
-              ))}
-            </LayerGroup>
+                ))}
+              </LayerGroup>
           </LayersControl.Overlay>
+          )}
+
+          {activeLayers.has("hotspots") && (
+            <LayersControl.Overlay name="Incident Hotspots">
+              <LayerGroup>
+                {/* Heatmap circles for hotspots */}
+                {MOCK_DATA.incidents.map(inc => (
+                  <Circle
+                    key={`hotspot-${inc.id}`}
+                    center={inc.pos as [number, number]}
+                    radius={inc.severity === 'High' ? 500 : 300}
+                    pathOptions={{
+                      color: inc.severity === 'High' ? '#ef4444' : '#f97316',
+                      fillColor: inc.severity === 'High' ? '#ef4444' : '#f97316',
+                      fillOpacity: 0.3,
+                      weight: 2
+                    }}
+                  >
+                    <Popup>
+                      <div className="text-xs">
+                        <p className="font-bold">{inc.type}</p>
+                        <p>Hotspot Radius: {inc.severity === 'High' ? '500m' : '300m'}</p>
+                      </div>
+                    </Popup>
+                  </Circle>
+                ))}
+              </LayerGroup>
+            </LayersControl.Overlay>
+          )}
         </LayersControl>
       </MapContainer>
 

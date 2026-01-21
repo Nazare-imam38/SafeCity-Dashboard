@@ -76,6 +76,45 @@ type GanttTask = {
   children?: GanttTask[];
 };
 
+const CHILD_NAME_TEMPLATES: Record<string, string[]> = {
+  "Site Survey & Assessment": ["Field Survey", "Data Collection", "Site Measurements", "Survey Report"],
+  "Technical Feasibility Study": ["Requirements Review", "Feasibility Analysis", "Risk Assessment", "Approval & Sign-off"],
+  "Site Selection & Approval": ["Option Shortlisting", "Stakeholder Review", "Authority Approval", "Final Selection"],
+  "Environmental Clearance": ["Documentation", "Submission", "Compliance Review", "Clearance Issuance"],
+
+  "Excavation Work": ["Marking & Layout", "Excavation", "Disposal/Hauling", "Inspection"],
+  "Foundation Pouring": ["Rebar Setup", "Formwork", "Concrete Pour", "Finishing"],
+  "Curing & Quality Check": ["Curing", "Cube Tests", "QC Inspection", "Punch List"],
+  "Backfilling & Compaction": ["Backfilling", "Layer Compaction", "Leveling", "Final Check"],
+
+  "Cabinet Installation": ["Mounting", "Anchoring", "Alignment", "Handover"],
+  "Electrical Connections": ["Cabling", "Terminations", "Earthing", "Testing"],
+  "Network Setup": ["Fiber Pulling", "Splicing", "Switch Config", "Connectivity Test"],
+  "Equipment Mounting": ["Bracket Install", "Device Mount", "Labeling", "Commissioning Prep"],
+
+  "Cable Trenching": ["Route Marking", "Trenching", "Duct Placement", "Backfill"],
+  "Fiber Optic Laying": ["Pulling", "Splicing", "OTDR Test", "Documentation"],
+  "Power Cable Installation": ["Cable Pull", "Terminations", "Protection", "Load Test"],
+  "Cable Termination & Testing": ["Termination", "Continuity Test", "Insulation Test", "Sign-off"],
+
+  "Room Renovation": ["Civil Works", "Electrical Works", "Flooring/Ceiling", "Finishing"],
+  "Server Installation": ["Rack Setup", "Server Mount", "Power & Network", "Burn-in Test"],
+  "Display Systems": ["Mounting", "Cabling", "Calibration", "Acceptance Test"],
+  "Control Systems Integration": ["Integration", "Configuration", "End-to-End Test", "Handover"],
+
+  "System Integration": ["Interface Setup", "Data Mapping", "Integration Test", "UAT Support"],
+  "Software Deployment": ["Environment Setup", "Deployment", "Smoke Tests", "Stabilization"],
+  "Testing & Commissioning": ["Test Plans", "Commissioning", "Defect Fixes", "Final Verification"],
+  "Go-Live Preparation": ["Training", "Runbook", "Cutover Plan", "Go-Live Readiness"],
+};
+
+function getChildNames(parentName: string, childCount: number): string[] {
+  const tpl = CHILD_NAME_TEMPLATES[parentName];
+  if (tpl && tpl.length) return tpl.slice(0, childCount);
+  // Fallback: derive readable labels from parent
+  return Array.from({ length: childCount }).map((_, i) => `${parentName} — Task ${i + 1}`);
+}
+
 function buildChildTasks(parent: GanttTask, seed: string): GanttTask[] {
   const span = parent.endIdx - parent.startIdx + 1;
   const childCount = clamp(Math.round(2 + hash01(seed + "|n") * 2), 2, 4); // 2..4
@@ -86,6 +125,7 @@ function buildChildTasks(parent: GanttTask, seed: string): GanttTask[] {
   // Split parent's window into sequential child windows (with small deterministic overlaps)
   let cursor = parent.startIdx;
   const children: GanttTask[] = [];
+  const childNames = getChildNames(parent.name, childCount);
   for (let i = 0; i < childCount; i++) {
     const remaining = parent.endIdx - cursor + 1;
     const minDur = 1;
@@ -97,7 +137,7 @@ function buildChildTasks(parent: GanttTask, seed: string): GanttTask[] {
 
     children.push({
       id: `${parent.id}::${i}`,
-      name: `Sub-Activity ${i + 1}`,
+      name: childNames[i] ?? `${parent.name} — Task ${i + 1}`,
       startIdx,
       endIdx,
       weight: parent.weight * weights[i],
@@ -151,6 +191,22 @@ function statusColor(status: GanttTask["status"], baseColor: string) {
   return baseColor;
 }
 
+// Generate a deterministic "responsible person" name for a task
+function getResponsiblePerson(taskId: string, taskName: string): string {
+  const seed = hash01(taskId + "|person");
+  const names = ["Team A", "Team B", "Team C", "Project Lead", "Site Manager", "QC Team"];
+  return names[Math.floor(seed * names.length)];
+}
+
+// Calculate progress percentage for display
+function getProgressPercentage(task: GanttTask): number {
+  // Use a deterministic progress based on task status and position
+  const seed = hash01(task.id + "|progress");
+  if (task.status === "ahead") return Math.round(60 + seed * 40); // 60-100%
+  if (task.status === "behind") return Math.round(20 + seed * 40); // 20-60%
+  return Math.round(40 + seed * 40); // 40-80%
+}
+
 function GanttMini({
   tasks,
   months,
@@ -167,100 +223,148 @@ function GanttMini({
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // Calculate grid columns: left label column + one column per month
+  const gridCols = `240px repeat(${n}, 1fr)`;
+
   return (
-    <div className="space-y-3">
-      <div className="grid" style={{ gridTemplateColumns: "220px 1fr" }}>
-        <div className="text-xs font-semibold text-muted-foreground">WBS Subprocess</div>
-        <div className="flex justify-between text-[11px] text-muted-foreground px-2">
-          {months.map((m) => (
-            <div key={m} className="w-full text-center">
-              {m}
-            </div>
-          ))}
-        </div>
+    <div className="space-y-4">
+      {/* Header row with month labels */}
+      <div className="grid border-b-2 border-border" style={{ gridTemplateColumns: gridCols }}>
+        <div className="p-2 text-xs font-bold text-muted-foreground border-r border-border">WBS Subprocess</div>
+        {months.map((m, idx) => (
+          <div
+            key={m}
+            className="p-2 text-xs font-semibold text-center text-muted-foreground border-r border-border last:border-r-0"
+          >
+            {m}
+          </div>
+        ))}
       </div>
 
-      <div className="space-y-2">
+      {/* Task rows */}
+      <div className="space-y-1">
         {tasks.map((t) => {
-          const leftPct = (t.startIdx / n) * 100;
-          const widthPct = ((t.endIdx - t.startIdx + 1) / n) * 100;
           const isExpanded = expanded[t.id] ?? true;
           const hasChildren = (t.children?.length ?? 0) > 0;
+          const progress = getProgressPercentage(t);
+          const responsible = getResponsiblePerson(t.id, t.name);
+          const span = t.endIdx - t.startIdx + 1;
 
           return (
-            <div key={t.id} className="space-y-1.5">
-              {/* Parent row */}
-              <div className="grid items-center gap-3" style={{ gridTemplateColumns: "220px 1fr" }}>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    {hasChildren && (
-                      <button
-                        type="button"
-                        onClick={() => toggle(t.id)}
-                        className="h-6 w-6 rounded-md border border-border/60 bg-background hover:bg-muted/40 transition-colors flex items-center justify-center"
-                        title={isExpanded ? "Collapse" : "Expand"}
+            <div key={t.id} className="space-y-1">
+              {/* Parent task row */}
+              <div className="grid border-b border-border/50 relative overflow-hidden" style={{ gridTemplateColumns: gridCols }}>
+                {/* Left label column */}
+                <div className="p-2 border-r border-border flex items-center gap-2 min-w-0 relative z-10 bg-background">
+                  {hasChildren && (
+                    <button
+                      type="button"
+                      onClick={() => toggle(t.id)}
+                      className="h-5 w-5 rounded border border-border/60 bg-background hover:bg-muted/40 transition-colors flex items-center justify-center flex-shrink-0"
+                      title={isExpanded ? "Collapse" : "Expand"}
+                    >
+                      <span className="text-[10px] font-bold leading-none">{isExpanded ? "−" : "+"}</span>
+                    </button>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-foreground truncate">{t.name}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      Weight {(t.weight * 100).toFixed(0)}% •{" "}
+                      <span
+                        className={
+                          t.status === "ahead"
+                            ? "text-emerald-600"
+                            : t.status === "behind"
+                            ? "text-red-600"
+                            : "text-blue-600"
+                        }
                       >
-                        <span className="text-xs font-bold">{isExpanded ? "−" : "+"}</span>
-                      </button>
-                    )}
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-foreground truncate">{t.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Weight {(t.weight * 100).toFixed(0)}% •{" "}
                         {t.status === "ontrack" ? "On track" : t.status === "ahead" ? "Ahead" : "Behind"}
-                      </div>
+                      </span>
                     </div>
                   </div>
                 </div>
-                <div className="relative h-8 rounded-lg bg-muted/40 overflow-hidden border border-border/50">
-                  <div className="absolute inset-0 flex">
-                    {months.map((m) => (
-                      <div key={m} className="flex-1 border-r border-border/40 last:border-r-0" />
+
+                {/* Timeline container - wraps grid cells and bars */}
+                <div className="relative" style={{ gridColumn: `2 / -1` }}>
+                  {/* Grid cells for timeline - background cells */}
+                  <div className="grid h-12" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
+                    {months.map((m, monthIdx) => (
+                      <div
+                        key={m}
+                        className="border-r border-border last:border-r-0 bg-muted/20"
+                      />
                     ))}
                   </div>
+
+                  {/* Task bar spanning across cells */}
                   <div
-                    className="absolute top-2 h-4 rounded-md shadow-sm"
+                    className="absolute top-1 bottom-1 flex items-center px-2 rounded shadow-sm z-20 pointer-events-none"
                     style={{
-                      left: `${leftPct}%`,
-                      width: `${widthPct}%`,
+                      left: `${(t.startIdx / n) * 100}%`,
+                      width: `${(span / n) * 100}%`,
+                      maxWidth: `calc(100% - ${(t.startIdx / n) * 100}%)`,
                       backgroundColor: statusColor(t.status, baseColor),
-                      opacity: 0.9,
                     }}
-                    title={`${t.name} (${months[t.startIdx]} → ${months[t.endIdx]})`}
-                  />
+                  >
+                    <div className="text-[9px] font-semibold text-white truncate flex-1 pointer-events-auto">
+                      <div className="truncate">{responsible}</div>
+                      <div className="text-[8px] opacity-90">{progress}% Done</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Child rows */}
+              {/* Child task rows */}
               {hasChildren && isExpanded && (
-                <div className="space-y-1.5 pl-8">
+                <div className="space-y-0.5 pl-6">
                   {t.children!.map((c) => {
-                    const cLeftPct = (c.startIdx / n) * 100;
-                    const cWidthPct = ((c.endIdx - c.startIdx + 1) / n) * 100;
+                    const childProgress = getProgressPercentage(c);
+                    const childResponsible = getResponsiblePerson(c.id, c.name);
+                    const childSpan = c.endIdx - c.startIdx + 1;
+
                     return (
-                      <div key={c.id} className="grid items-center gap-3" style={{ gridTemplateColumns: "220px 1fr" }}>
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold text-foreground/90 truncate">{c.name}</div>
-                          <div className="text-[11px] text-muted-foreground">
+                      <div
+                        key={c.id}
+                        className="grid border-b border-border/30 relative overflow-hidden"
+                        style={{ gridTemplateColumns: gridCols }}
+                      >
+                        {/* Left label column */}
+                        <div className="p-1.5 border-r border-border min-w-0 relative z-10 bg-background">
+                          <div className="text-xs font-medium text-foreground/90 truncate">{c.name}</div>
+                          <div className="text-[9px] text-muted-foreground">
                             Weight {(c.weight * 100).toFixed(0)}%
                           </div>
                         </div>
-                        <div className="relative h-7 rounded-lg bg-muted/30 overflow-hidden border border-border/40">
-                          <div className="absolute inset-0 flex">
+
+                        {/* Timeline container - wraps grid cells and bars */}
+                        <div className="relative" style={{ gridColumn: `2 / -1` }}>
+                          {/* Grid cells for timeline - background cells */}
+                          <div className="grid h-10" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
                             {months.map((m) => (
-                              <div key={m} className="flex-1 border-r border-border/30 last:border-r-0" />
+                              <div
+                                key={m}
+                                className="border-r border-border/50 last:border-r-0 bg-muted/10"
+                              />
                             ))}
                           </div>
+
+                          {/* Child task bar spanning across cells */}
                           <div
-                            className="absolute top-2 h-3 rounded-md"
+                            className="absolute top-0.5 bottom-0.5 flex items-center px-1.5 rounded z-20 pointer-events-none"
                             style={{
-                              left: `${cLeftPct}%`,
-                              width: `${cWidthPct}%`,
+                              left: `${(c.startIdx / n) * 100}%`,
+                              width: `${(childSpan / n) * 100}%`,
+                              maxWidth: `calc(100% - ${(c.startIdx / n) * 100}%)`,
                               backgroundColor: statusColor(c.status, baseColor),
-                              opacity: 0.55,
+                              opacity: 0.75,
                             }}
-                            title={`${c.name} (${months[c.startIdx]} → ${months[c.endIdx]})`}
-                          />
+                          >
+                            <div className="text-[8px] font-medium text-white truncate flex-1 pointer-events-auto">
+                              <div className="truncate">{childResponsible}</div>
+                              <div className="text-[7px] opacity-90">{childProgress}%</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
@@ -372,10 +476,25 @@ export function MilestoneDetailsPanel({
                         cy="50%"
                         outerRadius={110}
                         labelLine={false}
-                        label={({ name, value }) => {
+                        label={({ name, value, cx, cy, midAngle, innerRadius, outerRadius }) => {
                           const pct = value * 100;
-                          if (pct < 6) return "";
-                          return `${name}: ${(pct).toFixed(0)}%`;
+                          if (pct < 6) return null;
+                          const RADIAN = Math.PI / 180;
+                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              fill="currentColor"
+                              textAnchor={x > cx ? 'start' : 'end'}
+                              dominantBaseline="central"
+                              style={{ fontSize: '12px', fontWeight: 500 }}
+                            >
+                              {`${name}: ${(pct).toFixed(0)}%`}
+                            </text>
+                          );
                         }}
                       >
                         {wbsPieData.map((_, idx) => (
@@ -393,7 +512,10 @@ export function MilestoneDetailsPanel({
                           borderRadius: "8px",
                         }}
                       />
-                      <Legend />
+                      <Legend 
+                        wrapperStyle={{ fontSize: '12px' }}
+                        iconSize={12}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>

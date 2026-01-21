@@ -14,12 +14,12 @@ import {
   PUNJAB_HIERARCHY
 } from "@/data/punjabHierarchy";
 
-// Format PKR currency
+// Format PKR currency (Finance page: show in Millions instead of Crore)
 const formatPKR = (amount: number) => {
-  if (amount >= 10000000) {
-    return `PKR ${(amount / 10000000).toFixed(2)} Cr`;
-  } else if (amount >= 100000) {
-    return `PKR ${(amount / 100000).toFixed(2)} L`;
+  if (amount >= 1_000_000) {
+    return `PKR ${(amount / 1_000_000).toFixed(2)} M`;
+  } else if (amount >= 1_000) {
+    return `PKR ${(amount / 1_000).toFixed(2)} K`;
   } else {
     return `PKR ${amount.toLocaleString()}`;
   }
@@ -430,7 +430,7 @@ export default function Finance() {
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis 
                     tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-                    tickFormatter={(value) => `${(value / 100000000).toFixed(1)}Cr`}
+                    tickFormatter={(value) => `${(value / 1_000_000).toFixed(1)}M`}
                   />
                   <Tooltip 
                     contentStyle={{ 
@@ -533,7 +533,7 @@ export default function Finance() {
                 />
                 <YAxis 
                   tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-                  tickFormatter={(value) => `${(value / 100000000).toFixed(1)}Cr`}
+                  tickFormatter={(value) => `${(value / 1_000_000).toFixed(1)}M`}
                 />
                 <Tooltip 
                   contentStyle={{ 
