@@ -476,21 +476,29 @@ export function MilestoneDetailsPanel({
                         cy="50%"
                         outerRadius={110}
                         labelLine={false}
-                        label={({ name, value, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                        label={({ name, value, cx, cy, midAngle, innerRadius, outerRadius, index }) => {
                           const pct = value * 100;
                           if (pct < 6) return null;
                           const RADIAN = Math.PI / 180;
                           const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
                           const x = cx + radius * Math.cos(-midAngle * RADIAN);
                           const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          
+                          // Calculate the same color as the segment
+                          const segmentColor = `hsl(${Math.round((index / Math.max(1, wbsPieData.length)) * 280)} 75% 55%)`;
+                          
                           return (
                             <text
                               x={x}
                               y={y}
-                              fill="currentColor"
+                              fill={segmentColor}
                               textAnchor={x > cx ? 'start' : 'end'}
                               dominantBaseline="central"
-                              style={{ fontSize: '12px', fontWeight: 500 }}
+                              style={{ 
+                                fontSize: '12px', 
+                                fontWeight: 600,
+                                filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))'
+                              }}
                             >
                               {`${name}: ${(pct).toFixed(0)}%`}
                             </text>
