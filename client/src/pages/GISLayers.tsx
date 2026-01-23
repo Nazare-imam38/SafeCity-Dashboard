@@ -223,11 +223,11 @@ export default function GISLayers() {
                               <div className={`p-2 rounded-md transition-colors shadow-sm ${
                                 isActive ? 'bg-primary/20' : 'bg-muted group-hover:bg-white'
                               }`}>
-                                <item.icon className={`h-4 w-4 ${item.color}`} />
-                              </div>
+                              <item.icon className={`h-4 w-4 ${item.color}`} />
+                            </div>
                               <div className="flex-1">
-                                <p className="text-sm font-bold tracking-tight">{item.label}</p>
-                                <p className="text-[10px] text-muted-foreground uppercase font-medium">{item.detail}</p>
+                              <p className="text-sm font-bold tracking-tight">{item.label}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase font-medium">{item.detail}</p>
                               </div>
                             </div>
                             <Switch 

@@ -36,49 +36,56 @@ export function InstallationCard({
         iconBg: "bg-blue-50 dark:bg-blue-950", 
         border: "border-l-4 border-l-blue-500", 
         progress: "bg-blue-500",
-        percentage: "text-blue-600 dark:text-blue-400"
+        percentage: "text-blue-600 dark:text-blue-400",
+        selectedRing: "ring-2 ring-blue-500 ring-offset-2 ring-offset-background"
       };
       case "green": return { 
         icon: "text-emerald-600", 
         iconBg: "bg-emerald-50 dark:bg-emerald-950", 
         border: "border-l-4 border-l-emerald-500", 
         progress: "bg-emerald-500",
-        percentage: "text-emerald-600 dark:text-emerald-400"
+        percentage: "text-emerald-600 dark:text-emerald-400",
+        selectedRing: "ring-2 ring-emerald-500 ring-offset-2 ring-offset-background"
       };
       case "orange": return { 
         icon: "text-orange-600", 
         iconBg: "bg-orange-50 dark:bg-orange-950", 
         border: "border-l-4 border-l-orange-500", 
         progress: "bg-orange-500",
-        percentage: "text-orange-600 dark:text-orange-400"
+        percentage: "text-orange-600 dark:text-orange-400",
+        selectedRing: "ring-2 ring-orange-500 ring-offset-2 ring-offset-background"
       };
       case "purple": return { 
         icon: "text-purple-600", 
         iconBg: "bg-purple-50 dark:bg-purple-950", 
         border: "border-l-4 border-l-purple-500", 
         progress: "bg-purple-500",
-        percentage: "text-purple-600 dark:text-purple-400"
+        percentage: "text-purple-600 dark:text-purple-400",
+        selectedRing: "ring-2 ring-purple-500 ring-offset-2 ring-offset-background"
       };
       case "red": return { 
         icon: "text-red-600", 
         iconBg: "bg-red-50 dark:bg-red-950", 
         border: "border-l-4 border-l-red-500", 
         progress: "bg-red-500",
-        percentage: "text-red-600 dark:text-red-400"
+        percentage: "text-red-600 dark:text-red-400",
+        selectedRing: "ring-2 ring-red-500 ring-offset-2 ring-offset-background"
       };
       case "yellow": return { 
         icon: "text-yellow-600", 
         iconBg: "bg-yellow-50 dark:bg-yellow-950", 
         border: "border-l-4 border-l-yellow-500", 
         progress: "bg-yellow-500",
-        percentage: "text-yellow-600 dark:text-yellow-400"
+        percentage: "text-yellow-600 dark:text-yellow-400",
+        selectedRing: "ring-2 ring-yellow-500 ring-offset-2 ring-offset-background"
       };
       default: return { 
         icon: "text-primary", 
         iconBg: "bg-primary/10", 
         border: "border-l-4 border-l-primary", 
         progress: "bg-primary",
-        percentage: "text-primary"
+        percentage: "text-primary",
+        selectedRing: "ring-2 ring-primary ring-offset-2 ring-offset-background"
       };
     }
   };
@@ -93,7 +100,8 @@ export function InstallationCard({
       "border-r border-t border-b border-border/40 hover:border-border",
       "bg-gradient-to-br from-card to-card/95",
       onClick && "cursor-pointer select-none",
-      selected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl",
+      selected && colors.selectedRing,
+      selected && "shadow-2xl",
       className
     )}
       role={onClick ? "button" : undefined}

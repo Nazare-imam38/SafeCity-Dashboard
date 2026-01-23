@@ -233,21 +233,23 @@ function GanttMini({
 
   return (
     <div className="space-y-4">
-      {/* Header row with month labels */}
-      <div className={`grid border-b-2 border-border ${isMobile ? 'overflow-x-auto min-w-full' : ''}`} style={{ gridTemplateColumns: gridCols }}>
-        <div className={`${isMobile ? 'p-1.5 text-[10px]' : 'p-2 text-xs'} font-bold text-muted-foreground border-r border-border`}>WBS Subprocess</div>
-        {months.map((m, idx) => (
-          <div
-            key={m}
-            className={`${isMobile ? 'p-1.5 text-[10px]' : 'p-2 text-xs'} font-semibold text-center text-muted-foreground border-r border-border last:border-r-0`}
-          >
-            {isMobile ? m.substring(0, 3) : m}
-          </div>
-        ))}
-      </div>
+      {/* Gantt Chart Container with full border */}
+      <div className="border-2 border-border rounded-lg overflow-hidden bg-background">
+        {/* Header row with month labels */}
+        <div className={`grid border-b-2 border-border bg-muted/30 ${isMobile ? 'overflow-x-auto min-w-full' : ''}`} style={{ gridTemplateColumns: gridCols }}>
+          <div className={`${isMobile ? 'p-1.5 text-[10px]' : 'p-2 text-xs'} font-bold text-muted-foreground border-r-2 border-border bg-muted/40`}>WBS Subprocess</div>
+          {months.map((m, idx) => (
+            <div
+              key={m}
+              className={`${isMobile ? 'p-1.5 text-[10px]' : 'p-2 text-xs'} font-semibold text-center text-muted-foreground border-r-2 border-border bg-muted/40 last:border-r-0`}
+            >
+              {isMobile ? m.substring(0, 3) : m}
+            </div>
+          ))}
+        </div>
 
-      {/* Task rows */}
-      <div className={`space-y-1 ${isMobile ? 'overflow-x-auto min-w-full' : ''}`}>
+        {/* Task rows */}
+        <div className={`space-y-1 ${isMobile ? 'overflow-x-auto min-w-full' : ''}`}>
         {tasks.map((t) => {
           const isExpanded = expanded[t.id] ?? true;
           const hasChildren = (t.children?.length ?? 0) > 0;
@@ -258,9 +260,9 @@ function GanttMini({
           return (
             <div key={t.id} className="space-y-1">
               {/* Parent task row */}
-              <div className={`grid border-b border-border/50 relative ${isMobile ? 'min-w-full' : 'overflow-hidden'}`} style={{ gridTemplateColumns: gridCols }}>
+              <div className={`grid border-l-2 border-r-2 border-b-2 border-border relative ${isMobile ? 'min-w-full' : 'overflow-hidden'} bg-background`} style={{ gridTemplateColumns: gridCols }}>
                 {/* Left label column */}
-                <div className="p-2 border-r border-border flex items-center gap-2 min-w-0 relative z-10 bg-background">
+                <div className="p-2 border-r-2 border-border flex items-center gap-2 min-w-0 relative z-10 bg-muted/20">
                   {hasChildren && (
                     <button
                       type="button"
@@ -291,13 +293,13 @@ function GanttMini({
                 </div>
 
                 {/* Timeline container - wraps grid cells and bars */}
-                <div className="relative" style={{ gridColumn: `2 / -1` }}>
+                <div className="relative border-r-2 border-border" style={{ gridColumn: `2 / -1` }}>
                   {/* Grid cells for timeline - background cells */}
                   <div className="grid h-12" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
                     {months.map((m, monthIdx) => (
                       <div
                         key={m}
-                        className="border-r border-border last:border-r-0 bg-muted/20"
+                        className="border-r-2 border-border last:border-r-0 bg-muted/20"
                       />
                     ))}
                   </div>
@@ -331,11 +333,11 @@ function GanttMini({
                     return (
                       <div
                         key={c.id}
-                        className={`grid border-b border-border/30 relative ${isMobile ? 'min-w-full' : 'overflow-hidden'}`}
+                        className={`grid border-l-2 border-r-2 border-b-2 border-border relative ${isMobile ? 'min-w-full' : 'overflow-hidden'} bg-background`}
                         style={{ gridTemplateColumns: gridCols }}
                       >
                         {/* Left label column */}
-                        <div className="p-1.5 border-r border-border min-w-0 relative z-10 bg-background">
+                        <div className="p-1.5 border-r-2 border-border min-w-0 relative z-10 bg-muted/10">
                           <div className={`${isMobile ? 'text-[11px]' : 'text-xs'} font-medium text-foreground/90 truncate`}>{c.name}</div>
                           <div className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} text-muted-foreground`}>
                             Weight {(c.weight * 100).toFixed(0)}%
@@ -343,13 +345,13 @@ function GanttMini({
                         </div>
 
                         {/* Timeline container - wraps grid cells and bars */}
-                        <div className="relative" style={{ gridColumn: `2 / -1` }}>
+                        <div className="relative border-r-2 border-border" style={{ gridColumn: `2 / -1` }}>
                           {/* Grid cells for timeline - background cells */}
                           <div className="grid h-10" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
                             {months.map((m) => (
                               <div
                                 key={m}
-                                className="border-r border-border/50 last:border-r-0 bg-muted/10"
+                                className="border-r-2 border-border last:border-r-0 bg-muted/10"
                               />
                             ))}
                           </div>
@@ -379,6 +381,7 @@ function GanttMini({
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
