@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recha
 import { PlannedVsActualChart } from "@/components/dashboard/PlannedVsActualChart";
 import type { SubProject } from "@/components/dashboard/SubProjectCard";
 import { useWindowSize } from "@/hooks/use-window-size";
+import { ImageIcon, ZoomIn } from "lucide-react";
 
 type PhaseTimelinePoint = {
   month: string;
@@ -588,6 +589,109 @@ export function MilestoneDetailsPanel({
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Progress Images Section */}
+        <div className="mt-6 pt-6 border-t border-border/50">
+          <div className="mb-4">
+            <h3 className="text-lg font-bold font-heading">Progress Images</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Visual documentation of progress for each WBS subprocess
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {subProjects.map((sub) => {
+              // Generate deterministic image count (2-5 images per subprocess)
+              const imageCount = Math.floor(2 + hash01(sub.id + "|imgCount") * 3);
+              const imgWidth = 400;
+              const imgHeight = 300;
+              
+              const images: Array<{
+                id: string;
+                url: string;
+                title: string;
+                date: string;
+                description: string;
+                width: number;
+                height: number;
+              }> = Array.from({ length: imageCount }, (_, i) => {
+                const imgSeed = hash01(sub.id + `|img|${i}`);
+                // Using picsum.photos with seed for deterministic images
+                const imageUrl = `https://picsum.photos/seed/${sub.id}-${i}/${imgWidth}/${imgHeight}`;
+                
+                return {
+                  id: `${sub.id}-img-${i}`,
+                  url: imageUrl,
+                  title: `${sub.name} - Progress ${i + 1}`,
+                  date: new Date(2024, Math.floor(imgSeed * 6), Math.floor(imgSeed * 28) + 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                  description: `Progress documentation for ${sub.name}`,
+                  width: imgWidth,
+                  height: imgHeight,
+                };
+              });
+
+              return (
+                <div key={sub.id} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">{sub.name}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {imageCount} image{imageCount !== 1 ? 's' : ''} • Progress: {sub.actualProgress.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className={`grid gap-3 ${
+                    isMobile 
+                      ? 'grid-cols-1' 
+                      : isTablet 
+                      ? 'grid-cols-2' 
+                      : 'grid-cols-3'
+                  }`}>
+                    {images.map((img) => (
+                      <div
+                        key={img.id}
+                        className="group relative overflow-hidden rounded-lg border border-border/50 bg-card hover:border-primary/50 transition-all cursor-pointer"
+                      >
+                        <div className="relative aspect-video bg-muted/30">
+                          <img
+                            src={img.url}
+                            alt={img.title}
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                            loading="lazy"
+                            onError={(e) => {
+                              // Fallback to placeholder if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.src = `https://via.placeholder.com/${img.width}x${img.height}/e5e7eb/9ca3af?text=${encodeURIComponent(sub.name)}`;
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-2 text-white text-xs">
+                              <ZoomIn className="h-3 w-3" />
+                              <span>Click to view</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <div className="text-xs font-semibold text-foreground truncate">{img.title}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{img.date}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {subProjects.length === 0 && (
+            <div className="text-center py-12 border border-dashed border-border/50 rounded-lg">
+              <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+              <p className="text-sm text-muted-foreground">No progress images available for this milestone yet.</p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
