@@ -1250,31 +1250,40 @@ export default function Dashboard() {
           <div className={`relative flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 ease-in-out overflow-hidden ${
             isFilterBarExpanded ? 'max-h-[500px] opacity-100 p-4 md:p-6' : 'max-h-0 opacity-0 p-0'
           }`}>
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
                   <Camera className="h-6 w-6 text-white" />
             </div>
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold font-heading bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                    {viewType === "divisions" ? "All Punjab Divisions" : 
-                     viewType === "districts" ? "All Punjab Districts" : 
-                     viewType === "tehsils" ? "All Punjab Tehsils" : 
-                     "PSCA Progress Dashboard"}
+                    {selectedItemName && selectedItemType === "division" 
+                      ? `${selectedItemName} Division`
+                      : selectedItemName && selectedItemType === "district"
+                      ? `${selectedItemName} District`
+                      : selectedItemName && selectedItemType === "tehsil"
+                      ? `${selectedItemName} Tehsil`
+                      : viewType === "divisions" 
+                      ? "All Punjab Divisions" 
+                      : viewType === "districts" 
+                      ? "All Punjab Districts" 
+                      : viewType === "tehsils" 
+                      ? "All Punjab Tehsils" 
+                      : "PSCA Progress Dashboard"}
                   </h1>
                 </div>
               </div>
-              {aggregatedData && (
+              {(selectedItemName && singleItemData) || aggregatedData ? (
               <div className="flex items-center gap-3">
                 <Badge className="px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
                   <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400" />
-                    Overall: {aggregatedData.overall}%
+                    Overall: {selectedItemName && singleItemData ? singleItemData.overall : aggregatedData?.overall || 0}%
                 </Badge>
             </div>
-              )}
+              ) : null}
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Button
               variant="outline"
               size="icon"
@@ -1283,21 +1292,37 @@ export default function Dashboard() {
             >
                 {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-              {aggregatedData && viewType && (
+              {((selectedItemName && singleItemData) || aggregatedData) && viewType && (
             <Button
               className="rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm font-semibold"
               onClick={async () => {
                 try {
+                  const dataToExport = selectedItemName && singleItemData ? singleItemData : aggregatedData;
+                  const exportName = selectedItemName && selectedItemType === "division"
+                    ? `${selectedItemName} Division`
+                    : selectedItemName && selectedItemType === "district"
+                    ? `${selectedItemName} District`
+                    : selectedItemName && selectedItemType === "tehsil"
+                    ? `${selectedItemName} Tehsil`
+                    : viewType === "divisions" 
+                    ? "All Punjab Divisions" 
+                    : viewType === "districts" 
+                    ? "All Punjab Districts" 
+                    : "All Punjab Tehsils";
+                  
+                  if (!dataToExport) {
+                    setShowErrorDialog(true);
+                    return;
+                  }
+                  
                   // Pass the full data structure including PhaseProgress objects with timeline
                   await exportDashboardToPPTX({
-                        cityName: viewType === "divisions" ? "All Punjab Divisions" : 
-                                 viewType === "districts" ? "All Punjab Districts" : 
-                                 "All Punjab Tehsils",
-                        cityData: aggregatedData as any, // Type assertion needed due to PhaseProgress union type
+                        cityName: exportName,
+                        cityData: dataToExport as any, // Type assertion needed due to PhaseProgress union type
                     installationPhases: installationPhases.map(phase => ({
                       key: phase.key,
                       title: phase.title,
-                          percentage: getProgressValue(aggregatedData[phase.key]),
+                          percentage: getProgressValue(dataToExport[phase.key]),
                     })),
                   });
                   setShowSuccessDialog(true);
@@ -1315,32 +1340,228 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Single Item Detail View */}
-        {selectedItemName && selectedItemType && singleItemData && (
-          <div className="space-y-6">
-            {/* Back Button */}
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSelectedItemName(null);
-                  setSelectedItemType(null);
-                }}
-                className="rounded-xl cursor-pointer"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to {viewType === "divisions" ? "Divisions" : viewType === "districts" ? "Districts" : "Tehsils"}
-              </Button>
-              <div>
-                <h2 className="text-2xl font-bold font-heading">{selectedItemName}</h2>
-                <p className="text-sm text-muted-foreground">Detailed progress with actual vs planned</p>
-            </div>
-        </div>
+        {/* Division Selected - Show Districts */}
+        {selectedItemName && selectedItemType === "division" && singleItemData && (() => {
+          const districts = getDistrictsByDivision(selectedItemName);
+          const distData = getAllDistrictData();
+          
+          // Get districts data for this division
+          const divisionDistrictsData = districts.map((districtName, index) => {
+            const key = `${selectedItemName}-${districtName}`.toLowerCase().replace(/\s+/g, '');
+            const districtData = distData[key];
+            return {
+              name: districtName,
+              overall: districtData?.overall || 0,
+              data: districtData,
+              color: CARD_COLORS[index % CARD_COLORS.length]
+            };
+          }).sort((a, b) => b.overall - a.overall);
 
-            {/* Detailed View */}
-            {renderAggregatedCharts(selectedItemName, singleItemData)}
-          </div>
-        )}
+          return (
+            <div className="space-y-6">
+              {/* Back Button */}
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedItemName(null);
+                    setSelectedItemType(null);
+                  }}
+                  className="rounded-xl cursor-pointer"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to All Divisions
+                </Button>
+                <div>
+                  <h2 className="text-2xl font-bold font-heading">{selectedItemName} Division</h2>
+                  <p className="text-sm text-muted-foreground">Districts in {selectedItemName} Division</p>
+                </div>
+              </div>
+
+              {/* District Cards */}
+              {divisionDistrictsData.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {divisionDistrictsData.map((dist) => (
+                      <HierarchyCard
+                        key={dist.name}
+                        title={dist.name}
+                        overallProgress={dist.overall}
+                        color={dist.color}
+                        onClick={() => {
+                          setSelectedItemName(dist.name);
+                          setSelectedItemType("district");
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Charts for Division */}
+                  {renderAggregatedCharts(selectedItemName + " Division", singleItemData)}
+                </>
+              ) : (
+                <Card className="border-border/50">
+                  <CardContent className="p-8 text-center">
+                    <p className="text-muted-foreground">
+                      No districts found for {selectedItemName} Division.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* District Selected - Show Tehsils */}
+        {selectedItemName && selectedItemType === "district" && singleItemData && (() => {
+          // Find which division this district belongs to
+          const division = PUNJAB_HIERARCHY.find(div => 
+            div.districts.some(dist => dist.district === selectedItemName)
+          );
+          
+          if (!division) {
+            return (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedItemName(null);
+                      setSelectedItemType(null);
+                    }}
+                    className="rounded-xl cursor-pointer"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Divisions
+                  </Button>
+                </div>
+                <Card className="border-border/50">
+                  <CardContent className="p-8 text-center">
+                    <p className="text-muted-foreground">
+                      District not found in hierarchy.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          }
+
+          const district = division.districts.find(dist => dist.district === selectedItemName);
+          const tehsils = district?.tehsils || [];
+          const tehData = getAllTehsilData();
+          
+          // Get tehsils data for this district
+          const districtTehsilsData = tehsils.map((tehsil, index) => {
+            const key = `${division.division}-${selectedItemName}-${tehsil.tehsil}`.toLowerCase().replace(/\s+/g, '');
+            const tehsilData = tehData[key];
+            return {
+              name: tehsil.tehsil,
+              overall: tehsilData?.overall || 0,
+              data: tehsilData,
+              color: CARD_COLORS[index % CARD_COLORS.length]
+            };
+          }).sort((a, b) => b.overall - a.overall);
+
+          return (
+            <div className="space-y-6">
+              {/* Back Button */}
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Go back to division view
+                    setSelectedItemName(division.division);
+                    setSelectedItemType("division");
+                  }}
+                  className="rounded-xl cursor-pointer"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to {division.division} Division
+                </Button>
+                <div>
+                  <h2 className="text-2xl font-bold font-heading">{selectedItemName} District</h2>
+                  <p className="text-sm text-muted-foreground">Tehsils in {selectedItemName} District ({division.division} Division)</p>
+                </div>
+              </div>
+
+              {/* Tehsil Cards */}
+              {districtTehsilsData.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {districtTehsilsData.map((teh) => (
+                      <HierarchyCard
+                        key={teh.name}
+                        title={teh.name}
+                        overallProgress={teh.overall}
+                        color={teh.color}
+                        onClick={() => {
+                          setSelectedItemName(teh.name);
+                          setSelectedItemType("tehsil");
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Charts for District */}
+                  {renderAggregatedCharts(selectedItemName + " District", singleItemData)}
+                </>
+              ) : (
+                <Card className="border-border/50">
+                  <CardContent className="p-8 text-center">
+                    <p className="text-muted-foreground">
+                      No tehsils found for {selectedItemName} District.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Tehsil Selected - Show Detail View */}
+        {selectedItemName && selectedItemType === "tehsil" && singleItemData && (() => {
+          // Find which division and district this tehsil belongs to
+          let parentDivision = "";
+          let parentDistrict = "";
+          
+          for (const div of PUNJAB_HIERARCHY) {
+            for (const dist of div.districts) {
+              if (dist.tehsils.some(teh => teh.tehsil === selectedItemName)) {
+                parentDivision = div.division;
+                parentDistrict = dist.district;
+                break;
+              }
+            }
+            if (parentDivision) break;
+          }
+
+          return (
+            <div className="space-y-6">
+              {/* Back Button */}
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Go back to district view
+                    setSelectedItemName(parentDistrict);
+                    setSelectedItemType("district");
+                  }}
+                  className="rounded-xl cursor-pointer"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to {parentDistrict} District
+                </Button>
+                <div>
+                  <h2 className="text-2xl font-bold font-heading">{selectedItemName} Tehsil</h2>
+                  <p className="text-sm text-muted-foreground">Detailed progress with actual vs planned</p>
+                </div>
+              </div>
+
+              {/* Detailed View */}
+              {renderAggregatedCharts(selectedItemName + " Tehsil", singleItemData)}
+            </div>
+          );
+        })()}
 
         {/* Hierarchy Cards View with Charts */}
         {!selectedItemName && viewType === "divisions" && aggregatedData && (
