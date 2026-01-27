@@ -792,9 +792,20 @@ export default function Dashboard() {
       <>
         {/* Installation Phase Cards */}
         <div className="w-full">
-          <div className="mb-3">
-            <h2 className="text-xl font-bold font-heading mb-1">Project Milestones</h2>
-            <p className="text-sm text-muted-foreground">Progress breakdown for {title}</p>
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold font-heading mb-1">Project Milestones</h2>
+              <p className="text-sm text-muted-foreground">Progress breakdown for {title}</p>
+            </div>
+            {selectedMilestoneKey && (
+              <button
+                type="button"
+                onClick={() => setSelectedMilestoneKey(null)}
+                className="h-9 px-4 rounded-xl border border-border/60 bg-background hover:bg-muted/40 text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0"
+              >
+                Clear
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {installationPhases.map((phase) => {

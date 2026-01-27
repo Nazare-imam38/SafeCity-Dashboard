@@ -218,13 +218,27 @@ function GanttMini({
   baseColor: string;
 }) {
   const n = months.length || 1;
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  // Initialize all tasks as expanded by default
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    tasks.forEach(task => {
+      if (task.children && task.children.length > 0) {
+        initial[task.id] = true;
+      }
+    });
+    return initial;
+  });
   const { width } = useWindowSize();
   const isMobile = width < 640;
   const isTablet = width >= 640 && width < 1024;
 
-  const toggle = (id: string) => {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggle = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    e?.preventDefault();
+    setExpanded((prev) => {
+      const currentValue = prev[id] ?? true; // Default to true (expanded)
+      return { ...prev, [id]: !currentValue };
+    });
   };
 
   // Calculate grid columns: responsive left label column + one column per month
@@ -262,12 +276,13 @@ function GanttMini({
               {/* Parent task row */}
               <div className={`grid border-l-2 border-r-2 border-b-2 border-border relative ${isMobile ? 'min-w-full' : 'overflow-hidden'} bg-background`} style={{ gridTemplateColumns: gridCols }}>
                 {/* Left label column */}
-                <div className="p-2 border-r-2 border-border flex items-center gap-2 min-w-0 relative z-10 bg-muted/20">
+                <div className="p-2 border-r-2 border-border flex items-center gap-2 min-w-0 relative z-10 bg-muted/20" onClick={(e) => e.stopPropagation()}>
                   {hasChildren && (
                     <button
                       type="button"
-                      onClick={() => toggle(t.id)}
-                      className="h-5 w-5 rounded border border-border/60 bg-background hover:bg-muted/40 transition-colors flex items-center justify-center flex-shrink-0"
+                      onClick={(e) => toggle(t.id, e)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      className="h-5 w-5 rounded border border-border/60 bg-background hover:bg-muted/40 transition-colors flex items-center justify-center flex-shrink-0 relative z-20"
                       title={isExpanded ? "Collapse" : "Expand"}
                     >
                       <span className="text-[10px] font-bold leading-none">{isExpanded ? "−" : "+"}</span>
@@ -442,22 +457,11 @@ export function MilestoneDetailsPanel({
   return (
     <Card className="border-2 border-primary/10">
       <CardHeader>
-        <div className={`flex ${isMobile ? 'flex-col' : 'items-start justify-between'} gap-3`}>
-          <div>
-            <CardTitle className={isMobile ? 'text-base' : ''}>{milestoneTitle} — Milestone KPIs</CardTitle>
-            <CardDescription className={isMobile ? 'text-xs' : ''}>
-              Gantt plan, WBS breakdown, and S-curves (planned vs actual) for this milestone.
-            </CardDescription>
-          </div>
-          {onClear && (
-            <button
-              type="button"
-              onClick={onClear}
-              className={`${isMobile ? 'w-full' : ''} h-9 px-3 rounded-xl border border-border/60 bg-background hover:bg-muted/40 ${isMobile ? 'text-xs' : 'text-sm'} font-semibold transition-colors`}
-            >
-              Clear
-            </button>
-          )}
+        <div>
+          <CardTitle className={isMobile ? 'text-base' : ''}>{milestoneTitle} — Milestone KPIs</CardTitle>
+          <CardDescription className={isMobile ? 'text-xs' : ''}>
+            Gantt plan, WBS breakdown, and S-curves (planned vs actual) for this milestone.
+          </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
