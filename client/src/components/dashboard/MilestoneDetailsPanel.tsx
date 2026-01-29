@@ -457,11 +457,11 @@ export function MilestoneDetailsPanel({
   return (
     <Card className="border-2 border-primary/10">
       <CardHeader>
-        <div>
-          <CardTitle className={isMobile ? 'text-base' : ''}>{milestoneTitle} — Milestone KPIs</CardTitle>
-          <CardDescription className={isMobile ? 'text-xs' : ''}>
-            Gantt plan, WBS breakdown, and S-curves (planned vs actual) for this milestone.
-          </CardDescription>
+          <div>
+            <CardTitle className={isMobile ? 'text-base' : ''}>{milestoneTitle} — Milestone KPIs</CardTitle>
+            <CardDescription className={isMobile ? 'text-xs' : ''}>
+              Gantt plan, WBS breakdown, and S-curves (planned vs actual) for this milestone.
+            </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

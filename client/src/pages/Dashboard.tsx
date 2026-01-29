@@ -1049,9 +1049,30 @@ export default function Dashboard() {
               <CardDescription>Planned vs Actual vs Variance breakdown</CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Always-visible values (avoid pie labels getting clipped) */}
+              <div className="mb-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#3b82f6" }} />
+                  <span className="text-muted-foreground">Planned:</span>
+                  <span className="font-semibold">{financialPlanned.toFixed(1)}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#10b981" }} />
+                  <span className="text-muted-foreground">Actual:</span>
+                  <span className="font-semibold">{financialActual.toFixed(1)}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: financialVariance < 0 ? "#f59e0b" : "#ef4444" }}
+                  />
+                  <span className="text-muted-foreground">Variance:</span>
+                  <span className="font-semibold">{absFinancialVariance.toFixed(1)}%</span>
+                </div>
+              </div>
               <div className="w-full" style={{ height: isMobile ? '280px' : isTablet ? '320px' : '400px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                     <Pie
                       data={[
                         { 
@@ -1074,14 +1095,12 @@ export default function Dashboard() {
                         }
                       ]}
                       cx="50%"
-                      cy="50%"
+                      cy="44%"
+                      innerRadius={isMobile ? 38 : isTablet ? 48 : 60}
                       labelLine={false}
-                      label={({ name, payload }) => {
-                        const percent = (payload.value / 100) * 100;
-                        if (percent < 2) return ''; // Hide very small labels
-                        return `${name}: ${payload.originalValue.toFixed(1)}%`;
-                      }}
-                      outerRadius={isMobile ? 60 : isTablet ? 75 : 90}
+                      // Avoid rendering long labels around the pie (they get clipped on smaller widths)
+                      label={false}
+                      outerRadius={isMobile ? 72 : isTablet ? 92 : 120}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -1106,7 +1125,10 @@ export default function Dashboard() {
                       }}
                     />
                     <Legend
-                      wrapperStyle={{ paddingTop: "20px", fontSize: isMobile ? '11px' : '12px' }}
+                      verticalAlign="bottom"
+                      align="center"
+                      layout="horizontal"
+                      wrapperStyle={{ paddingTop: isMobile ? "10px" : "14px", fontSize: isMobile ? '11px' : '12px' }}
                       formatter={(value) => {
                         let itemValue = 0;
                         if (value === 'Planned') itemValue = financialPlanned;
@@ -1128,9 +1150,30 @@ export default function Dashboard() {
               <CardDescription>Planned vs Actual progress with variance</CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Always-visible values (avoid pie labels getting clipped) */}
+              <div className="mb-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#3b82f6" }} />
+                  <span className="text-muted-foreground">Planned:</span>
+                  <span className="font-semibold">{avgPlanned.toFixed(1)}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#10b981" }} />
+                  <span className="text-muted-foreground">Actual:</span>
+                  <span className="font-semibold">{avgActual.toFixed(1)}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: variance < 0 ? "#f59e0b" : "#ef4444" }}
+                  />
+                  <span className="text-muted-foreground">Variance:</span>
+                  <span className="font-semibold">{absVariance.toFixed(1)}%</span>
+                </div>
+              </div>
               <div className="w-full" style={{ height: isMobile ? '280px' : isTablet ? '320px' : '400px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                     <Pie
                       data={[
                         { 
@@ -1153,14 +1196,12 @@ export default function Dashboard() {
                         }
                       ]}
                       cx="50%"
-                      cy="50%"
+                      cy="44%"
+                      innerRadius={isMobile ? 38 : isTablet ? 48 : 60}
                       labelLine={false}
-                      label={({ name, payload }) => {
-                        const percent = (payload.value / 100) * 100;
-                        if (percent < 2) return ''; // Hide very small labels
-                        return `${name}: ${payload.originalValue.toFixed(1)}%`;
-                      }}
-                      outerRadius={isMobile ? 60 : isTablet ? 75 : 90}
+                      // Avoid rendering long labels around the pie (they get clipped on smaller widths)
+                      label={false}
+                      outerRadius={isMobile ? 72 : isTablet ? 92 : 120}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -1185,7 +1226,10 @@ export default function Dashboard() {
                       }}
                     />
                     <Legend
-                      wrapperStyle={{ paddingTop: "20px", fontSize: isMobile ? '11px' : '12px' }}
+                      verticalAlign="bottom"
+                      align="center"
+                      layout="horizontal"
+                      wrapperStyle={{ paddingTop: isMobile ? "10px" : "14px", fontSize: isMobile ? '11px' : '12px' }}
                       formatter={(value) => {
                         let itemValue = 0;
                         if (value === 'Planned Progress') itemValue = avgPlanned;
