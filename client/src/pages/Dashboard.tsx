@@ -964,16 +964,16 @@ export default function Dashboard() {
           return (
             <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-card/95 mb-6">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-              <CardContent className="relative p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                  <div className="space-y-3">
+              <CardContent className="relative p-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-                        <TrendingUp className="h-7 w-7 text-white" />
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+                        <TrendingUp className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-2xl font-bold font-heading">Overall Progress</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <h3 className="text-xl font-bold font-heading">Overall Progress</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           Combined progress across all milestone progress for {title}
                         </p>
                       </div>
@@ -981,18 +981,18 @@ export default function Dashboard() {
                   </div>
                   <div className="text-center md:text-right">
                     <div className="inline-block">
-                      <div className="text-6xl font-bold font-heading bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
+                      <div className="text-4xl font-bold font-heading bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
                         {overall}
-                        <span className="text-3xl">%</span>
+                        <span className="text-xl">%</span>
                       </div>
                       <div
-                        className="mt-2 px-4 py-1.5 rounded-full border inline-block"
+                        className="mt-1 px-3 py-1 rounded-full border inline-block"
                         style={{
                           backgroundColor: `${rangeMeta.color}1A`,
                           borderColor: `${rangeMeta.color}40`,
                         }}
                       >
-                        <span className="text-sm font-semibold" style={{ color: rangeMeta.color }}>
+                        <span className="text-xs font-semibold" style={{ color: rangeMeta.color }}>
                           {rangeMeta.label}
                         </span>
                       </div>
@@ -1001,7 +1001,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Legend for progress ranges */}
-                <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {[
                     { label: "0–25% Low", color: "#ef4444" },
                     { label: "25–50% Moderate", color: "#f59e0b" },
@@ -1016,8 +1016,8 @@ export default function Dashboard() {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="mt-4">
-                  <div className="relative h-5 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
+                <div className="mt-3">
+                  <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
                     <div
                       className="h-full transition-all duration-1000 ease-out rounded-full shadow-lg relative overflow-hidden"
                       style={{
@@ -1028,7 +1028,7 @@ export default function Dashboard() {
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                     <span>0%</span>
                     <span className="font-medium">Target: 100%</span>
                     <span>100%</span>

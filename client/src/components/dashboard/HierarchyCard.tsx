@@ -106,7 +106,7 @@ export function HierarchyCard({ title, overallProgress, onClick, className, colo
   return (
     <Card 
       className={cn(
-        "relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer group",
+        "relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 cursor-pointer group",
         "border-l-4",
         colors.border,
         "border-r border-t border-b border-border/40 hover:border-opacity-100",
@@ -118,12 +118,12 @@ export function HierarchyCard({ title, overallProgress, onClick, className, colo
       {/* Background gradient */}
       <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-16 -mt-16 opacity-20 group-hover:opacity-30 transition-opacity", colors.bg)}></div>
       
-      <CardContent className="relative p-6">
-        <div className="flex flex-col space-y-4">
+      <CardContent className="relative p-4">
+        <div className="flex flex-col space-y-3">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="text-lg font-bold font-heading text-foreground mb-1">
+              <h3 className="text-base font-bold font-heading text-foreground mb-0.5">
                 {title}
               </h3>
               <p className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -134,22 +134,22 @@ export function HierarchyCard({ title, overallProgress, onClick, className, colo
               "p-2 rounded-lg transition-colors",
               colors.iconBg
             )}>
-              <TrendingUp className={cn("h-5 w-5", colors.text)} />
+              <TrendingUp className={cn("h-4 w-4", colors.text)} />
             </div>
           </div>
 
           {/* Progress Section */}
           <div className="space-y-2">
             <div className="flex items-baseline justify-between">
-              <span className={cn("text-3xl font-bold font-heading tabular-nums", colors.text)}>
+              <span className={cn("text-2xl font-bold font-heading tabular-nums", colors.text)}>
                 {overallProgress}
-                <span className="text-xl ml-1">%</span>
+                <span className="text-base ml-1">%</span>
               </span>
-              <ArrowRight className={cn("h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-all", colors.text)} />
+              <ArrowRight className={cn("h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-all", colors.text)} />
             </div>
             
             {/* Progress Bar */}
-            <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
+            <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
               <div 
                 className={cn(
                   "h-full transition-all duration-1000 ease-out rounded-full shadow-lg relative overflow-hidden",
