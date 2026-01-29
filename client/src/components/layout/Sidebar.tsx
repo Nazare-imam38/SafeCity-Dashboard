@@ -16,7 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "City Monitor", href: "/" },
-  { icon: BarChart3, label: "Comparison", href: "/comparison" },
+  { icon: BarChart3, label: "City Comparison", href: "/comparison" },
   { icon: LucideBanknote, label: "Finance & Budget", href: "/finance" },
   { icon: MapIcon, label: "GIS Layers", href: "/gis" },
   { icon: Settings, label: "Settings", href: "/settings" },

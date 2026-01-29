@@ -50,6 +50,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo, useEffect } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { CheckCircle2 } from "lucide-react";
@@ -372,6 +373,21 @@ const CITY_NAMES: Record<string, string> = {
 // Color palette for cards
 const CARD_COLORS = ["emerald", "blue", "orange", "purple", "indigo", "teal", "pink", "cyan", "amber", "red"];
 
+type ProgressRangeMeta = {
+  label: "Low Progress" | "Moderate Progress" | "Good Progress" | "High Progress" | "Fully Completed";
+  color: string; // hex
+  min: number;
+  max: number;
+};
+
+const getProgressRangeMeta = (overall: number): ProgressRangeMeta => {
+  if (overall >= 100) return { label: "Fully Completed", color: "#10b981", min: 100, max: 100 }; // emerald
+  if (overall >= 75) return { label: "High Progress", color: "#22c55e", min: 75, max: 100 }; // green
+  if (overall >= 50) return { label: "Good Progress", color: "#3b82f6", min: 50, max: 75 }; // blue
+  if (overall >= 25) return { label: "Moderate Progress", color: "#f59e0b", min: 25, max: 50 }; // amber
+  return { label: "Low Progress", color: "#ef4444", min: 0, max: 25 }; // red
+};
+
 export default function Dashboard() {
   const [viewType, setViewType] = useState<"divisions" | "districts" | "tehsils" | "">("divisions");
   const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
@@ -385,7 +401,20 @@ export default function Dashboard() {
   const [allTehsilGroupsExpanded, setAllTehsilGroupsExpanded] = useState(false);
   const [isFilterBarExpanded, setIsFilterBarExpanded] = useState(true);
   const [selectedMilestoneKey, setSelectedMilestoneKey] = useState<PhaseKey | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { theme, toggleTheme } = useTheme();
+  const { width } = useWindowSize();
+  const isMobile = width < 640;
+  const isTablet = width >= 640 && width < 1024;
+
+  // Simulate loading on initial mount and when view type changes
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800); // 800ms loading simulation
+    return () => clearTimeout(timer);
+  }, [viewType, selectedItemName, selectedItemType]);
 
   // Get available divisions - independent filter
   const divisions = useMemo(() => ["all", ...getAllDivisions()], []);
@@ -568,6 +597,25 @@ export default function Dashboard() {
     return null;
   }, [viewType]);
 
+  // Context theme: follow the currently visible/selected area overall %
+  const contextOverall = useMemo(() => {
+    if (selectedItemName && singleItemData) return singleItemData.overall ?? 0;
+    return aggregatedData?.overall ?? 0;
+  }, [selectedItemName, singleItemData, aggregatedData]);
+
+  const contextTheme = useMemo(() => {
+    const meta = getProgressRangeMeta(contextOverall);
+    return {
+      meta,
+      // hex with alpha (CSS supports #RRGGBBAA)
+      accent: meta.color,
+      // stronger tint/border so the theme is clearly visible
+      accentSoft: `${meta.color}33`, // ~20% alpha
+      accentBorder: `${meta.color}80`, // ~50% alpha
+      accentGlow: `${meta.color}4D`, // ~30% alpha (for shadows)
+    };
+  }, [contextOverall]);
+
   // Get all divisions data for cards view - sorted by overall progress (descending)
   const divisionsData = useMemo(() => {
     try {
@@ -714,11 +762,75 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Skeleton loader component
+  const renderSkeletonLoader = () => (
+    <div className="space-y-6">
+      {/* Installation Phase Cards Skeleton */}
+      <div className="w-full">
+        <div className="mb-3">
+          <Skeleton className="h-7 w-48 mb-2" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="p-4">
+              <Skeleton className="h-5 w-24 mb-3" />
+              <Skeleton className="h-8 w-16 mb-2" />
+              <Skeleton className="h-2 w-full rounded-full" />
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Overall Progress Card Skeleton */}
+      <Card className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-14 w-14 rounded-xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+            </div>
+          </div>
+          <div className="text-center md:text-right">
+            <Skeleton className="h-16 w-24 mb-2" />
+            <Skeleton className="h-8 w-32 rounded-full" />
+          </div>
+        </div>
+        <div className="mt-6">
+          <Skeleton className="h-5 w-full rounded-full mb-3" />
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3 w-8" />
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-3 w-8" />
+          </div>
+        </div>
+      </Card>
+
+      {/* Pie Charts Skeleton */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Card key={i} className="p-6">
+            <Skeleton className="h-6 w-48 mb-2" />
+            <Skeleton className="h-4 w-64 mb-6" />
+            <Skeleton className="h-80 w-full rounded-lg" />
+          </Card>
+        ))}
+      </div>
+
+      {/* Phase Distribution Chart Skeleton */}
+      <Card className="p-6">
+        <Skeleton className="h-6 w-48 mb-2" />
+        <Skeleton className="h-4 w-64 mb-6" />
+        <Skeleton className="h-80 w-full rounded-lg" />
+      </Card>
+    </div>
+  );
+
   // Render aggregated charts function
   const renderAggregatedCharts = (title: string, data: CityInstallationData) => {
-    const { width } = useWindowSize();
-    const isMobile = width < 640;
-    const isTablet = width >= 640 && width < 1024;
 
     // Calculate overall planned and actual from all phases
     let totalPlanned = 0;
@@ -831,6 +943,98 @@ export default function Dashboard() {
             })}
           </div>
         </div>
+
+        {/* Overall Progress Bar (with legend) - Above pie charts */}
+        {!selectedMilestoneKey && (() => {
+          const overall = data.overall ?? 0;
+          const rangeMeta =
+            overall < 25
+              ? { label: "Low Progress", color: "#ef4444" }
+              : overall < 50
+                ? { label: "Moderate Progress", color: "#f59e0b" }
+                : overall < 75
+                  ? { label: "Good Progress", color: "#3b82f6" }
+                  : overall < 100
+                    ? { label: "High Progress", color: "#22c55e" }
+                    : { label: "Fully Completed", color: "#10b981" };
+
+          return (
+            <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-card/95 mb-6">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
+              <CardContent className="relative p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+                        <TrendingUp className="h-7 w-7 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold font-heading">Overall Progress</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Combined progress across all milestone progress for {title}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-center md:text-right">
+                    <div className="inline-block">
+                      <div className="text-6xl font-bold font-heading bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
+                        {overall}
+                        <span className="text-3xl">%</span>
+                      </div>
+                      <div
+                        className="mt-2 px-4 py-1.5 rounded-full border inline-block"
+                        style={{
+                          backgroundColor: `${rangeMeta.color}1A`,
+                          borderColor: `${rangeMeta.color}40`,
+                        }}
+                      >
+                        <span className="text-sm font-semibold" style={{ color: rangeMeta.color }}>
+                          {rangeMeta.label}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Legend for progress ranges */}
+                <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  {[
+                    { label: "0–25% Low", color: "#ef4444" },
+                    { label: "25–50% Moderate", color: "#f59e0b" },
+                    { label: "50–75% Good", color: "#3b82f6" },
+                    { label: "75–100% High", color: "#22c55e" },
+                  ].map((it) => (
+                    <div key={it.label} className="flex items-center gap-2">
+                      <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: it.color }} />
+                      <span>{it.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mt-4">
+                  <div className="relative h-5 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
+                    <div
+                      className="h-full transition-all duration-1000 ease-out rounded-full shadow-lg relative overflow-hidden"
+                      style={{
+                        width: `${Math.max(0, Math.min(100, overall))}%`,
+                        backgroundColor: rangeMeta.color,
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+                    <span>0%</span>
+                    <span className="font-medium">Target: 100%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Financial Progress Pie Charts (hide when a milestone KPI is selected) */}
         {!selectedMilestoneKey && (
@@ -995,57 +1199,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Overall Progress Card */}
-        <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-card/95">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-          <CardContent className="relative p-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-                    <TrendingUp className="h-7 w-7 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold font-heading">Overall Progress</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Combined progress across all milestone progress for {title}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-center md:text-right">
-                <div className="inline-block">
-                  <div className="text-6xl font-bold font-heading bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
-                    {data.overall}
-                    <span className="text-3xl">%</span>
-                  </div>
-                  <div className="mt-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 inline-block">
-                    <span className="text-sm font-semibold text-primary">
-                      {data.overall === 100 ? "Fully Completed" : 
-                       data.overall >= 80 ? "Near Completion" : 
-                       data.overall >= 50 ? "In Progress" : "Early Stage"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-8">
-              <div className="relative h-5 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
-                <div 
-                  className="h-full bg-gradient-to-r from-primary via-primary/90 to-primary transition-all duration-1000 ease-out rounded-full shadow-lg relative overflow-hidden"
-                  style={{ width: `${data.overall}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-                <span>0%</span>
-                <span className="font-medium">Target: 100%</span>
-                <span>100%</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Milestone details should appear beneath Overall Progress (and replace the old charts when selected) */}
         {selectedMilestoneKey && selectedPhaseMeta && selectedProgress && hasDetailedProgress(selectedProgress) && (
@@ -1088,37 +1241,39 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Planned vs Actual Charts for Each Phase */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-bold font-heading mb-2">Planned vs Actual Progress</h3>
-              <p className="text-sm text-muted-foreground">Compare actual progress against planned milestones for each project phase</p>
+          {/* Planned vs Actual Charts for Each Phase - Only show when specific item is selected (not aggregated view) */}
+          {title.startsWith("All Punjab") ? null : (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-bold font-heading mb-2">Planned vs Actual Progress</h3>
+                <p className="text-sm text-muted-foreground">Compare actual progress against planned milestones for each project phase</p>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                {installationPhases.map((phase) => {
+                  const progress = data[phase.key];
+                  if (!hasDetailedProgress(progress) || !progress.timeline) return null;
+                  
+                  const colorMap: Record<string, string> = {
+                    blue: "#3b82f6",
+                    green: "#10b981",
+                    orange: "#f59e0b",
+                    purple: "#a855f7",
+                    red: "#ef4444",
+                    yellow: "#eab308",
+                  };
+                  
+                  return (
+                    <PlannedVsActualChart
+                      key={`planned-actual-${phase.key}`}
+                      phaseName={phase.title}
+                      timelineData={progress.timeline}
+                      color={colorMap[phase.color] || "#6b7280"}
+                    />
+                  );
+                })}
+              </div>
             </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              {installationPhases.map((phase) => {
-                const progress = data[phase.key];
-                if (!hasDetailedProgress(progress) || !progress.timeline) return null;
-                
-                const colorMap: Record<string, string> = {
-                  blue: "#3b82f6",
-                  green: "#10b981",
-                  orange: "#f59e0b",
-                  purple: "#a855f7",
-                  red: "#ef4444",
-                  yellow: "#eab308",
-                };
-                
-                return (
-                  <PlannedVsActualChart
-                    key={`planned-actual-${phase.key}`}
-                    phaseName={phase.title}
-                    timelineData={progress.timeline}
-                    color={colorMap[phase.color] || "#6b7280"}
-                  />
-                );
-              })}
-            </div>
-          </div>
+          )}
 
           {/* Phase Timeline Chart */}
           <div className="grid gap-4 lg:grid-cols-12">
@@ -1176,10 +1331,37 @@ export default function Dashboard() {
 
   return (
     <Layout title="PSCA Progress Dashboard">
-      <div className="flex flex-col gap-4">
+      <div
+        className="flex flex-col gap-4"
+        style={{
+          // Page-level theme variables (used by chart cards, headers, etc.)
+          ["--progress-accent" as any]: contextTheme.accent,
+          ["--progress-accent-soft" as any]: contextTheme.accentSoft,
+          ["--progress-accent-border" as any]: contextTheme.accentBorder,
+          ["--progress-accent-glow" as any]: contextTheme.accentGlow,
+        }}
+      >
         {/* Top Header Section - Enhanced Design with Filter Bar */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-lg">
+        <div
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border shadow-lg"
+          style={{
+            borderColor: "var(--progress-accent-border)",
+            boxShadow: `0 16px 40px var(--progress-accent-glow)`,
+          }}
+        >
           <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
+          {/* soft tint overlay so the page feels \"on track\" based on context */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: [
+                // stronger radial tint
+                `radial-gradient(900px circle at 18% 22%, var(--progress-accent-soft), transparent 55%)`,
+                // subtle top-to-bottom wash
+                `linear-gradient(180deg, var(--progress-accent-soft), transparent 55%)`,
+              ].join(", "),
+            }}
+          />
           
           {/* Filter Bar Section - Radio Buttons */}
           <div className={`relative transition-all duration-300 ${
@@ -1284,13 +1466,17 @@ export default function Dashboard() {
                   </h1>
                 </div>
               </div>
-              {(selectedItemName && singleItemData) || aggregatedData ? (
-              <div className="flex items-center gap-3">
-                <Badge className="px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
-                  <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400" />
-                    Overall: {selectedItemName && singleItemData ? singleItemData.overall : aggregatedData?.overall || 0}%
-                </Badge>
-            </div>
+              {isLoading ? (
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-7 w-32 rounded-full" />
+                </div>
+              ) : (selectedItemName && singleItemData) || aggregatedData ? (
+                <div className="flex items-center gap-3">
+                  <Badge className="px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
+                    <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400" />
+                      Overall: {selectedItemName && singleItemData ? singleItemData.overall : aggregatedData?.overall || 0}%
+                  </Badge>
+                </div>
               ) : null}
           </div>
           
@@ -1352,7 +1538,28 @@ export default function Dashboard() {
         </div>
 
         {/* Division Selected - Show Districts */}
-        {selectedItemName && selectedItemType === "division" && singleItemData && (() => {
+        {selectedItemName && selectedItemType === "division" && (
+          isLoading ? (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-32" />
+                <div>
+                  <Skeleton className="h-7 w-48 mb-2" />
+                  <Skeleton className="h-4 w-64" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="p-6">
+                    <Skeleton className="h-6 w-32 mb-3" />
+                    <Skeleton className="h-10 w-20 mb-2" />
+                    <Skeleton className="h-2 w-full rounded-full" />
+                  </Card>
+                ))}
+              </div>
+              {renderSkeletonLoader()}
+            </div>
+          ) : singleItemData ? (() => {
           const districts = getDistrictsByDivision(selectedItemName);
           const distData = getAllDistrictData();
           
@@ -1421,10 +1628,32 @@ export default function Dashboard() {
               )}
             </div>
           );
-        })()}
+        })() : null
+        )}
 
         {/* District Selected - Show Tehsils */}
-        {selectedItemName && selectedItemType === "district" && singleItemData && (() => {
+        {selectedItemName && selectedItemType === "district" && (
+          isLoading ? (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-32" />
+                <div>
+                  <Skeleton className="h-7 w-48 mb-2" />
+                  <Skeleton className="h-4 w-64" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="p-6">
+                    <Skeleton className="h-6 w-32 mb-3" />
+                    <Skeleton className="h-10 w-20 mb-2" />
+                    <Skeleton className="h-2 w-full rounded-full" />
+                  </Card>
+                ))}
+              </div>
+              {renderSkeletonLoader()}
+            </div>
+          ) : singleItemData ? (() => {
           // Find which division this district belongs to
           const division = PUNJAB_HIERARCHY.find(div => 
             div.districts.some(dist => dist.district === selectedItemName)
@@ -1527,10 +1756,23 @@ export default function Dashboard() {
               )}
             </div>
           );
-        })()}
+        })() : null
+        )}
 
         {/* Tehsil Selected - Show Detail View */}
-        {selectedItemName && selectedItemType === "tehsil" && singleItemData && (() => {
+        {selectedItemName && selectedItemType === "tehsil" && (
+          isLoading ? (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-32" />
+                <div>
+                  <Skeleton className="h-7 w-48 mb-2" />
+                  <Skeleton className="h-4 w-64" />
+                </div>
+              </div>
+              {renderSkeletonLoader()}
+            </div>
+          ) : singleItemData ? (() => {
           // Find which division and district this tehsil belongs to
           let parentDivision = "";
           let parentDistrict = "";
@@ -1572,114 +1814,184 @@ export default function Dashboard() {
               {renderAggregatedCharts(selectedItemName + " Tehsil", singleItemData)}
             </div>
           );
-        })()}
+        })() : null
+        )}
 
         {/* Hierarchy Cards View with Charts */}
-        {!selectedItemName && viewType === "divisions" && aggregatedData && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold font-heading mb-1">All Punjab Divisions</h2>
-                <p className="text-sm text-muted-foreground">Overall progress across all divisions of Punjab (sorted by progress)</p>
-              </div>
-              
-              {/* Show More/Less Button */}
-              {divisionsData.length > 4 && (
-                <Button
-                  variant="outline"
-                  onClick={() => setExpandedDivisions(!expandedDivisions)}
-                  className="rounded-xl h-9 whitespace-nowrap text-white border-[#101a3c] hover:border-[#101a3c] cursor-pointer"
-                  style={{ backgroundColor: '#101a3c' }}
-                >
-                  {expandedDivisions ? (
-                    <>
-                      <ChevronUp className="h-4 w-4 mr-2 text-white" />
-                      Show Less ({divisionsData.length - 4} hidden)
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-4 w-4 mr-2 text-white" />
-                      Show More ({divisionsData.length - 4} more)
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-            
-            {/* Division Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {(expandedDivisions ? divisionsData : divisionsData.slice(0, 4)).map((div) => (
-                <HierarchyCard
-                  key={div.name}
-                  title={div.name}
-                  overallProgress={div.overall}
-                  color={div.color}
-                  onClick={() => {
-                    setSelectedItemName(div.name);
-                    setSelectedItemType("division");
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Aggregated Charts Section - Same as detail view */}
-            {renderAggregatedCharts("All Punjab Divisions", aggregatedData)}
+        {!selectedItemName && viewType === "divisions" && (
+          isLoading ? (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <Skeleton className="h-7 w-48 mb-2" />
+                  <Skeleton className="h-4 w-80" />
                 </div>
-        )}
-
-        {!selectedItemName && viewType === "districts" && aggregatedData && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold font-heading mb-1">All Punjab Districts</h2>
-                <p className="text-sm text-muted-foreground">Overall progress across all districts of Punjab (sorted by progress)</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="p-6">
+                    <Skeleton className="h-6 w-32 mb-3" />
+                    <Skeleton className="h-10 w-20 mb-2" />
+                    <Skeleton className="h-2 w-full rounded-full" />
+                  </Card>
+                ))}
+              </div>
+              {renderSkeletonLoader()}
+            </div>
+          ) : aggregatedData ? (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold font-heading mb-1">All Punjab Divisions</h2>
+                  <p className="text-sm text-muted-foreground">Overall progress across all divisions of Punjab (sorted by progress)</p>
+                </div>
+                
+                {/* Show More/Less Button */}
+                {divisionsData.length > 4 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setExpandedDivisions(!expandedDivisions)}
+                    className="rounded-xl h-9 whitespace-nowrap text-white border-[#101a3c] hover:border-[#101a3c] cursor-pointer"
+                    style={{ backgroundColor: '#101a3c' }}
+                  >
+                    {expandedDivisions ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-2 text-white" />
+                        Show Less ({divisionsData.length - 4} hidden)
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-2 text-white" />
+                        Show More ({divisionsData.length - 4} more)
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
               
-              {/* Show More/Less Button */}
-              {districtsData.length > 4 && (
-                <Button
-                  variant="outline"
-                  onClick={() => setExpandedDistricts(!expandedDistricts)}
-                  className="rounded-xl h-9 whitespace-nowrap text-white border-[#101a3c] hover:border-[#101a3c] cursor-pointer"
-                  style={{ backgroundColor: '#101a3c' }}
-                >
-                  {expandedDistricts ? (
-                    <>
-                      <ChevronUp className="h-4 w-4 mr-2 text-white" />
-                      Show Less ({districtsData.length - 4} hidden)
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-4 w-4 mr-2 text-white" />
-                      Show More ({districtsData.length - 4} more)
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-            
-            {/* District Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {(expandedDistricts ? districtsData : districtsData.slice(0, 4)).map((dist) => (
-                <HierarchyCard
-                  key={dist.name}
-                  title={dist.name}
-                  overallProgress={dist.overall}
-                  color={dist.color}
-                  onClick={() => {
-                    setSelectedItemName(dist.name);
-                    setSelectedItemType("district");
-                  }}
-                />
-              ))}
-            </div>
+              {/* Division Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {(expandedDivisions ? divisionsData : divisionsData.slice(0, 4)).map((div) => (
+                  <HierarchyCard
+                    key={div.name}
+                    title={div.name}
+                    overallProgress={div.overall}
+                    color={div.color}
+                    onClick={() => {
+                      setSelectedItemName(div.name);
+                      setSelectedItemType("division");
+                    }}
+                  />
+                ))}
+              </div>
 
-            {/* Aggregated Charts Section */}
-            {renderAggregatedCharts("All Punjab Districts", aggregatedData)}
-                   </div>
+              {/* Aggregated Charts Section - Same as detail view */}
+              {renderAggregatedCharts("All Punjab Divisions", aggregatedData)}
+            </div>
+          ) : null
         )}
 
-        {!selectedItemName && viewType === "tehsils" && aggregatedData && (() => {
+        {!selectedItemName && viewType === "districts" && (
+          isLoading ? (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <Skeleton className="h-7 w-48 mb-2" />
+                  <Skeleton className="h-4 w-80" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="p-6">
+                    <Skeleton className="h-6 w-32 mb-3" />
+                    <Skeleton className="h-10 w-20 mb-2" />
+                    <Skeleton className="h-2 w-full rounded-full" />
+                  </Card>
+                ))}
+              </div>
+              {renderSkeletonLoader()}
+            </div>
+          ) : aggregatedData ? (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold font-heading mb-1">All Punjab Districts</h2>
+                  <p className="text-sm text-muted-foreground">Overall progress across all districts of Punjab (sorted by progress)</p>
+                </div>
+                
+                {/* Show More/Less Button */}
+                {districtsData.length > 4 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setExpandedDistricts(!expandedDistricts)}
+                    className="rounded-xl h-9 whitespace-nowrap text-white border-[#101a3c] hover:border-[#101a3c] cursor-pointer"
+                    style={{ backgroundColor: '#101a3c' }}
+                  >
+                    {expandedDistricts ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-2 text-white" />
+                        Show Less ({districtsData.length - 4} hidden)
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-2 text-white" />
+                        Show More ({districtsData.length - 4} more)
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+              
+              {/* District Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {(expandedDistricts ? districtsData : districtsData.slice(0, 4)).map((dist) => (
+                  <HierarchyCard
+                    key={dist.name}
+                    title={dist.name}
+                    overallProgress={dist.overall}
+                    color={dist.color}
+                    onClick={() => {
+                      setSelectedItemName(dist.name);
+                      setSelectedItemType("district");
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Aggregated Charts Section */}
+              {renderAggregatedCharts("All Punjab Districts", aggregatedData)}
+            </div>
+          ) : null
+        )}
+
+        {!selectedItemName && viewType === "tehsils" && (
+          isLoading ? (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <Skeleton className="h-7 w-48 mb-2" />
+                  <Skeleton className="h-4 w-80" />
+                </div>
+              </div>
+              <div className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Card key={i} className="p-6">
+                    <Skeleton className="h-6 w-32 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {Array.from({ length: 4 }).map((_, j) => (
+                        <Card key={j} className="p-4">
+                          <Skeleton className="h-5 w-24 mb-3" />
+                          <Skeleton className="h-8 w-16 mb-2" />
+                          <Skeleton className="h-2 w-full rounded-full" />
+                        </Card>
+                      ))}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              {renderSkeletonLoader()}
+            </div>
+          ) : aggregatedData ? (() => {
           // Default districts to show: Lahore and Sheikhupura
           const DEFAULT_DISTRICTS = ['Lahore', 'Sheikhupura'];
           
@@ -1857,7 +2169,8 @@ export default function Dashboard() {
               {renderAggregatedCharts("All Punjab Tehsils", aggregatedData)}
             </div>
           );
-        })()}
+        })() : null
+        )}
 
       </div>
 

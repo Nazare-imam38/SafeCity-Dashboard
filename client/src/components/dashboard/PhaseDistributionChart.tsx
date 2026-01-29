@@ -65,7 +65,17 @@ export function PhaseDistributionChart({ data }: PhaseDistributionChartProps) {
   };
 
   return (
-    <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
+    <Card
+      className="shadow-lg border-2 transition-colors"
+      style={{
+        borderColor: "var(--progress-accent-border, hsl(var(--border)))",
+        boxShadow: "0 12px 30px var(--progress-accent-glow, transparent)",
+        backgroundImage: [
+          "radial-gradient(650px circle at 18% 14%, var(--progress-accent-soft, transparent), transparent 55%)",
+          "linear-gradient(180deg, var(--progress-accent-soft, transparent), transparent 55%)",
+        ].join(", "),
+      }}
+    >
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Phase Distribution</CardTitle>
         <CardDescription className="text-sm">Progress distribution across milestone progress</CardDescription>
