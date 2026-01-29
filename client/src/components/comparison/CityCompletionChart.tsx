@@ -7,6 +7,7 @@ interface CityCompletionChartProps {
     city: string;
     completion: number;
   }[];
+  description?: string;
 }
 
 const getColor = (completion: number): string => {
@@ -16,7 +17,7 @@ const getColor = (completion: number): string => {
   return "#ef4444"; // red
 };
 
-export function CityCompletionChart({ cityData }: CityCompletionChartProps) {
+export function CityCompletionChart({ cityData, description = "District Wise Progress" }: CityCompletionChartProps) {
   const { width } = useWindowSize();
   const sortedData = [...cityData].sort((a, b) => b.completion - a.completion);
   const isMobile = width < 640;
@@ -26,7 +27,7 @@ export function CityCompletionChart({ cityData }: CityCompletionChartProps) {
     <Card className="shadow-lg border-border/50 border-2 transition-colors hover:border-[#101a3c]">
       <CardHeader className="pb-4">
         <CardTitle className="font-heading text-xl font-bold">Smart Safe Cities Phase I (Completion %)</CardTitle>
-        <CardDescription className="text-sm">District Wise Progress</CardDescription>
+        <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="w-full" style={{ height: isMobile ? '320px' : isTablet ? '380px' : '450px' }}>

@@ -5,13 +5,19 @@ import { StackedPhaseChart } from "@/components/comparison/StackedPhaseChart";
 import { RadarComparisonChart } from "@/components/comparison/RadarComparisonChart";
 import { HeatmapChart } from "@/components/comparison/HeatmapChart";
 import { CITY_INSTALLATION_DATA, CITY_NAMES } from "@/data/cityData";
+import { getAllDivisions } from "@/data/punjabHierarchy";
+import { getAllDivisionData } from "@/data/punjabInstallationData";
 
 export default function Comparison() {
-  // Prepare data for city completion chart
-  const cityCompletionData = Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
-    city: CITY_NAMES[key] || key,
-    completion: data.overall,
-  }));
+  // Prepare data for division completion chart (Punjab Division-wise progress)
+  const divisionDataMap = getAllDivisionData();
+  const divisionCompletionData = getAllDivisions().map((division) => {
+    const key = division.toLowerCase().replace(/\s+/g, "");
+    return {
+      city: `${division} Division`,
+      completion: divisionDataMap[key]?.overall ?? 0,
+    };
+  });
 
   // Prepare data for stacked phase chart
   const stackedData = Object.entries(CITY_INSTALLATION_DATA).map(([key, data]) => ({
@@ -70,7 +76,7 @@ export default function Comparison() {
         
 
         {/* City Completion Comparison Chart */}
-        <CityCompletionChart cityData={cityCompletionData} />
+        <CityCompletionChart cityData={divisionCompletionData} description="Division Wise Progress" />
 
         {/* Stacked Phase Chart */}
         <StackedPhaseChart data={stackedData} />

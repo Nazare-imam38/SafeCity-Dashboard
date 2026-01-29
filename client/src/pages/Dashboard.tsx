@@ -820,17 +820,20 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Phase Distribution Chart Skeleton */}
-      <Card className="p-6">
-        <Skeleton className="h-6 w-48 mb-2" />
-        <Skeleton className="h-4 w-64 mb-6" />
-        <Skeleton className="h-80 w-full rounded-lg" />
-      </Card>
+      {/* Phase Distribution Chart Skeleton (drilldown only) */}
+      {selectedItemName && selectedItemType ? (
+        <Card className="p-6">
+          <Skeleton className="h-6 w-48 mb-2" />
+          <Skeleton className="h-4 w-64 mb-6" />
+          <Skeleton className="h-80 w-full rounded-lg" />
+        </Card>
+      ) : null}
     </div>
   );
 
   // Render aggregated charts function
   const renderAggregatedCharts = (title: string, data: CityInstallationData) => {
+    const isAggregatedView = title.startsWith("All Punjab");
 
     // Calculate overall planned and actual from all phases
     let totalPlanned = 0;
@@ -1217,8 +1220,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Charts Grid */}
-        {!selectedMilestoneKey && (
+        {/* Charts Grid (drilldown only; hide in All Divisions/Districts/Tehsils views) */}
+        {!selectedMilestoneKey && !isAggregatedView && (
           <div className="space-y-4">
           <div>
             <h2 className="text-xl font-bold font-heading mb-1">Analytics & Insights</h2>
