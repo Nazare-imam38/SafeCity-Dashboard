@@ -13,6 +13,7 @@ import {
   getAllTehsilData,
   InstallationData
 } from "@/data/punjabInstallationData";
+import { PUNJAB_HIERARCHY } from "@/data/punjabHierarchy";
 import { 
   ClipboardCheck, 
   Building2, 
@@ -71,6 +72,102 @@ const hasDetailedProgress = (progress: number | PhaseProgress): progress is Phas
   return typeof progress !== 'number';
 };
 
+// Generate sub-projects for a phase (sample data structure)
+const generateSubProjects = (
+  phaseKey: string,
+  actualProgress: number,
+  plannedProgress: number
+): SubProject[] => {
+  // Sample sub-project structure - this should be replaced with real data
+  const subProjectTemplates: Record<string, { names: string[], weights: number[] }> = {
+    surveys: {
+      names: ["Site Survey & Assessment", "Technical Feasibility Study", "Site Selection & Approval", "Environmental Clearance"],
+      weights: [0.30, 0.25, 0.25, 0.20]
+    },
+    foundations: {
+      names: ["Excavation Work", "Foundation Pouring", "Curing & Quality Check", "Backfilling & Compaction"],
+      weights: [0.25, 0.35, 0.20, 0.20]
+    },
+    cabinet: {
+      names: ["Cabinet Installation", "Electrical Connections", "Network Setup", "Equipment Mounting"],
+      weights: [0.30, 0.25, 0.25, 0.20]
+    },
+    cable: {
+      names: ["Cable Trenching", "Fiber Optic Laying", "Power Cable Installation", "Cable Termination & Testing"],
+      weights: [0.25, 0.30, 0.25, 0.20]
+    },
+    controlRoom: {
+      names: ["Room Renovation", "Server Installation", "Display Systems", "Control Systems Integration"],
+      weights: [0.25, 0.30, 0.25, 0.20]
+    },
+    ppic3: {
+      names: ["System Integration", "Software Deployment", "Testing & Commissioning", "Go-Live Preparation"],
+      weights: [0.30, 0.25, 0.25, 0.20]
+    }
+  };
+
+  const template = subProjectTemplates[phaseKey] || {
+    names: ["Sub-Project 1", "Sub-Project 2", "Sub-Project 3"],
+    weights: [0.33, 0.33, 0.34]
+  };
+
+  // Generate sub-projects with variance based on parent progress
+  const variance = actualProgress - plannedProgress;
+  
+  return template.names.map((name, index) => {
+    const weight = template.weights[index];
+    const baseActual = actualProgress * (0.8 + Math.random() * 0.4); // Vary around parent
+    const basePlanned = plannedProgress * (0.8 + Math.random() * 0.4);
+    
+    return {
+      id: `${phaseKey}-${index}`,
+      name,
+      actualProgress: Math.min(100, Math.max(0, baseActual)),
+      plannedProgress: Math.min(100, Math.max(0, basePlanned)),
+      weight
+    };
+  });
+};
+
+// Helper to convert legacy data to new format
+const convertToPhaseProgress = (
+  currentValue: number,
+  phaseKey: string,
+  timelineData?: { month: string; [key: string]: number | string }[]
+): PhaseProgress => {
+  // Generate planned progress (typically 5-10% higher initially, then converges)
+  const plannedProgress = Math.min(100, currentValue + (100 - currentValue) * 0.15);
+  
+  // Generate timeline if not provided
+  const timeline = timelineData?.map(point => {
+    const actual = (point[phaseKey] as number) || 0;
+    const planned = Math.min(100, actual + (100 - actual) * 0.15);
+    return {
+      month: point.month as string,
+      actual,
+      planned
+    };
+  }) || [];
+
+  // Generate default timeline if none provided
+  const defaultTimeline = timeline.length === 0 ? [
+    { month: "Jan", actual: Math.max(0, currentValue * 0.1), planned: Math.max(0, plannedProgress * 0.15) },
+    { month: "Feb", actual: Math.max(0, currentValue * 0.25), planned: Math.max(0, plannedProgress * 0.30) },
+    { month: "Mar", actual: Math.max(0, currentValue * 0.40), planned: Math.max(0, plannedProgress * 0.45) },
+    { month: "Apr", actual: Math.max(0, currentValue * 0.55), planned: Math.max(0, plannedProgress * 0.60) },
+    { month: "May", actual: Math.max(0, currentValue * 0.70), planned: Math.max(0, plannedProgress * 0.75) },
+    { month: "Jun", actual: Math.max(0, currentValue * 0.85), planned: Math.max(0, plannedProgress * 0.90) },
+    { month: "Jul", actual: currentValue, planned: plannedProgress },
+  ] : timeline;
+
+  return {
+    actual: currentValue,
+    planned: plannedProgress,
+    subProjects: generateSubProjects(phaseKey, currentValue, plannedProgress),
+    timeline: defaultTimeline
+  };
+};
+
 const installationPhases = [
   {
     key: "surveys" as const,
@@ -122,6 +219,23 @@ export default function ProjectDetail() {
   const pathParts = location.split('/').filter(Boolean);
   const tehsilName = pathParts[1] || '';
   const projectId = pathParts[2] || '';
+
+  // Find the actual tehsil name from hierarchy
+  const actualTehsilName = useMemo(() => {
+    if (!tehsilName) return null;
+    const tehsilSlug = tehsilName.toLowerCase().replace(/\s+/g, '');
+    for (const div of PUNJAB_HIERARCHY) {
+      for (const dist of div.districts) {
+        for (const teh of dist.tehsils) {
+          const tehSlug = teh.tehsil.toLowerCase().replace(/\s+/g, '');
+          if (tehSlug === tehsilSlug || tehSlug.includes(tehsilSlug) || tehsilSlug.includes(tehSlug)) {
+            return teh.tehsil;
+          }
+        }
+      }
+    }
+    return null;
+  }, [tehsilName]);
 
   // Get tehsil data
   const tehsilData = useMemo(() => {
@@ -176,9 +290,22 @@ export default function ProjectDetail() {
   const progressValue = getProgressValue(progress);
   const hasDetails = hasDetailedProgress(progress);
 
+  // Convert to PhaseProgress if needed to get sub-projects
+  const projectPhaseProgress: PhaseProgress = useMemo(() => {
+    if (hasDetails) {
+      return progress;
+    } else {
+      const timelineData = (tehsilData as any).timeline;
+      return convertToPhaseProgress(progressValue, projectId, timelineData);
+    }
+  }, [hasDetails, progress, progressValue, projectId, tehsilData]);
+
+  // Get sub-projects for the selected project
+  const subProjects = projectPhaseProgress.subProjects || [];
+
   // Calculate metrics for this specific project
-  const planned = hasDetails ? progress.planned : progressValue;
-  const actual = hasDetails ? progress.actual : progressValue;
+  const planned = projectPhaseProgress.planned;
+  const actual = projectPhaseProgress.actual;
   const variance = actual - planned;
   const absVariance = Math.abs(variance);
 
@@ -220,11 +347,19 @@ export default function ProjectDetail() {
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
-            onClick={() => setLocation('/')}
+            onClick={() => {
+              // Navigate back to Dashboard with tehsil selected
+              if (actualTehsilName) {
+                // Use location state to pass tehsil info
+                setLocation(`/?tehsil=${encodeURIComponent(actualTehsilName)}`);
+              } else {
+                setLocation('/');
+              }
+            }}
             className="rounded-xl cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            Back to {actualTehsilName || 'Tehsil'} Projects
           </Button>
           <div>
             <h2 className="text-2xl font-bold font-heading">{selectedProject.title}</h2>
@@ -232,12 +367,12 @@ export default function ProjectDetail() {
           </div>
         </div>
 
-        {/* Project Milestones - All 6 cards */}
+        {/* Project KPIs - Sub-projects of the selected project */}
         <div className="w-full">
           <div className="mb-3 flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold font-heading mb-1">Project Milestones</h2>
-              <p className="text-sm text-muted-foreground">Progress breakdown for {tehsilName} Tehsil</p>
+              <h2 className="text-xl font-bold font-heading mb-1">Project KPIs</h2>
+              <p className="text-sm text-muted-foreground">Sub-projects breakdown for {selectedProject.title}</p>
             </div>
             {selectedMilestoneKey && (
               <button
@@ -249,353 +384,126 @@ export default function ProjectDetail() {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-            {installationPhases.map((phase) => {
-              const phaseProgress = tehsilData[phase.key];
-              const phaseProgressValue = getProgressValue(phaseProgress);
-              const phaseHasDetails = hasDetailedProgress(phaseProgress);
+          {subProjects.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {subProjects.map((subProject) => {
+                const subProjectProgress = Math.round(subProject.actualProgress);
+                const isSelected = selectedMilestoneKey === subProject.id;
               
               return (
                 <InstallationCard
-                  key={`${tehsilName}-${phase.key}`}
-                  title={phase.title}
-                  percentage={phaseProgressValue}
-                  icon={phase.icon}
-                  color={phase.color}
-                  actualProgress={phaseHasDetails ? phaseProgress.actual : undefined}
-                  plannedProgress={phaseHasDetails ? phaseProgress.planned : undefined}
-                  selected={selectedMilestoneKey === phase.key}
+                    key={subProject.id}
+                    title={subProject.name}
+                    percentage={subProjectProgress}
+                    icon={selectedProject.icon}
+                    color={selectedProject.color}
+                    actualProgress={subProject.actualProgress}
+                    plannedProgress={subProject.plannedProgress}
+                    selected={isSelected}
                   onClick={() => {
-                    setSelectedMilestoneKey(prev => (prev === phase.key ? null : phase.key));
+                      setSelectedMilestoneKey(prev => (prev === subProject.id ? null : subProject.id));
                   }}
                 />
               );
             })}
           </div>
+          ) : (
+            <Card className="border-border/50">
+              <CardContent className="p-6">
+                <p className="text-muted-foreground text-center">
+                  No sub-projects found for {selectedProject.title}. Sub-projects will be generated automatically.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {/* Overall Progress Bar */}
-        {!selectedMilestoneKey && (
-          <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-card/95 mb-6">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-            <CardContent className="relative p-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-                      <TrendingUp className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold font-heading">Overall Progress</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {tehsilName} Tehsil
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-center md:text-right">
-                  <div className="inline-block">
-                    <div className="text-4xl font-bold font-heading bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
-                      {overallProgress}
-                      <span className="text-xl">%</span>
-                    </div>
-                    <div
-                      className="mt-1 px-3 py-1 rounded-full border inline-block"
-                      style={{
-                        backgroundColor: `${rangeMeta.color}1A`,
-                        borderColor: `${rangeMeta.color}40`,
-                      }}
-                    >
-                      <span className="text-xs font-semibold" style={{ color: rangeMeta.color }}>
-                        {rangeMeta.label}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Legend for progress ranges */}
-              <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                {[
-                  { label: "0–25% Low", color: "#ef4444" },
-                  { label: "25–50% Moderate", color: "#f59e0b" },
-                  { label: "50–75% Good", color: "#3b82f6" },
-                  { label: "75–100% High", color: "#22c55e" },
-                ].map((it) => (
-                  <div key={it.label} className="flex items-center gap-2">
-                    <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: it.color }} />
-                    <span>{it.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Progress Bar */}
-              <div className="mt-3">
-                <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
-                  <div
-                    className="h-full transition-all duration-1000 ease-out rounded-full shadow-lg relative overflow-hidden"
-                    style={{
-                      width: `${Math.max(0, Math.min(100, overallProgress))}%`,
-                      backgroundColor: rangeMeta.color,
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                  <span>0%</span>
-                  <span className="font-medium">Target: 100%</span>
-                  <span>100%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Progress Pie Charts */}
-        {!selectedMilestoneKey && (
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Project Progress Pie Chart */}
-            <Card className="border-2 transition-colors hover:border-[#101a3c]">
-              <CardHeader>
-                <CardTitle>{selectedProject.title} Progress</CardTitle>
-                <CardDescription>Planned vs Actual progress with variance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#3b82f6" }} />
-                    <span className="text-muted-foreground">Planned:</span>
-                    <span className="font-semibold">{planned.toFixed(1)}%</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#10b981" }} />
-                    <span className="text-muted-foreground">Actual:</span>
-                    <span className="font-semibold">{actual.toFixed(1)}%</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: variance < 0 ? "#f59e0b" : "#ef4444" }}
-                    />
-                    <span className="text-muted-foreground">Variance:</span>
-                    <span className="font-semibold">{absVariance.toFixed(1)}%</span>
-                  </div>
-                </div>
-                <div className="w-full" style={{ height: isMobile ? '280px' : isTablet ? '320px' : '400px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-                      <Pie
-                        data={[
-                          { 
-                            name: 'Planned Progress', 
-                            value: normalizedPlanned,
-                            originalValue: planned,
-                            color: '#3b82f6'
-                          },
-                          { 
-                            name: 'Actual Progress', 
-                            value: normalizedActual,
-                            originalValue: actual,
-                            color: '#10b981'
-                          },
-                          { 
-                            name: 'Variance', 
-                            value: normalizedVariance,
-                            originalValue: absVariance,
-                            color: variance < 0 ? '#f59e0b' : '#ef4444'
-                          }
-                        ]}
-                        cx="50%"
-                        cy="44%"
-                        innerRadius={isMobile ? 38 : isTablet ? 48 : 60}
-                        labelLine={false}
-                        label={false}
-                        outerRadius={isMobile ? 72 : isTablet ? 92 : 120}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {[
-                          { name: 'Planned Progress', value: normalizedPlanned, originalValue: planned, color: '#3b82f6' },
-                          { name: 'Actual Progress', value: normalizedActual, originalValue: actual, color: '#10b981' },
-                          { name: 'Variance', value: normalizedVariance, originalValue: absVariance, color: variance < 0 ? '#f59e0b' : '#ef4444' }
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          borderColor: "hsl(var(--border))",
-                          borderRadius: "8px",
-                          fontSize: isMobile ? '11px' : '12px'
-                        }}
-                        formatter={(value: number, name: string, props: any) => {
-                          const originalValue = props.payload?.originalValue ?? value;
-                          return [`${originalValue.toFixed(1)}%`, name];
-                        }}
-                      />
-                      <Legend
-                        verticalAlign="bottom"
-                        align="center"
-                        layout="horizontal"
-                        wrapperStyle={{ paddingTop: isMobile ? "10px" : "14px", fontSize: isMobile ? '11px' : '12px' }}
-                        formatter={(value) => {
-                          let itemValue = 0;
-                          if (value === 'Planned Progress') itemValue = planned;
-                          else if (value === 'Actual Progress') itemValue = actual;
-                          else if (value === 'Variance') itemValue = absVariance;
-                          return `${value}: ${itemValue.toFixed(1)}%`;
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Overall Progress Pie Chart */}
-            <Card className="border-2 transition-colors hover:border-[#101a3c]">
-              <CardHeader>
-                <CardTitle>Overall Tehsil Progress</CardTitle>
-                <CardDescription>All projects combined progress</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#3b82f6" }} />
-                    <span className="text-muted-foreground">Overall:</span>
-                    <span className="font-semibold">{overallProgress.toFixed(1)}%</span>
-                  </div>
-                </div>
-                <div className="w-full" style={{ height: isMobile ? '280px' : isTablet ? '320px' : '400px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-                      <Pie
-                        data={[
-                          { 
-                            name: 'Completed', 
-                            value: overallProgress,
-                            color: phaseColor
-                          },
-                          { 
-                            name: 'Remaining', 
-                            value: 100 - overallProgress,
-                            color: '#e5e7eb'
-                          }
-                        ]}
-                        cx="50%"
-                        cy="44%"
-                        innerRadius={isMobile ? 38 : isTablet ? 48 : 60}
-                        labelLine={false}
-                        label={false}
-                        outerRadius={isMobile ? 72 : isTablet ? 92 : 120}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {[
-                          { name: 'Completed', value: overallProgress, color: phaseColor },
-                          { name: 'Remaining', value: 100 - overallProgress, color: '#e5e7eb' }
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          borderColor: "hsl(var(--border))",
-                          borderRadius: "8px",
-                          fontSize: isMobile ? '11px' : '12px'
-                        }}
-                        formatter={(value: number) => {
-                          return [`${value.toFixed(1)}%`, ''];
-                        }}
-                      />
-                      <Legend
-                        verticalAlign="bottom"
-                        align="center"
-                        layout="horizontal"
-                        wrapperStyle={{ paddingTop: isMobile ? "10px" : "14px", fontSize: isMobile ? '11px' : '12px' }}
-                        formatter={(value) => {
-                          if (value === 'Completed') return `Completed: ${overallProgress.toFixed(1)}%`;
-                          return `Remaining: ${(100 - overallProgress).toFixed(1)}%`;
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Charts Section - Always visible, updates based on selected KPI */}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-xl font-bold font-heading mb-1">Project Charts</h2>
+            <p className="text-sm text-muted-foreground">
+              {selectedMilestoneKey 
+                ? `Gantt chart, WBS breakdown, and S-curves for ${installationPhases.find(p => p.key === selectedMilestoneKey)?.title || 'selected milestone'}`
+                : `Gantt chart, WBS breakdown, and S-curves for ${selectedProject.title}`
+              }
+            </p>
           </div>
-        )}
 
-        {/* Milestone details panel */}
-        {selectedMilestoneKey && hasDetails && (
-          <div className="space-y-4">
-            <MilestoneDetailsPanel
-              milestoneTitle={installationPhases.find(p => p.key === selectedMilestoneKey)?.title || ''}
-              phase={{
-                actual: hasDetailedProgress(tehsilData[selectedMilestoneKey]) ? tehsilData[selectedMilestoneKey].actual : getProgressValue(tehsilData[selectedMilestoneKey]),
-                planned: hasDetailedProgress(tehsilData[selectedMilestoneKey]) ? tehsilData[selectedMilestoneKey].planned : getProgressValue(tehsilData[selectedMilestoneKey]),
-                subProjects: hasDetailedProgress(tehsilData[selectedMilestoneKey]) ? tehsilData[selectedMilestoneKey].subProjects : undefined,
-                timeline: hasDetailedProgress(tehsilData[selectedMilestoneKey]) ? tehsilData[selectedMilestoneKey].timeline : undefined,
-              }}
-              phaseColor={colorMap[installationPhases.find(p => p.key === selectedMilestoneKey)?.color || 'blue'] || "#6b7280"}
-              onClear={() => setSelectedMilestoneKey(null)}
-            />
+          {/* Get current phase data based on selection */}
+          {(() => {
+            // If a sub-project KPI is selected, show that sub-project's data
+            // Otherwise, show the main project's data
+            let currentPhase: PhaseProgress;
+            let currentPhaseTitle: string;
+            let currentPhaseColor: string;
+
+            if (selectedMilestoneKey && subProjects.length > 0) {
+              // A sub-project KPI was selected
+              const selectedSubProject = subProjects.find(sp => sp.id === selectedMilestoneKey);
+              if (selectedSubProject) {
+                // Create a PhaseProgress for the selected sub-project
+                // Use the sub-project's timeline (generate from parent timeline)
+                const subProjectTimeline = projectPhaseProgress.timeline?.map(t => ({
+                  month: t.month,
+                  actual: selectedSubProject.actualProgress * (t.actual / 100),
+                  planned: selectedSubProject.plannedProgress * (t.planned / 100),
+                })) || [];
+
+                currentPhase = {
+                  actual: selectedSubProject.actualProgress,
+                  planned: selectedSubProject.plannedProgress,
+                  subProjects: [], // Sub-project has no further sub-projects
+                  timeline: subProjectTimeline,
+                };
+                currentPhaseTitle = selectedSubProject.name;
+                currentPhaseColor = phaseColor;
+              } else {
+                // Fallback to main project
+                currentPhase = projectPhaseProgress;
+                currentPhaseTitle = selectedProject.title;
+                currentPhaseColor = phaseColor;
+              }
+            } else {
+              // No sub-project selected, show main project data
+              currentPhase = projectPhaseProgress;
+              currentPhaseTitle = selectedProject.title;
+              currentPhaseColor = phaseColor;
+            }
+
+            if (!currentPhase || !currentPhase.timeline || currentPhase.timeline.length === 0) {
+              return (
+                <Card className="border-border/50">
+                  <CardHeader>
+                    <CardTitle>{currentPhaseTitle} — Charts</CardTitle>
+                    <CardDescription>
+                      No timeline data found for this project yet. Timeline data is required to enable Gantt, WBS breakdown and S-curves.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              );
+            }
+
+            // For sub-project selection, we still show the main project's sub-projects in WBS
+            // but filter the timeline to the selected sub-project
+            const displayPhase = selectedMilestoneKey && subProjects.find(sp => sp.id === selectedMilestoneKey)
+              ? {
+                  ...currentPhase,
+                  subProjects: projectPhaseProgress.subProjects || [], // Keep all sub-projects for WBS view
+                }
+              : currentPhase;
+
+            return (
+              <MilestoneDetailsPanel
+                milestoneTitle={currentPhaseTitle}
+                phase={displayPhase}
+                phaseColor={currentPhaseColor}
+                onClear={selectedMilestoneKey ? () => setSelectedMilestoneKey(null) : undefined}
+                showAllTabs={true}
+              />
+            );
+          })()}
           </div>
-        )}
-
-        {/* Charts Grid */}
-        {!selectedMilestoneKey && (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-xl font-bold font-heading mb-1">Analytics & Insights</h2>
-              <p className="text-sm text-muted-foreground">Detailed progress analysis for {selectedProject.title} in {tehsilName} Tehsil</p>
-            </div>
-            
-            {/* Phase Distribution Pie Chart */}
-            <div className="grid gap-4 lg:grid-cols-12">
-              <div className="lg:col-span-12">
-                <PhaseDistributionChart 
-                  data={installationPhases.map(phase => ({
-                    phase: phase.title,
-                    percentage: getProgressValue(tehsilData[phase.key]),
-                  }))}
-                />
-              </div>
-            </div>
-
-            {/* Planned vs Actual Chart for Selected Project */}
-            {hasDetails && progress.timeline && (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-bold font-heading mb-2">Planned vs Actual Progress</h3>
-                  <p className="text-sm text-muted-foreground">Timeline comparison for {selectedProject.title}</p>
-                </div>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <PlannedVsActualChart
-                    phaseName={selectedProject.title}
-                    timelineData={progress.timeline}
-                    color={phaseColor}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Phase Timeline Chart */}
-            {tehsilData.timeline && (
-              <div className="grid gap-4 lg:grid-cols-12">
-                <div className="lg:col-span-12">
-                  <PhaseTimelineChart 
-                    timelineData={tehsilData.timeline}
-                    cityKey={tehsilName}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </Layout>
   );

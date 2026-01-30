@@ -54,6 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo, useEffect } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { CheckCircle2 } from "lucide-react";
+import { useLocation } from "wouter";
 
 // Enhanced installation progress data with sub-projects and planned vs actual
 interface PhaseProgress {
@@ -389,6 +390,7 @@ const getProgressRangeMeta = (overall: number): ProgressRangeMeta => {
 };
 
 export default function Dashboard() {
+  const [location, setLocation] = useLocation();
   const [viewType, setViewType] = useState<"divisions" | "districts" | "tehsils" | "">("divisions");
   const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
   const [selectedItemType, setSelectedItemType] = useState<"division" | "district" | "tehsil" | null>(null);
@@ -406,6 +408,27 @@ export default function Dashboard() {
   const { width } = useWindowSize();
   const isMobile = width < 640;
   const isTablet = width >= 640 && width < 1024;
+
+  // Check for tehsil parameter in URL (from ProjectDetail back navigation)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tehsilParam = urlParams.get('tehsil');
+    if (tehsilParam) {
+      const tehsilName = decodeURIComponent(tehsilParam);
+      // Find the tehsil in hierarchy and select it
+      for (const div of PUNJAB_HIERARCHY) {
+        for (const dist of div.districts) {
+          if (dist.tehsils.some(teh => teh.tehsil === tehsilName)) {
+            setSelectedItemName(tehsilName);
+            setSelectedItemType("tehsil");
+            // Clean up URL parameter
+            window.history.replaceState({}, '', '/');
+            break;
+          }
+        }
+      }
+    }
+  }, []); // Only run on mount
 
   // Simulate loading on initial mount and when view type changes
   useEffect(() => {
@@ -1853,12 +1876,38 @@ export default function Dashboard() {
                 </Button>
                 <div>
                   <h2 className="text-2xl font-bold font-heading">{selectedItemName} Tehsil</h2>
-                  <p className="text-sm text-muted-foreground">Detailed progress with actual vs planned</p>
+                  <p className="text-sm text-muted-foreground">Ongoing projects in this tehsil</p>
                 </div>
               </div>
 
-              {/* Detailed View */}
-              {renderAggregatedCharts(selectedItemName + " Tehsil", singleItemData)}
+              {/* Project Cards */}
+              <div className="w-full">
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold font-heading mb-1">Ongoing Projects</h3>
+                  <p className="text-sm text-muted-foreground">Select a project to view detailed KPIs and charts</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {installationPhases.map((phase) => {
+                    const progress = singleItemData[phase.key];
+                    const progressValue = getProgressValue(progress);
+                    
+                    // Format tehsil name for URL (remove spaces, lowercase)
+                    const tehsilSlug = selectedItemName?.toLowerCase().replace(/\s+/g, '') || '';
+                    
+                    return (
+                      <HierarchyCard
+                        key={phase.key}
+                        title={phase.title}
+                        overallProgress={Math.round(progressValue)}
+                        onClick={() => {
+                          setLocation(`/project/${tehsilSlug}/${phase.key}`);
+                        }}
+                        color={phase.color}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           );
         })() : null

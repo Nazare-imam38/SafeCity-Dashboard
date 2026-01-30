@@ -407,11 +407,13 @@ export function MilestoneDetailsPanel({
   phase,
   phaseColor,
   onClear,
+  showAllTabs = false,
 }: {
   milestoneTitle: string;
   phase: MilestonePhaseProgress;
   phaseColor: string;
   onClear?: () => void;
+  showAllTabs?: boolean;
 }) {
   const [tab, setTab] = useState<"gantt" | "wbs" | "scurves">("gantt");
   const { width } = useWindowSize();
@@ -465,23 +467,24 @@ export function MilestoneDetailsPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-          <TabsList className={`w-full ${isMobile ? 'grid grid-cols-3' : 'justify-start'}`}>
-            <TabsTrigger value="gantt" className={isMobile ? 'text-xs' : ''}>Gantt</TabsTrigger>
-            <TabsTrigger value="wbs" className={isMobile ? 'text-xs' : ''}>WBS Breakdown</TabsTrigger>
-            <TabsTrigger value="scurves" className={isMobile ? 'text-xs' : ''}>S-Curves</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="gantt" className="mt-4">
-            <GanttMini tasks={ganttTasks} months={months} baseColor={phaseColor} />
-          </TabsContent>
-
-          <TabsContent value="wbs" className="mt-4">
+        {showAllTabs ? (
+          <>
+            {/* Show all charts at once */}
             <div className="space-y-6">
+              {/* Gantt Chart */}
               <div>
-                <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold mb-2`}>WBS Weight Distribution</div>
-                <div className={`w-full ${isMobile ? 'h-[280px]' : isTablet ? 'h-[320px]' : 'h-[340px]'}`}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold mb-3`}>Gantt Chart</h3>
+                <GanttMini tasks={ganttTasks} months={months} baseColor={phaseColor} />
+              </div>
+
+              {/* WBS Breakdown */}
+              <div>
+                <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold mb-3`}>WBS Breakdown</h3>
+                <div className="space-y-6">
+                  <div>
+                    <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold mb-2`}>WBS Weight Distribution</div>
+                    <div className={`w-full ${isMobile ? 'h-[280px]' : isTablet ? 'h-[320px]' : 'h-[340px]'}`}>
+                      <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={wbsPieData}
@@ -547,51 +550,183 @@ export function MilestoneDetailsPanel({
                         verticalAlign={isMobile ? 'bottom' : 'top'}
                       />
                     </PieChart>
-                  </ResponsiveContainer>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div>
+                    <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold mb-2`}>WBS Subprocess KPIs</div>
+                    <div className="space-y-2">
+                      {subProjects.map((s) => {
+                        const variance = s.actualProgress - s.plannedProgress;
+                        return (
+                          <div key={s.id} className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center justify-between'} rounded-lg border border-border/50 ${isMobile ? 'p-2' : 'p-3'} bg-card/50`}>
+                            <div className="min-w-0 flex-1">
+                              <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold truncate`}>{s.name}</div>
+                              <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground`}>Weight {(s.weight * 100).toFixed(0)}%</div>
+                            </div>
+                            <div className={`${isMobile ? 'text-left' : 'text-right'}`}>
+                              <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground`}>Actual / Planned</div>
+                              <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold tabular-nums`}>
+                                {s.actualProgress.toFixed(1)}% / {s.plannedProgress.toFixed(1)}%
+                              </div>
+                              <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} font-semibold ${variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                {variance >= 0 ? "+" : ""}
+                                {variance.toFixed(1)}%
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold mb-2`}>WBS Subprocess KPIs</div>
-                <div className="space-y-2">
-                  {subProjects.map((s) => {
-                    const variance = s.actualProgress - s.plannedProgress;
-                    return (
-                      <div key={s.id} className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center justify-between'} rounded-lg border border-border/50 ${isMobile ? 'p-2' : 'p-3'} bg-card/50`}>
-                        <div className="min-w-0 flex-1">
-                          <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold truncate`}>{s.name}</div>
-                          <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground`}>Weight {(s.weight * 100).toFixed(0)}%</div>
-                        </div>
-                        <div className={`${isMobile ? 'text-left' : 'text-right'}`}>
-                          <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground`}>Actual / Planned</div>
-                          <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold tabular-nums`}>
-                            {s.actualProgress.toFixed(1)}% / {s.plannedProgress.toFixed(1)}%
-                          </div>
-                          <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} font-semibold ${variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                            {variance >= 0 ? "+" : ""}
-                            {variance.toFixed(1)}%
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </TabsContent>
 
-          <TabsContent value="scurves" className="mt-4">
-            <div className="grid gap-4 grid-cols-1">
-              {subProjectTimelines.map(({ sub, timeline }) => (
-                <PlannedVsActualChart
-                  key={sub.id}
-                  phaseName={sub.name}
-                  timelineData={timeline}
-                  color={phaseColor}
-                />
-              ))}
+              {/* S-Curves */}
+              <div>
+                <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold mb-3`}>S-Curves</h3>
+                <div className="grid gap-4 grid-cols-1">
+                  {subProjectTimelines.map(({ sub, timeline }) => (
+                    <PlannedVsActualChart
+                      key={sub.id}
+                      phaseName={sub.name}
+                      timelineData={timeline}
+                      color={phaseColor}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </>
+        ) : (
+          <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+            <TabsList className={`w-full ${isMobile ? 'grid grid-cols-3' : 'justify-start'}`}>
+              <TabsTrigger value="gantt" className={isMobile ? 'text-xs' : ''}>Gantt</TabsTrigger>
+              <TabsTrigger value="wbs" className={isMobile ? 'text-xs' : ''}>WBS Breakdown</TabsTrigger>
+              <TabsTrigger value="scurves" className={isMobile ? 'text-xs' : ''}>S-Curves</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="gantt" className="mt-4">
+              <GanttMini tasks={ganttTasks} months={months} baseColor={phaseColor} />
+            </TabsContent>
+
+            <TabsContent value="wbs" className="mt-4">
+              <div className="space-y-6">
+                <div>
+                  <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold mb-2`}>WBS Weight Distribution</div>
+                  <div className={`w-full ${isMobile ? 'h-[280px]' : isTablet ? 'h-[320px]' : 'h-[340px]'}`}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={wbsPieData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={isMobile ? 70 : isTablet ? 90 : 110}
+                          labelLine={false}
+                          label={({ name, value, cx, cy, midAngle, innerRadius, outerRadius, index }) => {
+                            const pct = value * 100;
+                            if (pct < 6) return null;
+                            const RADIAN = Math.PI / 180;
+                            const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                            
+                            // Calculate the same color as the segment
+                            const segmentColor = `hsl(${Math.round((index / Math.max(1, wbsPieData.length)) * 280)} 75% 55%)`;
+                            const fontSize = isMobile ? '10px' : isTablet ? '11px' : '12px';
+                            
+                            return (
+                              <text
+                                x={x}
+                                y={y}
+                                fill={segmentColor}
+                                textAnchor={x > cx ? 'start' : 'end'}
+                                dominantBaseline="central"
+                                style={{ 
+                                  fontSize, 
+                                  fontWeight: 600,
+                                  filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))'
+                                }}
+                              >
+                                {`${name}: ${(pct).toFixed(0)}%`}
+                              </text>
+                            );
+                          }}
+                        >
+                          {wbsPieData.map((_, idx) => (
+                            <Cell
+                              key={idx}
+                              fill={`hsl(${Math.round((idx / Math.max(1, wbsPieData.length)) * 280)} 75% 55%)`}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(v: number) => [`${(v * 100).toFixed(1)}%`, "Weight"]}
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            borderColor: "hsl(var(--border))",
+                            borderRadius: "8px",
+                            fontSize: isMobile ? '10px' : '12px',
+                            padding: isMobile ? '4px 6px' : '8px 12px'
+                          }}
+                        />
+                        <Legend 
+                          wrapperStyle={{ 
+                            fontSize: isMobile ? '10px' : isTablet ? '11px' : '12px' 
+                          }}
+                          iconSize={isMobile ? 10 : isTablet ? 11 : 12}
+                          layout={isMobile ? 'vertical' : 'horizontal'}
+                          verticalAlign={isMobile ? 'bottom' : 'top'}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div>
+                  <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold mb-2`}>WBS Subprocess KPIs</div>
+                  <div className="space-y-2">
+                    {subProjects.map((s) => {
+                      const variance = s.actualProgress - s.plannedProgress;
+                      return (
+                        <div key={s.id} className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center justify-between'} rounded-lg border border-border/50 ${isMobile ? 'p-2' : 'p-3'} bg-card/50`}>
+                          <div className="min-w-0 flex-1">
+                            <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold truncate`}>{s.name}</div>
+                            <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground`}>Weight {(s.weight * 100).toFixed(0)}%</div>
+                          </div>
+                          <div className={`${isMobile ? 'text-left' : 'text-right'}`}>
+                            <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground`}>Actual / Planned</div>
+                            <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold tabular-nums`}>
+                              {s.actualProgress.toFixed(1)}% / {s.plannedProgress.toFixed(1)}%
+                            </div>
+                            <div className={`${isMobile ? 'text-[10px]' : 'text-xs'} font-semibold ${variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                              {variance >= 0 ? "+" : ""}
+                              {variance.toFixed(1)}%
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="scurves" className="mt-4">
+              <div className="grid gap-4 grid-cols-1">
+                {subProjectTimelines.map(({ sub, timeline }) => (
+                  <PlannedVsActualChart
+                    key={sub.id}
+                    phaseName={sub.name}
+                    timelineData={timeline}
+                    color={phaseColor}
+                  />
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
       </CardContent>
     </Card>
   );
