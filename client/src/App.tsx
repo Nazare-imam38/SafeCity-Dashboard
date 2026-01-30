@@ -10,6 +10,7 @@ import Comparison from "@/pages/Comparison";
 import Finance from "@/pages/Finance";
 import GISLayers from "@/pages/GISLayers";
 import Settings from "@/pages/Settings";
+import ProjectDetail from "@/pages/ProjectDetail";
 import { useState, useEffect, useRef } from "react";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/finance" component={Finance} />
       <Route path="/gis" component={GISLayers} />
       <Route path="/settings" component={Settings} />
+      <Route path="/project/:tehsil/:projectId" component={ProjectDetail} />
       <Route component={NotFound} />
     </Switch>
   );
