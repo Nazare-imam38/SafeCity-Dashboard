@@ -932,7 +932,7 @@ export default function Dashboard() {
         <div className="w-full">
           <div className="mb-3 flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold font-heading mb-1">Project Milestones</h2>
+              <h2 className="text-xl font-bold font-heading mb-1">Best Performing Projects</h2>
               <p className="text-sm text-muted-foreground">Progress breakdown for {title}</p>
             </div>
             {selectedMilestoneKey && (

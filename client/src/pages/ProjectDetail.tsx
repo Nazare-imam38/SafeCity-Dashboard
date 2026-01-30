@@ -499,7 +499,7 @@ export default function ProjectDetail() {
                 phase={displayPhase}
                 phaseColor={currentPhaseColor}
                 onClear={selectedMilestoneKey ? () => setSelectedMilestoneKey(null) : undefined}
-                showAllTabs={true}
+                showAllTabs={false}
               />
             );
           })()}

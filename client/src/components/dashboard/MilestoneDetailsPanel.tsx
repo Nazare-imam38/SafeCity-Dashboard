@@ -469,16 +469,16 @@ export function MilestoneDetailsPanel({
       <CardContent className="space-y-4">
         {showAllTabs ? (
           <>
-            {/* Show all charts at once */}
-            <div className="space-y-6">
+            {/* Show all charts side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Gantt Chart */}
-              <div>
+              <div className="lg:col-span-1">
                 <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold mb-3`}>Gantt Chart</h3>
                 <GanttMini tasks={ganttTasks} months={months} baseColor={phaseColor} />
               </div>
 
               {/* WBS Breakdown */}
-              <div>
+              <div className="lg:col-span-1">
                 <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold mb-3`}>WBS Breakdown</h3>
                 <div className="space-y-6">
                   <div>
@@ -583,9 +583,9 @@ export function MilestoneDetailsPanel({
               </div>
 
               {/* S-Curves */}
-              <div>
+              <div className="lg:col-span-1">
                 <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold mb-3`}>S-Curves</h3>
-                <div className="grid gap-4 grid-cols-1">
+                <div className="space-y-4">
                   {subProjectTimelines.map(({ sub, timeline }) => (
                     <PlannedVsActualChart
                       key={sub.id}
