@@ -1541,11 +1541,27 @@ export default function Dashboard() {
                   <Skeleton className="h-7 w-32 rounded-full" />
                 </div>
               ) : (selectedItemName && singleItemData) || aggregatedData ? (
-                <div className="flex items-center gap-3">
-                  <Badge className="px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
-                    <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400" />
-                      Overall: {selectedItemName && singleItemData ? singleItemData.overall : aggregatedData?.overall || 0}%
-                  </Badge>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <Badge className="px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
+                      <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400" />
+                        Overall: {selectedItemName && singleItemData ? singleItemData.overall : aggregatedData?.overall || 0}%
+                    </Badge>
+                  </div>
+                  {/* Legend for progress ranges */}
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    {[
+                      { label: "0–25% Low", color: "#ef4444" },
+                      { label: "25–50% Moderate", color: "#f59e0b" },
+                      { label: "50–75% Good", color: "#3b82f6" },
+                      { label: "75–100% High", color: "#22c55e" },
+                    ].map((it) => (
+                      <div key={it.label} className="flex items-center gap-2">
+                        <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: it.color }} />
+                        <span>{it.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : null}
           </div>
