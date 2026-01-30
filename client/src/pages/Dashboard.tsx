@@ -1371,7 +1371,7 @@ export default function Dashboard() {
       key: "foundations" as const,
       title: "Foundations Pole Installations",
       icon: Building2,
-      color: "green" as const,
+      color: "emerald" as const,
     },
     {
       key: "cabinet" as const,
@@ -1395,7 +1395,7 @@ export default function Dashboard() {
       key: "ppic3" as const,
       title: "PPIC3 Go Live",
       icon: Radio,
-      color: "yellow" as const,
+      color: "indigo" as const,
     },
   ];
 

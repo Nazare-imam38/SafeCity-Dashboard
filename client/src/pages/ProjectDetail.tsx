@@ -179,7 +179,7 @@ const installationPhases = [
     key: "foundations" as const,
     title: "Foundations Pole Installations",
     icon: Building2,
-    color: "green" as const,
+    color: "emerald" as const,
   },
   {
     key: "cabinet" as const,
@@ -203,7 +203,7 @@ const installationPhases = [
     key: "ppic3" as const,
     title: "PPIC3 Go Live",
     icon: Radio,
-    color: "yellow" as const,
+    color: "indigo" as const,
   },
 ];
 
