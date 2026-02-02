@@ -1,10 +1,19 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { PlannedVsActualChart } from "@/components/dashboard/PlannedVsActualChart";
 import type { SubProject } from "@/components/dashboard/SubProjectCard";
 import { useWindowSize } from "@/hooks/use-window-size";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertCircle, X, Plus, Trash2, Edit2, Calendar } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type PhaseTimelinePoint = {
   month: string;
@@ -75,6 +84,24 @@ type GanttTask = {
   weight: number;
   status: "ahead" | "behind" | "ontrack";
   children?: GanttTask[];
+};
+
+// Delay log data structure
+export type DelayLog = {
+  id: string;
+  taskId: string;
+  loggedBy: string;
+  reason: string;
+  delayDuration: number; // in days
+  loggedAt: string; // ISO date string
+  monthIndex: number; // Which month the delay occurred
+};
+
+// Delay log form data
+type DelayLogFormData = {
+  loggedBy: string;
+  reason: string;
+  delayDuration: string;
 };
 
 const CHILD_NAME_TEMPLATES: Record<string, string[]> = {
@@ -208,14 +235,483 @@ function getProgressPercentage(task: GanttTask): number {
   return Math.round(40 + seed * 40); // 40-80%
 }
 
+// Delay Log Form Dialog Component (for adding/editing)
+function DelayLogFormDialog({
+  open,
+  onOpenChange,
+  taskName,
+  taskId,
+  monthIndex,
+  monthName,
+  onSave,
+  existingLog,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  taskName: string;
+  taskId: string;
+  monthIndex: number;
+  monthName: string;
+  onSave: (log: DelayLog) => void;
+  existingLog?: DelayLog;
+}) {
+  const [formData, setFormData] = useState<DelayLogFormData>({
+    loggedBy: existingLog?.loggedBy || "",
+    reason: existingLog?.reason || "",
+    delayDuration: existingLog?.delayDuration.toString() || "1",
+  });
+
+  // Reset form when dialog opens/closes or existingLog changes
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        loggedBy: existingLog?.loggedBy || "",
+        reason: existingLog?.reason || "",
+        delayDuration: existingLog?.delayDuration.toString() || "1",
+      });
+    }
+  }, [open, existingLog]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.loggedBy.trim() || !formData.reason.trim()) {
+      return;
+    }
+
+    const delayLog: DelayLog = {
+      id: existingLog?.id || `${taskId}-${monthIndex}-${Date.now()}`,
+      taskId,
+      loggedBy: formData.loggedBy.trim(),
+      reason: formData.reason.trim(),
+      delayDuration: parseInt(formData.delayDuration, 10) || 1,
+      loggedAt: existingLog?.loggedAt || new Date().toISOString(),
+      monthIndex,
+    };
+
+    onSave(delayLog);
+    setFormData({ loggedBy: "", reason: "", delayDuration: "1" });
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{existingLog ? "Edit" : "Add"} Delay Log for {taskName}</DialogTitle>
+          <DialogDescription>
+            {existingLog ? "Update" : "Record"} a delay that occurred in {monthName}. This will be displayed in the Gantt chart.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="loggedBy">Logged By *</Label>
+              <Input
+                id="loggedBy"
+                placeholder="Enter your name or ID"
+                value={formData.loggedBy}
+                onChange={(e) => setFormData({ ...formData, loggedBy: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="delayDuration">Delay Duration (Days) *</Label>
+              <Input
+                id="delayDuration"
+                type="number"
+                min="1"
+                placeholder="1"
+                value={formData.delayDuration}
+                onChange={(e) => setFormData({ ...formData, delayDuration: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for Delay *</Label>
+              <Textarea
+                id="reason"
+                placeholder="Describe the reason for the delay..."
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                rows={4}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!formData.loggedBy.trim() || !formData.reason.trim()}>
+              {existingLog ? "Update" : "Add"} Delay Log
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Delay Logs Table Component (shows all logs in a table format)
+function DelayLogsTable({
+  delayLogs,
+  ganttTasks,
+  subProjects,
+  months,
+  onEdit,
+  onDelete,
+  isMobile,
+  isTablet,
+}: {
+  delayLogs: DelayLog[];
+  ganttTasks: GanttTask[];
+  subProjects?: SubProject[];
+  months: string[];
+  onEdit: (log: DelayLog) => void;
+  onDelete: (logId: string) => void;
+  isMobile: boolean;
+  isTablet: boolean;
+}) {
+  // Get task name from taskId
+  const getTaskName = (taskId: string): string => {
+    // First check subProjects
+    const subProject = subProjects?.find(sp => sp.id === taskId);
+    if (subProject) return subProject.name;
+    
+    // Then check ganttTasks (including children)
+    const findTaskInTree = (tasks: GanttTask[], id: string): GanttTask | null => {
+      for (const task of tasks) {
+        if (task.id === id) return task;
+        if (task.children) {
+          const found = findTaskInTree(task.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    const task = findTaskInTree(ganttTasks, taskId);
+    return task?.name || taskId;
+  };
+
+  if (delayLogs.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground border border-border rounded-lg">
+        <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+        <p className="text-sm font-medium">No delay logs recorded yet</p>
+        <p className="text-xs mt-1">Delay logs will appear here when you log delays in the Gantt chart.</p>
+      </div>
+    );
+  }
+
+  // Sort logs by date (newest first)
+  const sortedLogs = [...delayLogs].sort((a, b) => 
+    new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          {delayLogs.length} delay log{delayLogs.length !== 1 ? 's' : ''} recorded
+        </div>
+      </div>
+      
+      <div className="border border-border rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className={isMobile ? 'w-[120px]' : ''}>Task Name</TableHead>
+                <TableHead className={isMobile ? 'w-[80px]' : ''}>Month</TableHead>
+                <TableHead className={isMobile ? 'w-[100px]' : ''}>Logged By</TableHead>
+                <TableHead className={isMobile ? 'w-[80px]' : ''}>Duration</TableHead>
+                <TableHead className={isMobile ? 'hidden' : ''}>Reason</TableHead>
+                <TableHead className={isMobile ? 'w-[100px]' : ''}>Date</TableHead>
+                <TableHead className="w-[100px] text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedLogs.map((log) => (
+                <TableRow key={log.id}>
+                  <TableCell className={`font-medium ${isMobile ? 'text-xs' : ''}`}>
+                    <div className="max-w-[200px] truncate" title={getTaskName(log.taskId)}>
+                      {getTaskName(log.taskId)}
+                    </div>
+                  </TableCell>
+                  <TableCell className={isMobile ? 'text-xs' : ''}>
+                    <Badge variant="outline" className="gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {months[log.monthIndex] || `M${log.monthIndex + 1}`}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className={isMobile ? 'text-xs' : ''}>
+                    {log.loggedBy}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="gap-1">
+                      {log.delayDuration} day{log.delayDuration !== 1 ? 's' : ''}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className={isMobile ? 'hidden' : ''}>
+                    <div className="max-w-[300px] truncate text-sm text-muted-foreground" title={log.reason}>
+                      {log.reason}
+                    </div>
+                  </TableCell>
+                  <TableCell className={isMobile ? 'text-xs' : 'text-sm'}>
+                    {new Date(log.loggedAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(log)}
+                        className="h-8 w-8 p-0"
+                        title="Edit log"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Are you sure you want to delete this delay log?")) {
+                            onDelete(log.id);
+                          }
+                        }}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        title="Delete log"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+      
+      {/* Mobile view: Show reason in expanded view */}
+      {isMobile && (
+        <div className="space-y-2">
+          {sortedLogs.map((log) => (
+            <div key={log.id} className="border border-border rounded-lg p-3 bg-card/50">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate">{getTaskName(log.taskId)}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {months[log.monthIndex] || `Month ${log.monthIndex + 1}`} • {log.loggedBy}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(log)}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm("Delete this delay log?")) {
+                        onDelete(log.id);
+                      }
+                    }}
+                    className="h-7 w-7 p-0 text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground mb-2">{log.reason}</div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  {log.delayDuration} day{log.delayDuration !== 1 ? 's' : ''}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(log.loggedAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Delay Logs List Dialog Component (shows all logs and allows adding new ones)
+function DelayLogsListDialog({
+  open,
+  onOpenChange,
+  taskName,
+  taskId,
+  monthIndex,
+  monthName,
+  delayLogs,
+  onSave,
+  onDelete,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  taskName: string;
+  taskId: string;
+  monthIndex: number;
+  monthName: string;
+  delayLogs: DelayLog[];
+  onSave: (log: DelayLog) => void;
+  onDelete: (logId: string) => void;
+}) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingLog, setEditingLog] = useState<DelayLog | undefined>(undefined);
+
+  const handleAddNew = () => {
+    setEditingLog(undefined);
+    setShowAddForm(true);
+  };
+
+  const handleEdit = (log: DelayLog) => {
+    setEditingLog(log);
+    setShowAddForm(true);
+  };
+
+  const handleSave = (log: DelayLog) => {
+    onSave(log);
+    setShowAddForm(false);
+    setEditingLog(undefined);
+  };
+
+  const handleDelete = (logId: string) => {
+    if (confirm("Are you sure you want to delete this delay log?")) {
+      onDelete(logId);
+    }
+  };
+
+  if (showAddForm) {
+    return (
+      <DelayLogFormDialog
+        open={showAddForm}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowAddForm(false);
+            setEditingLog(undefined);
+          }
+        }}
+        taskName={taskName}
+        taskId={taskId}
+        monthIndex={monthIndex}
+        monthName={monthName}
+        onSave={handleSave}
+        existingLog={editingLog}
+      />
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Delay Logs for {taskName}</DialogTitle>
+          <DialogDescription>
+            View and manage delay logs for {monthName}. Delay logs are displayed as orange bars in the Gantt chart.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {delayLogs.length} delay log{delayLogs.length !== 1 ? 's' : ''} recorded
+            </div>
+            <Button onClick={handleAddNew} size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add New Log
+            </Button>
+          </div>
+
+          {delayLogs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No delay logs recorded yet.</p>
+              <p className="text-xs mt-1">Click "Add New Log" to record a delay.</p>
+            </div>
+          ) : (
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="space-y-3">
+                {delayLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="border border-border rounded-lg p-4 bg-card hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(log.loggedAt).toLocaleDateString()}
+                          </Badge>
+                          <Badge variant="secondary">
+                            {log.delayDuration} day{log.delayDuration !== 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Logged by: {log.loggedBy}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{log.reason}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(log)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(log.id)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function GanttMini({
   tasks,
   months,
   baseColor,
+  subProjects,
+  delayLogs,
+  onAddDelayLog,
 }: {
   tasks: GanttTask[];
   months: string[];
   baseColor: string;
+  subProjects?: SubProject[];
+  delayLogs?: DelayLog[];
+  onAddDelayLog?: (log: DelayLog) => void;
 }) {
   const n = months.length || 1;
   // Initialize all tasks as expanded by default
@@ -228,9 +724,65 @@ function GanttMini({
     });
     return initial;
   });
+  
+  // Delay logs list dialog state
+  const [delayLogsDialogOpen, setDelayLogsDialogOpen] = useState(false);
+  const [selectedTaskForDelay, setSelectedTaskForDelay] = useState<{
+    taskId: string;
+    taskName: string;
+    monthIndex: number;
+    monthName: string;
+  } | null>(null);
+
   const { width } = useWindowSize();
   const isMobile = width < 640;
   const isTablet = width >= 640 && width < 1024;
+
+  // Get delay logs for a specific task
+  const getDelayLogsForTask = (taskId: string, monthIndex: number): DelayLog[] => {
+    if (!delayLogs) return [];
+    return delayLogs.filter(log => log.taskId === taskId && log.monthIndex === monthIndex);
+  };
+
+  // Get sub-project data for a task to check if it's delayed
+  const getSubProjectForTask = (taskId: string): SubProject | undefined => {
+    return subProjects?.find(sp => sp.id === taskId);
+  };
+
+  // Check if task has delay (actual < planned)
+  const hasDelay = (task: GanttTask): boolean => {
+    const subProject = getSubProjectForTask(task.id);
+    if (!subProject) return task.status === "behind";
+    return subProject.actualProgress < subProject.plannedProgress;
+  };
+
+  const handleOpenDelayLogs = (taskId: string, taskName: string, monthIndex: number) => {
+    setSelectedTaskForDelay({
+      taskId,
+      taskName,
+      monthIndex,
+      monthName: months[monthIndex] || `Month ${monthIndex + 1}`,
+    });
+    setDelayLogsDialogOpen(true);
+  };
+
+  const handleSaveDelayLog = (log: DelayLog) => {
+    if (onAddDelayLog) {
+      onAddDelayLog(log);
+    }
+  };
+
+  const handleDeleteDelayLog = (logId: string) => {
+    setDelayLogs((prev) => prev.filter(log => log.id !== logId));
+  };
+
+  // Get delay logs for selected task/month
+  const getSelectedTaskDelayLogs = (): DelayLog[] => {
+    if (!selectedTaskForDelay || !delayLogs) return [];
+    return delayLogs.filter(
+      log => log.taskId === selectedTaskForDelay.taskId && log.monthIndex === selectedTaskForDelay.monthIndex
+    );
+  };
 
   const toggle = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -247,6 +799,40 @@ function GanttMini({
 
   return (
     <div className="space-y-4">
+      {/* Delay Logs List Dialog */}
+      {selectedTaskForDelay && (
+        <DelayLogsListDialog
+          open={delayLogsDialogOpen}
+          onOpenChange={setDelayLogsDialogOpen}
+          taskName={selectedTaskForDelay.taskName}
+          taskId={selectedTaskForDelay.taskId}
+          monthIndex={selectedTaskForDelay.monthIndex}
+          monthName={selectedTaskForDelay.monthName}
+          delayLogs={getSelectedTaskDelayLogs()}
+          onSave={handleSaveDelayLog}
+          onDelete={handleDeleteDelayLog}
+        />
+      )}
+
+      {/* Legend for delay logs */}
+      {delayLogs && delayLogs.length > 0 && (
+        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg border border-border/50">
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-red-500 border border-red-700 flex items-center justify-center">
+              <AlertCircle className="h-1.5 w-1.5 text-white" />
+            </div>
+            <span>Click to log delay</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-1 w-4 bg-orange-500 rounded" />
+            <span>Delay log bar</span>
+          </div>
+          <div className="text-xs">
+            {delayLogs.length} delay log{delayLogs.length !== 1 ? 's' : ''} recorded
+          </div>
+        </div>
+      )}
+
       {/* Gantt Chart Container with full border */}
       <div className="border-2 border-border rounded-lg overflow-hidden bg-background">
         {/* Header row with month labels */}
@@ -311,12 +897,44 @@ function GanttMini({
                 <div className="relative border-r-2 border-border" style={{ gridColumn: `2 / -1` }}>
                   {/* Grid cells for timeline - background cells */}
                   <div className="grid h-12" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
-                    {months.map((m, monthIdx) => (
-                      <div
-                        key={m}
-                        className="border-r-2 border-border last:border-r-0 bg-muted/20"
-                      />
-                    ))}
+                    {months.map((m, monthIdx) => {
+                      const taskHasDelay = hasDelay(t);
+                      const delayLogsForMonth = getDelayLogsForTask(t.id, monthIdx);
+                      const isInTaskRange = monthIdx >= t.startIdx && monthIdx <= t.endIdx;
+                      
+                      return (
+                        <div
+                          key={m}
+                          className="border-r-2 border-border last:border-r-0 bg-muted/20 relative"
+                        >
+                          {/* Delay log button - show if task is delayed and in range, or if there are existing logs */}
+                          {(taskHasDelay && isInTaskRange) || delayLogsForMonth.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDelayLogs(t.id, t.name, monthIdx)}
+                              className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-red-500 hover:bg-red-600 border border-red-700 flex items-center justify-center z-30 transition-colors shadow-sm"
+                              title={delayLogsForMonth.length > 0 
+                                ? `View delay logs (${delayLogsForMonth.length} logged) - Click to manage` 
+                                : "Log delay for this month - Click to add"}
+                            >
+                              <AlertCircle className="h-2.5 w-2.5 text-white" />
+                            </button>
+                          ) : null}
+                          {/* Delay log indicators - show as bars at bottom of cell */}
+                          {delayLogsForMonth.length > 0 && (
+                            <div className="absolute bottom-0 left-0 right-0 flex gap-0.5 px-0.5 z-25">
+                              {delayLogsForMonth.map((log) => (
+                                <div
+                                  key={log.id}
+                                  className="flex-1 h-1.5 bg-orange-500 rounded-t border-t border-orange-600"
+                                  title={`Delay: ${log.reason} (${log.delayDuration} days) - Logged by ${log.loggedBy} on ${new Date(log.loggedAt).toLocaleDateString()}`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Task bar spanning across cells */}
@@ -363,12 +981,44 @@ function GanttMini({
                         <div className="relative border-r-2 border-border" style={{ gridColumn: `2 / -1` }}>
                           {/* Grid cells for timeline - background cells */}
                           <div className="grid h-10" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
-                            {months.map((m) => (
-                              <div
-                                key={m}
-                                className="border-r-2 border-border last:border-r-0 bg-muted/10"
-                              />
-                            ))}
+                            {months.map((m, monthIdx) => {
+                              const childHasDelay = c.status === "behind";
+                              const delayLogsForMonth = getDelayLogsForTask(c.id, monthIdx);
+                              const isInTaskRange = monthIdx >= c.startIdx && monthIdx <= c.endIdx;
+                              
+                              return (
+                                <div
+                                  key={m}
+                                  className="border-r-2 border-border last:border-r-0 bg-muted/10 relative"
+                                >
+                                  {/* Delay log button for child tasks */}
+                                  {(childHasDelay && isInTaskRange) || delayLogsForMonth.length > 0 ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenDelayLogs(c.id, c.name, monthIdx)}
+                                      className="absolute top-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-red-500 hover:bg-red-600 border border-red-700 flex items-center justify-center z-30 transition-colors shadow-sm"
+                                      title={delayLogsForMonth.length > 0 
+                                        ? `View delay logs (${delayLogsForMonth.length} logged) - Click to manage` 
+                                        : "Log delay for this month - Click to add"}
+                                    >
+                                      <AlertCircle className="h-2 w-2 text-white" />
+                                    </button>
+                                  ) : null}
+                                  {/* Delay log indicators for child tasks */}
+                                  {delayLogsForMonth.length > 0 && (
+                                    <div className="absolute bottom-0 left-0 right-0 flex gap-0.5 px-0.5 z-25">
+                                      {delayLogsForMonth.map((log) => (
+                                        <div
+                                          key={log.id}
+                                          className="flex-1 h-1 bg-orange-500 rounded-t border-t border-orange-600"
+                                          title={`Delay: ${log.reason} (${log.delayDuration} days) - Logged by ${log.loggedBy} on ${new Date(log.loggedAt).toLocaleDateString()}`}
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
 
                           {/* Child task bar spanning across cells */}
@@ -415,7 +1065,11 @@ export function MilestoneDetailsPanel({
   onClear?: () => void;
   showAllTabs?: boolean;
 }) {
-  const [tab, setTab] = useState<"gantt" | "wbs" | "scurves">("gantt");
+  const [tab, setTab] = useState<"gantt" | "wbs" | "scurves" | "logs">("gantt");
+  
+  // State for editing delay log from table
+  const [editingLogFromTable, setEditingLogFromTable] = useState<DelayLog | undefined>(undefined);
+  const [showEditForm, setShowEditForm] = useState(false);
   const { width } = useWindowSize();
   const isMobile = width < 640;
   const isTablet = width >= 640 && width < 1024;
@@ -425,6 +1079,26 @@ export function MilestoneDetailsPanel({
   const months = useMemo(() => timeline.map((t) => t.month), [timeline]);
 
   const ganttTasks = useMemo(() => buildGanttTasks(subProjects, months), [subProjects, months]);
+
+  // Delay logs state - stored per milestone
+  const [delayLogs, setDelayLogs] = useState<DelayLog[]>([]);
+
+  const handleAddDelayLog = (log: DelayLog) => {
+    setDelayLogs((prev) => {
+      // If log has existing ID, update it; otherwise add new
+      const existingIndex = prev.findIndex(l => l.id === log.id);
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex] = log;
+        return updated;
+      }
+      return [...prev, log];
+    });
+  };
+
+  const handleDeleteDelayLog = (logId: string) => {
+    setDelayLogs((prev) => prev.filter(log => log.id !== logId));
+  };
 
   const wbsPieData = useMemo(
     () =>
@@ -462,7 +1136,7 @@ export function MilestoneDetailsPanel({
           <div>
             <CardTitle className={isMobile ? 'text-base' : ''}>{milestoneTitle} — Milestone KPIs</CardTitle>
             <CardDescription className={isMobile ? 'text-xs' : ''}>
-              Gantt plan, WBS breakdown, and S-curves (planned vs actual) for this milestone.
+              Gantt plan, WBS breakdown, S-curves, and delay logs for this milestone.
             </CardDescription>
         </div>
       </CardHeader>
@@ -474,7 +1148,14 @@ export function MilestoneDetailsPanel({
               {/* Gantt Chart */}
               <div className="lg:col-span-1">
                 <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold mb-3`}>Gantt Chart</h3>
-                <GanttMini tasks={ganttTasks} months={months} baseColor={phaseColor} />
+                <GanttMini 
+                  tasks={ganttTasks} 
+                  months={months} 
+                  baseColor={phaseColor}
+                  subProjects={subProjects}
+                  delayLogs={delayLogs}
+                  onAddDelayLog={handleAddDelayLog}
+                />
               </div>
 
               {/* WBS Breakdown */}
@@ -600,14 +1281,22 @@ export function MilestoneDetailsPanel({
           </>
         ) : (
           <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-            <TabsList className={`w-full ${isMobile ? 'grid grid-cols-3' : 'justify-start'}`}>
+            <TabsList className={`w-full ${isMobile ? 'grid grid-cols-4' : 'justify-start'}`}>
               <TabsTrigger value="gantt" className={isMobile ? 'text-xs' : ''}>Gantt</TabsTrigger>
               <TabsTrigger value="wbs" className={isMobile ? 'text-xs' : ''}>WBS Breakdown</TabsTrigger>
               <TabsTrigger value="scurves" className={isMobile ? 'text-xs' : ''}>S-Curves</TabsTrigger>
+              <TabsTrigger value="logs" className={isMobile ? 'text-xs' : ''}>Delay Logs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="gantt" className="mt-4">
-              <GanttMini tasks={ganttTasks} months={months} baseColor={phaseColor} />
+              <GanttMini 
+                tasks={ganttTasks} 
+                months={months} 
+                baseColor={phaseColor}
+                subProjects={subProjects}
+                delayLogs={delayLogs}
+                onAddDelayLog={handleAddDelayLog}
+              />
             </TabsContent>
 
             <TabsContent value="wbs" className="mt-4">
@@ -724,6 +1413,44 @@ export function MilestoneDetailsPanel({
                   />
                 ))}
               </div>
+            </TabsContent>
+
+            <TabsContent value="logs" className="mt-4">
+              <DelayLogsTable
+                delayLogs={delayLogs}
+                ganttTasks={ganttTasks}
+                subProjects={subProjects}
+                months={months}
+                onEdit={(log) => {
+                  setEditingLogFromTable(log);
+                  setShowEditForm(true);
+                }}
+                onDelete={handleDeleteDelayLog}
+                isMobile={isMobile}
+                isTablet={isTablet}
+              />
+              {/* Edit form dialog */}
+              {editingLogFromTable && (
+                <DelayLogFormDialog
+                  open={showEditForm}
+                  onOpenChange={(open) => {
+                    if (!open) {
+                      setShowEditForm(false);
+                      setEditingLogFromTable(undefined);
+                    }
+                  }}
+                  taskName={editingLogFromTable.taskId}
+                  taskId={editingLogFromTable.taskId}
+                  monthIndex={editingLogFromTable.monthIndex}
+                  monthName={months[editingLogFromTable.monthIndex] || `Month ${editingLogFromTable.monthIndex + 1}`}
+                  onSave={(log) => {
+                    handleAddDelayLog(log);
+                    setShowEditForm(false);
+                    setEditingLogFromTable(undefined);
+                  }}
+                  existingLog={editingLogFromTable}
+                />
+              )}
             </TabsContent>
           </Tabs>
         )}
