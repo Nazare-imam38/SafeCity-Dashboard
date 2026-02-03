@@ -106,6 +106,95 @@ type DelayLogFormData = {
   delayDate: string; // ISO date string
 };
 
+// Hardcoded delay reasons for realistic delay logs
+const DELAY_REASONS = [
+  "Weather conditions delayed site work",
+  "Material delivery delayed due to supply chain issues",
+  "Equipment malfunction requiring repairs",
+  "Permit approval pending from authorities",
+  "Site access issues due to local restrictions",
+  "Resource unavailability - skilled labor shortage",
+  "Design changes requiring rework",
+  "Quality inspection delays",
+  "Coordination issues with other contractors",
+  "Unexpected site conditions discovered",
+  "Budget approval pending",
+  "Technical issues with equipment installation",
+];
+
+// Generate hardcoded delay logs for delayed sub-projects
+function generateHardcodedDelayLogs(
+  subProjects: SubProject[],
+  months: string[],
+  ganttTasks: GanttTask[]
+): DelayLog[] {
+  const delayLogs: DelayLog[] = [];
+  
+  // Find delayed sub-projects (where plannedProgress > actualProgress)
+  const delayedSubProjects = subProjects.filter(
+    sp => sp.plannedProgress > sp.actualProgress
+  );
+
+  // Generate 2-4 delay logs per delayed sub-project
+  delayedSubProjects.forEach((subProject) => {
+    const task = ganttTasks.find(t => t.id === subProject.id);
+    if (!task) return;
+
+    // Determine how many delay logs to create (2-4 based on delay severity)
+    const variance = subProject.plannedProgress - subProject.actualProgress;
+    const numLogs = variance > 15 ? 4 : variance > 8 ? 3 : 2;
+
+    // Generate delay logs spread across the task duration
+    for (let i = 0; i < numLogs; i++) {
+      // Distribute delays across the task timeline
+      const progress = (i + 1) / (numLogs + 1);
+      const monthIndex = Math.floor(
+        task.startIdx + (task.endIdx - task.startIdx) * progress
+      );
+      const clampedMonthIndex = Math.max(0, Math.min(monthIndex, months.length - 1));
+
+      // Generate delay date within the month
+      const monthName = months[clampedMonthIndex] || "Jan";
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNum = monthNames.indexOf(monthName) >= 0 
+        ? monthNames.indexOf(monthName) 
+        : clampedMonthIndex % 12;
+      const currentYear = new Date().getFullYear();
+      const dayInMonth = Math.floor(5 + hash01(subProject.id + `|delay|${i}`) * 20); // Day 5-25
+      const delayDate = new Date(currentYear, monthNum, dayInMonth);
+
+      // Select reason based on sub-project name
+      const reasonSeed = hash01(subProject.id + `|reason|${i}`);
+      const reason = DELAY_REASONS[Math.floor(reasonSeed * DELAY_REASONS.length)];
+
+      // Generate delay duration (3-15 days)
+      const delayDuration = Math.floor(3 + hash01(subProject.id + `|duration|${i}`) * 12);
+
+      // Generate logged by person
+      const loggedBySeed = hash01(subProject.id + `|loggedBy|${i}`);
+      const loggedByOptions = ["Project Manager", "Site Supervisor", "QC Engineer", "Team Lead", "Site Engineer"];
+      const loggedBy = loggedByOptions[Math.floor(loggedBySeed * loggedByOptions.length)];
+
+      // Generate logged at date (1-5 days after delay date)
+      const loggedAt = new Date(delayDate);
+      loggedAt.setDate(loggedAt.getDate() + Math.floor(1 + hash01(subProject.id + `|loggedAt|${i}`) * 4));
+
+      delayLogs.push({
+        id: `hardcoded-${subProject.id}-${i}-${delayDate.getTime()}`,
+        taskId: subProject.id,
+        loggedBy,
+        reason,
+        delayDuration,
+        loggedAt: loggedAt.toISOString(),
+        delayDate: delayDate.toISOString(),
+        monthIndex: clampedMonthIndex,
+      });
+    }
+  });
+
+  return delayLogs;
+}
+
 const CHILD_NAME_TEMPLATES: Record<string, string[]> = {
   "Site Survey & Assessment": ["Field Survey", "Data Collection", "Site Measurements", "Survey Report"],
   "Technical Feasibility Study": ["Requirements Review", "Feasibility Analysis", "Risk Assessment", "Approval & Sign-off"],
@@ -394,6 +483,142 @@ function DelayLogFormDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Delay Log Cards Component (displays delay logs as cards beneath Gantt chart)
+function DelayLogCards({
+  delayLogs,
+  ganttTasks,
+  subProjects,
+  months,
+  isMobile,
+  isTablet,
+}: {
+  delayLogs: DelayLog[];
+  ganttTasks: GanttTask[];
+  subProjects?: SubProject[];
+  months: string[];
+  isMobile: boolean;
+  isTablet: boolean;
+}) {
+  // Get task name from taskId
+  const getTaskName = (taskId: string): string => {
+    // First check subProjects
+    const subProject = subProjects?.find(sp => sp.id === taskId);
+    if (subProject) return subProject.name;
+    
+    // Then check ganttTasks (including children)
+    const findTaskInTree = (tasks: GanttTask[], id: string): GanttTask | null => {
+      for (const task of tasks) {
+        if (task.id === id) return task;
+        if (task.children) {
+          const found = findTaskInTree(task.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    const task = findTaskInTree(ganttTasks, taskId);
+    return task?.name || taskId;
+  };
+
+  if (delayLogs.length === 0) {
+    return null;
+  }
+
+  // Group delay logs by task
+  const logsByTask = delayLogs.reduce((acc, log) => {
+    if (!acc[log.taskId]) {
+      acc[log.taskId] = [];
+    }
+    acc[log.taskId].push(log);
+    return acc;
+  }, {} as Record<string, DelayLog[]>);
+
+  // Sort tasks by number of delays (most delayed first)
+  const sortedTaskIds = Object.keys(logsByTask).sort(
+    (a, b) => logsByTask[b].length - logsByTask[a].length
+  );
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+        <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold`}>
+          Delay Logs ({delayLogs.length} total)
+        </h3>
+      </div>
+      
+      <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : isTablet ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        {sortedTaskIds.map((taskId) => {
+          const taskLogs = logsByTask[taskId];
+          const taskName = getTaskName(taskId);
+          const subProject = subProjects?.find(sp => sp.id === taskId);
+          const variance = subProject 
+            ? subProject.plannedProgress - subProject.actualProgress 
+            : 0;
+
+          return (
+            <Card key={taskId} className="border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {/* Task header */}
+                  <div>
+                    <h4 className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold text-foreground mb-1 truncate`} title={taskName}>
+                      {taskName}
+                    </h4>
+                    {variance > 0 && (
+                      <Badge variant="destructive" className="text-xs">
+                        {variance.toFixed(1)}% behind schedule
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Delay logs list */}
+                  <div className="space-y-2">
+                    {taskLogs.map((log) => (
+                      <div
+                        key={log.id}
+                        className="border border-orange-200 dark:border-orange-900 rounded-lg p-2.5 bg-white dark:bg-card/50"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge variant="outline" className="text-[10px] gap-1">
+                              <Calendar className="h-2.5 w-2.5" />
+                              {months[log.monthIndex] || `M${log.monthIndex + 1}`}
+                            </Badge>
+                            <Badge variant="secondary" className="text-[10px]">
+                              <Clock className="h-2.5 w-2.5 mr-1" />
+                              {log.delayDuration} day{log.delayDuration !== 1 ? 's' : ''}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mb-1.5 line-clamp-2" title={log.reason}>
+                          {log.reason}
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span>By: {log.loggedBy}</span>
+                          <span>{new Date(log.delayDate).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Summary */}
+                  <div className="pt-2 border-t border-orange-200 dark:border-orange-900">
+                    <div className="text-[10px] text-muted-foreground">
+                      {taskLogs.length} delay{taskLogs.length !== 1 ? 's' : ''} • Total: {taskLogs.reduce((sum, log) => sum + log.delayDuration, 0)} days
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -1374,8 +1599,28 @@ export function MilestoneDetailsPanel({
   const timeline = phase.timeline ?? [];
   const months = useMemo(() => timeline.map((t) => t.month), [timeline]);
 
-  // Delay logs state - stored per milestone
-  const [delayLogs, setDelayLogs] = useState<DelayLog[]>([]);
+  // Build Gantt tasks first (needed for delay log generation)
+  const ganttTasksForDelayLogs = useMemo(() => {
+    if (subProjects.length === 0 || months.length === 0) return [];
+    return buildGanttTasks(subProjects, months);
+  }, [subProjects, months]);
+
+  // Initialize delay logs with hardcoded data for delayed sub-projects
+  const initialDelayLogs = useMemo(() => {
+    if (subProjects.length === 0 || months.length === 0) return [];
+    return generateHardcodedDelayLogs(subProjects, months, ganttTasksForDelayLogs);
+  }, [subProjects, months, ganttTasksForDelayLogs]);
+
+  // Delay logs state - stored per milestone, initialized with hardcoded delays
+  const [delayLogs, setDelayLogs] = useState<DelayLog[]>(initialDelayLogs);
+  
+  // Update delay logs when sub-projects or months change
+  useEffect(() => {
+    if (subProjects.length > 0 && months.length > 0) {
+      const newDelayLogs = generateHardcodedDelayLogs(subProjects, months, ganttTasksForDelayLogs);
+      setDelayLogs(newDelayLogs);
+    }
+  }, [subProjects, months, ganttTasksForDelayLogs]);
 
   // Create adjusted sub-projects based on delay logs with impact tracking
   const adjustedSubProjects = useMemo(() => {
@@ -1534,6 +1779,15 @@ export function MilestoneDetailsPanel({
                     </div>
                   </div>
                 )}
+                {/* Delay Log Cards - beneath Gantt chart */}
+                <DelayLogCards
+                  delayLogs={delayLogs}
+                  ganttTasks={ganttTasks}
+                  subProjects={subProjects}
+                  months={months}
+                  isMobile={isMobile}
+                  isTablet={isTablet}
+                />
               </div>
 
               {/* WBS Breakdown */}
@@ -1702,6 +1956,15 @@ export function MilestoneDetailsPanel({
                   </div>
                 </div>
               )}
+              {/* Delay Log Cards - beneath Gantt chart */}
+              <DelayLogCards
+                delayLogs={delayLogs}
+                ganttTasks={ganttTasks}
+                subProjects={subProjects}
+                months={months}
+                isMobile={isMobile}
+                isTablet={isTablet}
+              />
             </TabsContent>
 
             <TabsContent value="wbs" className="mt-4">
