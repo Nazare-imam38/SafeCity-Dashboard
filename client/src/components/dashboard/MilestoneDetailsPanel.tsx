@@ -229,8 +229,14 @@ function getResponsiblePerson(taskId: string, taskName: string): string {
 }
 
 // Calculate progress percentage for display
-function getProgressPercentage(task: GanttTask): number {
-  // Use a deterministic progress based on task status and position
+// Note: subProject should already have adjusted progress from adjustedSubProjects
+function getProgressPercentage(task: GanttTask, subProject?: SubProject): number {
+  // If we have sub-project data, use actual progress (already adjusted for delays)
+  if (subProject) {
+    return Math.round(subProject.actualProgress);
+  }
+  
+  // Fallback: Use a deterministic progress based on task status and position
   const seed = hash01(task.id + "|progress");
   if (task.status === "ahead") return Math.round(60 + seed * 40); // 60-100%
   if (task.status === "behind") return Math.round(20 + seed * 40); // 20-60%
@@ -965,7 +971,8 @@ function GanttMini({
         {tasks.map((t) => {
           const isExpanded = expanded[t.id] ?? true;
           const hasChildren = (t.children?.length ?? 0) > 0;
-          const progress = getProgressPercentage(t);
+          const subProject = getSubProjectForTask(t.id);
+          const progress = getProgressPercentage(t, subProject);
           const responsible = getResponsiblePerson(t.id, t.name);
           const span = t.endIdx - t.startIdx + 1;
 
@@ -1028,7 +1035,7 @@ function GanttMini({
                               title="Click anywhere on this cell to add a delay log"
                             />
                           )}
-                          {/* Delay log indicators - positioned based on date within month */}
+                          {/* Delay log indicators - positioned based on date within month - more visible */}
                           {delayLogsForMonth.length > 0 && (
                             <div className="absolute bottom-0 left-0 right-0 z-25">
                               {delayLogsForMonth.map((log) => {
@@ -1036,11 +1043,11 @@ function GanttMini({
                                 return (
                                   <div
                                     key={log.id}
-                                    className="absolute h-1.5 bg-orange-500 rounded-t border-t border-orange-600"
+                                    className="absolute h-2 bg-orange-500 rounded-t border-t-2 border-orange-600 shadow-md"
                                     style={{
-                                      left: `${Math.max(0, Math.min(100, positionPercent - 2))}%`,
-                                      width: '4%',
-                                      minWidth: '2px',
+                                      left: `${Math.max(0, Math.min(100, positionPercent - 2.5))}%`,
+                                      width: '5%',
+                                      minWidth: '3px',
                                     }}
                                     title={`Delay: ${log.reason} (${log.delayDuration} days) - ${new Date(log.delayDate).toLocaleDateString()} - Logged by ${log.loggedBy}`}
                                   />
@@ -1055,7 +1062,7 @@ function GanttMini({
 
                   {/* Task bar spanning across cells - clickable to add delay logs */}
                   <div
-                    className="absolute top-1 bottom-1 flex items-center px-2 rounded shadow-sm z-20"
+                    className="absolute top-1 bottom-1 rounded shadow-sm z-20 overflow-hidden"
                     style={{
                       left: `${(t.startIdx / n) * 100}%`,
                       width: `${(span / n) * 100}%`,
@@ -1074,9 +1081,36 @@ function GanttMini({
                     }}
                     title="Click on the bar to add a delay log at this position"
                   >
-                    <div className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-semibold text-white truncate flex-1 pointer-events-none`}>
-                      <div className="truncate">{responsible}</div>
-                      <div className={`${isMobile ? 'text-[7px]' : 'text-[8px]'} opacity-90`}>{progress}% Done</div>
+                    {/* Progress bar overlay showing actual progress */}
+                    <div
+                      className="absolute top-0 left-0 bottom-0 bg-white/30 transition-all duration-300 z-10"
+                      style={{
+                        width: `${Math.min(100, Math.max(0, progress))}%`,
+                      }}
+                    />
+                    {/* Delay log markers on the progress bar */}
+                    {delayLogs && delayLogs.filter(log => log.taskId === t.id && log.monthIndex >= t.startIdx && log.monthIndex <= t.endIdx).map((log) => {
+                      // Calculate position within the bar based on month index
+                      const positionInBar = ((log.monthIndex - t.startIdx) / span) * 100;
+                      const clampedPosition = Math.max(0, Math.min(100, positionInBar));
+                      
+                      return (
+                        <div
+                          key={log.id}
+                          className="absolute top-0 bottom-0 w-1 bg-orange-400 z-30 shadow-lg border-l border-r border-orange-500"
+                          style={{
+                            left: `${clampedPosition}%`,
+                          }}
+                          title={`Delay: ${log.reason} (${log.delayDuration} days) - ${new Date(log.delayDate).toLocaleDateString()} - Logged by ${log.loggedBy}`}
+                        />
+                      );
+                    })}
+                    {/* Text content */}
+                    <div className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-semibold text-white truncate flex-1 pointer-events-none relative z-20 px-2 flex items-center h-full`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate">{responsible}</div>
+                        <div className={`${isMobile ? 'text-[7px]' : 'text-[8px]'} opacity-90`}>{progress}% Done</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1086,7 +1120,8 @@ function GanttMini({
               {hasChildren && isExpanded && (
                 <div className="space-y-0.5 pl-6">
                   {t.children!.map((c) => {
-                    const childProgress = getProgressPercentage(c);
+                    const childSubProject = getSubProjectForTask(c.id);
+                    const childProgress = getProgressPercentage(c, childSubProject);
                     const childResponsible = getResponsiblePerson(c.id, c.name);
                     const childSpan = c.endIdx - c.startIdx + 1;
 
@@ -1127,7 +1162,7 @@ function GanttMini({
                                       title="Click anywhere on this cell to add a delay log"
                                     />
                                   )}
-                                  {/* Delay log indicators for child tasks - positioned based on date */}
+                                  {/* Delay log indicators for child tasks - positioned based on date - more visible */}
                                   {delayLogsForMonth.length > 0 && (
                                     <div className="absolute bottom-0 left-0 right-0 z-25">
                                       {delayLogsForMonth.map((log) => {
@@ -1135,11 +1170,11 @@ function GanttMini({
                                         return (
                                           <div
                                             key={log.id}
-                                            className="absolute h-1 bg-orange-500 rounded-t border-t border-orange-600"
+                                            className="absolute h-2 bg-orange-500 rounded-t border-t-2 border-orange-600 shadow-md"
                                             style={{
-                                              left: `${Math.max(0, Math.min(100, positionPercent - 2))}%`,
-                                              width: '4%',
-                                              minWidth: '2px',
+                                              left: `${Math.max(0, Math.min(100, positionPercent - 2.5))}%`,
+                                              width: '5%',
+                                              minWidth: '3px',
                                             }}
                                             title={`Delay: ${log.reason} (${log.delayDuration} days) - ${new Date(log.delayDate).toLocaleDateString()} - Logged by ${log.loggedBy}`}
                                           />
@@ -1154,7 +1189,7 @@ function GanttMini({
 
                           {/* Child task bar spanning across cells - clickable to add delay logs */}
                           <div
-                            className="absolute top-0.5 bottom-0.5 flex items-center px-1.5 rounded z-20"
+                            className="absolute top-0.5 bottom-0.5 rounded z-20 overflow-hidden"
                             style={{
                               left: `${(c.startIdx / n) * 100}%`,
                               width: `${(childSpan / n) * 100}%`,
@@ -1174,9 +1209,36 @@ function GanttMini({
                             }}
                             title="Click on the bar to add a delay log at this position"
                           >
-                            <div className={`${isMobile ? 'text-[7px]' : 'text-[8px]'} font-medium text-white truncate flex-1 pointer-events-none`}>
-                              <div className="truncate">{childResponsible}</div>
-                              <div className={`${isMobile ? 'text-[6px]' : 'text-[7px]'} opacity-90`}>{childProgress}%</div>
+                            {/* Progress bar overlay showing actual progress */}
+                            <div
+                              className="absolute top-0 left-0 bottom-0 bg-white/30 transition-all duration-300 z-10"
+                              style={{
+                                width: `${Math.min(100, Math.max(0, childProgress))}%`,
+                              }}
+                            />
+                            {/* Delay log markers on the progress bar */}
+                            {delayLogs && delayLogs.filter(log => log.taskId === c.id && log.monthIndex >= c.startIdx && log.monthIndex <= c.endIdx).map((log) => {
+                              // Calculate position within the bar based on month index
+                              const positionInBar = ((log.monthIndex - c.startIdx) / childSpan) * 100;
+                              const clampedPosition = Math.max(0, Math.min(100, positionInBar));
+                              
+                              return (
+                                <div
+                                  key={log.id}
+                                  className="absolute top-0 bottom-0 w-1 bg-orange-400 z-30 shadow-lg border-l border-r border-orange-500"
+                                  style={{
+                                    left: `${clampedPosition}%`,
+                                  }}
+                                  title={`Delay: ${log.reason} (${log.delayDuration} days) - ${new Date(log.delayDate).toLocaleDateString()} - Logged by ${log.loggedBy}`}
+                                />
+                              );
+                            })}
+                            {/* Text content */}
+                            <div className={`${isMobile ? 'text-[7px]' : 'text-[8px]'} font-medium text-white truncate flex-1 pointer-events-none relative z-20 px-1.5 flex items-center h-full`}>
+                              <div className="flex-1 min-w-0">
+                                <div className="truncate">{childResponsible}</div>
+                                <div className={`${isMobile ? 'text-[6px]' : 'text-[7px]'} opacity-90`}>{childProgress}%</div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1220,10 +1282,37 @@ export function MilestoneDetailsPanel({
   const timeline = phase.timeline ?? [];
   const months = useMemo(() => timeline.map((t) => t.month), [timeline]);
 
-  const ganttTasks = useMemo(() => buildGanttTasks(subProjects, months), [subProjects, months]);
-
   // Delay logs state - stored per milestone
   const [delayLogs, setDelayLogs] = useState<DelayLog[]>([]);
+
+  // Create adjusted sub-projects based on delay logs
+  const adjustedSubProjects = useMemo(() => {
+    return subProjects.map(subProject => {
+      // Find all delay logs for this sub-project
+      const subProjectDelayLogs = delayLogs.filter(log => log.taskId === subProject.id);
+      
+      if (subProjectDelayLogs.length === 0) {
+        return subProject;
+      }
+      
+      // Calculate total delay impact (each delay reduces actual progress)
+      const totalDelayImpact = subProjectDelayLogs.reduce((sum, log) => {
+        // Impact: delayDuration days / 30 days * 5% reduction per month of delay
+        // This makes delays more noticeable in the progress bar
+        return sum + (log.delayDuration / 30) * 5;
+      }, 0);
+      
+      // Adjust actual progress downward based on delays
+      const adjustedActualProgress = Math.max(0, subProject.actualProgress - totalDelayImpact);
+      
+      return {
+        ...subProject,
+        actualProgress: adjustedActualProgress,
+      };
+    });
+  }, [subProjects, delayLogs]);
+
+  const ganttTasks = useMemo(() => buildGanttTasks(adjustedSubProjects, months), [adjustedSubProjects, months]);
 
   const handleAddDelayLog = (log: DelayLog) => {
     setDelayLogs((prev) => {
@@ -1253,11 +1342,11 @@ export function MilestoneDetailsPanel({
 
   const subProjectTimelines = useMemo(() => {
     if (timeline.length === 0) return [];
-    return subProjects.map((s) => ({
+    return adjustedSubProjects.map((s) => ({
       sub: s,
       timeline: buildDeterministicSubprojectTimeline(s, timeline),
     }));
-  }, [subProjects, timeline]);
+  }, [adjustedSubProjects, timeline]);
 
   if (subProjects.length === 0 || timeline.length === 0) {
     return (
@@ -1294,7 +1383,7 @@ export function MilestoneDetailsPanel({
                   tasks={ganttTasks} 
                   months={months} 
                   baseColor={phaseColor}
-                  subProjects={subProjects}
+                  subProjects={adjustedSubProjects}
                   delayLogs={delayLogs}
                   onAddDelayLog={handleAddDelayLog}
                 />
@@ -1379,7 +1468,7 @@ export function MilestoneDetailsPanel({
                   <div>
                     <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold mb-2`}>WBS Subprocess KPIs</div>
                     <div className="space-y-2">
-                      {subProjects.map((s) => {
+                      {adjustedSubProjects.map((s) => {
                         const variance = s.actualProgress - s.plannedProgress;
                         return (
                           <div key={s.id} className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center justify-between'} rounded-lg border border-border/50 ${isMobile ? 'p-2' : 'p-3'} bg-card/50`}>
@@ -1435,7 +1524,7 @@ export function MilestoneDetailsPanel({
                 tasks={ganttTasks} 
                 months={months} 
                 baseColor={phaseColor}
-                subProjects={subProjects}
+                subProjects={adjustedSubProjects}
                 delayLogs={delayLogs}
                 onAddDelayLog={handleAddDelayLog}
               />
