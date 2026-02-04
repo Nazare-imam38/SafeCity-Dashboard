@@ -22,7 +22,13 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
           { tehsil: "Lahore City", cities: ["Lahore"] },
           { tehsil: "Lahore Cantt", cities: ["Lahore"] },
           { tehsil: "Model Town", cities: [] },
+          { tehsil: "Shalimar", cities: [] },
           { tehsil: "Raiwind", cities: [] },
+          { tehsil: "Allama Iqbal", cities: [] },
+          { tehsil: "Nishtar", cities: [] },
+          { tehsil: "Saddar", cities: [] },
+          { tehsil: "Wagha", cities: [] },
+          { tehsil: "Ravi", cities: [] },
         ]
       },
       {
@@ -30,22 +36,24 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         tehsils: [
           { tehsil: "Sheikhupura", cities: ["Sheikhupura"] },
           { tehsil: "Ferozewala", cities: [] },
-          { tehsil: "Sharaqpur", cities: [] },
           { tehsil: "Muridke", cities: [] },
+          { tehsil: "Sharaqpur", cities: [] },
+          { tehsil: "Safdarabad", cities: [] },
         ]
       },
       {
         district: "Nankana Sahib",
         tehsils: [
           { tehsil: "Nankana Sahib", cities: [] },
-          { tehsil: "Sangla Hill", cities: [] },
           { tehsil: "Shahkot", cities: [] },
+          { tehsil: "Sangla Hill", cities: [] },
         ]
       },
       {
         district: "Kasur",
         tehsils: [
           { tehsil: "Kasur", cities: [] },
+          { tehsil: "Kot Radha Kishan", cities: [] },
           { tehsil: "Chunian", cities: [] },
           { tehsil: "Pattoki", cities: [] },
         ]
@@ -59,35 +67,30 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         district: "Rawalpindi",
         tehsils: [
           { tehsil: "Rawalpindi", cities: ["Rawalpindi"] },
-          { tehsil: "Taxila", cities: ["Taxila"] },
-          { tehsil: "Kallar Syedan", cities: [] },
           { tehsil: "Gujar Khan", cities: [] },
-        ]
-      },
-      {
-        district: "Attock",
-        tehsils: [
-          { tehsil: "Attock", cities: ["Attock"] },
-          { tehsil: "Hassan Abdal", cities: ["Hassan Abdal"] },
-          { tehsil: "Fateh Jang", cities: [] },
-          { tehsil: "Pindi Gheb", cities: [] },
+          { tehsil: "Kahuta", cities: [] },
+          { tehsil: "Kallar Syedan", cities: [] },
+          { tehsil: "Taxila", cities: ["Taxila"] },
         ]
       },
       {
         district: "Jhelum",
         tehsils: [
           { tehsil: "Jhelum", cities: ["Jehlum"] },
+          { tehsil: "Dina", cities: [] },
           { tehsil: "Pind Dadan Khan", cities: [] },
           { tehsil: "Sohawa", cities: [] },
-          { tehsil: "Dina", cities: [] },
         ]
       },
       {
-        district: "Chakwal",
+        district: "Attock",
         tehsils: [
-          { tehsil: "Chakwal", cities: [] },
-          { tehsil: "Talagang", cities: [] },
-          { tehsil: "Choa Saidan Shah", cities: [] },
+          { tehsil: "Attock", cities: ["Attock"] },
+          { tehsil: "Fateh Jang", cities: [] },
+          { tehsil: "Hassan Abdal", cities: ["Hassan Abdal"] },
+          { tehsil: "Hazro", cities: [] },
+          { tehsil: "Jand", cities: [] },
+          { tehsil: "Pindi Gheb", cities: [] },
         ]
       },
       {
@@ -95,6 +98,21 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         tehsils: [
           { tehsil: "Murree", cities: ["Murree"] },
           { tehsil: "Kotli Sattian", cities: [] },
+        ]
+      },
+      {
+        district: "Talagang",
+        tehsils: [
+          { tehsil: "Talagang", cities: [] },
+          { tehsil: "Lawa", cities: [] },
+        ]
+      },
+      {
+        district: "Chakwal",
+        tehsils: [
+          { tehsil: "Chakwal", cities: [] },
+          { tehsil: "Choa Saidan Shah", cities: [] },
+          { tehsil: "Kallar Kahar", cities: [] },
         ]
       }
     ]
@@ -105,18 +123,10 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
       {
         district: "Gujranwala",
         tehsils: [
-          { tehsil: "Gujranwala", cities: [] },
+          { tehsil: "Gujranwala City", cities: [] },
+          { tehsil: "Gujranwala Saddar", cities: [] },
           { tehsil: "Kamoke", cities: [] },
-          { tehsil: "Nowshera Virkan", cities: [] },
-        ]
-      },
-      {
-        district: "Gujrat",
-        tehsils: [
-          { tehsil: "Gujrat", cities: ["Gujrat"] },
-          { tehsil: "Sarai Alamgir", cities: [] },
-          { tehsil: "Kharian", cities: [] },
-          { tehsil: "Jalalpur Jattan", cities: [] },
+          { tehsil: "Nowshera", cities: [] },
         ]
       },
       {
@@ -129,19 +139,26 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         ]
       },
       {
-        district: "Mandi Bahauddin",
-        tehsils: [
-          { tehsil: "Mandi Bahauddin", cities: [] },
-          { tehsil: "Phalia", cities: [] },
-          { tehsil: "Malikwal", cities: [] },
-        ]
-      },
-      {
         district: "Narowal",
         tehsils: [
           { tehsil: "Narowal", cities: [] },
           { tehsil: "Shakargarh", cities: [] },
           { tehsil: "Zafarwal", cities: [] },
+        ]
+      }
+    ]
+  },
+  {
+    division: "Gujrat",
+    districts: [
+      {
+        district: "Gujrat",
+        tehsils: [
+          { tehsil: "Gujrat", cities: ["Gujrat"] },
+          { tehsil: "Kharian", cities: [] },
+          { tehsil: "Sarai Alamgir", cities: [] },
+          { tehsil: "Jalalpur Jattan", cities: [] },
+          { tehsil: "Kunja", cities: [] },
         ]
       },
       {
@@ -149,6 +166,21 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         tehsils: [
           { tehsil: "Hafizabad", cities: [] },
           { tehsil: "Pindi Bhattian", cities: [] },
+        ]
+      },
+      {
+        district: "Mandi Bahauddin",
+        tehsils: [
+          { tehsil: "Mandi Bahauddin", cities: [] },
+          { tehsil: "Malakwal", cities: [] },
+          { tehsil: "Phalia", cities: [] },
+        ]
+      },
+      {
+        district: "Wazirabad",
+        tehsils: [
+          { tehsil: "Wazirabad", cities: [] },
+          { tehsil: "Ali Pur Chatta", cities: [] },
         ]
       }
     ]
@@ -160,17 +192,21 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         district: "Sargodha",
         tehsils: [
           { tehsil: "Sargodha", cities: ["Sargodha"] },
+          { tehsil: "Sahiwal Tehsil (in Sargodha District)", cities: [] },
           { tehsil: "Bhalwal", cities: [] },
-          { tehsil: "Sahiwal", cities: [] },
+          { tehsil: "Bhera", cities: [] },
           { tehsil: "Kot Momin", cities: [] },
+          { tehsil: "Shahpur", cities: [] },
+          { tehsil: "Sillanwala", cities: [] },
         ]
       },
       {
         district: "Khushab",
         tehsils: [
           { tehsil: "Khushab", cities: [] },
-          { tehsil: "Naushera", cities: [] },
+          { tehsil: "Noorpur Thal", cities: [] },
           { tehsil: "Quaidabad", cities: [] },
+          { tehsil: "Naushera (Wadi-e-Soon)", cities: [] },
         ]
       },
       {
@@ -186,7 +222,8 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         tehsils: [
           { tehsil: "Bhakkar", cities: [] },
           { tehsil: "Darya Khan", cities: [] },
-          { tehsil: "Kallur Kot", cities: [] },
+          { tehsil: "Kaloorkot", cities: [] },
+          { tehsil: "Mankera", cities: [] },
         ]
       }
     ]
@@ -197,10 +234,12 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
       {
         district: "Faisalabad",
         tehsils: [
-          { tehsil: "Faisalabad City", cities: ["Faisalabad"] },
-          { tehsil: "Faisalabad Sadar", cities: [] },
+          { tehsil: "Faisalabad", cities: ["Faisalabad"] },
+          { tehsil: "Faisalabad Saddar", cities: [] },
+          { tehsil: "Chak Jhumra", cities: [] },
           { tehsil: "Jaranwala", cities: [] },
           { tehsil: "Samundri", cities: [] },
+          { tehsil: "Tandlianwala", cities: [] },
         ]
       },
       {
@@ -209,7 +248,16 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
           { tehsil: "Jhang", cities: ["Jhang"] },
           { tehsil: "Shorkot", cities: [] },
           { tehsil: "Ahmadpur Sial", cities: [] },
-          { tehsil: "18-Hazari", cities: [] },
+          { tehsil: "Athara Hazari", cities: [] },
+          { tehsil: "Mandi Shah Jeewna", cities: [] },
+        ]
+      },
+      {
+        district: "Chiniot",
+        tehsils: [
+          { tehsil: "Chiniot", cities: [] },
+          { tehsil: "Bhawana", cities: [] },
+          { tehsil: "Lalian", cities: [] },
         ]
       },
       {
@@ -218,14 +266,7 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
           { tehsil: "Toba Tek Singh", cities: [] },
           { tehsil: "Gojra", cities: [] },
           { tehsil: "Kamalia", cities: [] },
-        ]
-      },
-      {
-        district: "Chiniot",
-        tehsils: [
-          { tehsil: "Chiniot", cities: [] },
-          { tehsil: "Bhowana", cities: [] },
-          { tehsil: "Lalian", cities: [] },
+          { tehsil: "Pir Mahal", cities: [] },
         ]
       }
     ]
@@ -237,25 +278,9 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         district: "Multan",
         tehsils: [
           { tehsil: "Multan City", cities: ["Multan"] },
-          { tehsil: "Multan Sadar", cities: [] },
-          { tehsil: "Shujabad", cities: [] },
+          { tehsil: "Multan Saddar", cities: [] },
           { tehsil: "Jalalpur Pirwala", cities: [] },
-        ]
-      },
-      {
-        district: "Lodhran",
-        tehsils: [
-          { tehsil: "Lodhran", cities: [] },
-          { tehsil: "Duniyapur", cities: [] },
-          { tehsil: "Kehror Pacca", cities: [] },
-        ]
-      },
-      {
-        district: "Khanewal",
-        tehsils: [
-          { tehsil: "Khanewal", cities: [] },
-          { tehsil: "Kabirwala", cities: [] },
-          { tehsil: "Mian Channu", cities: [] },
+          { tehsil: "Shujabad", cities: [] },
         ]
       },
       {
@@ -264,6 +289,23 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
           { tehsil: "Vehari", cities: [] },
           { tehsil: "Burewala", cities: [] },
           { tehsil: "Mailsi", cities: [] },
+        ]
+      },
+      {
+        district: "Lodhran",
+        tehsils: [
+          { tehsil: "Lodhran", cities: [] },
+          { tehsil: "Kahror Pacca", cities: [] },
+          { tehsil: "Dunyapur", cities: [] },
+        ]
+      },
+      {
+        district: "Khanewal",
+        tehsils: [
+          { tehsil: "Khanewal", cities: [] },
+          { tehsil: "Jahanian", cities: [] },
+          { tehsil: "Kabirwala", cities: [] },
+          { tehsil: "Mian Channu", cities: [] },
         ]
       }
     ]
@@ -274,10 +316,12 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
       {
         district: "Bahawalpur",
         tehsils: [
-          { tehsil: "Bahawalpur", cities: ["Bahawalpur"] },
-          { tehsil: "Ahmadpur East", cities: [] },
+          { tehsil: "Bahawalpur City", cities: ["Bahawalpur"] },
+          { tehsil: "Bahawalpur Saddar", cities: [] },
+          { tehsil: "Ahmedpur East", cities: [] },
           { tehsil: "Hasilpur", cities: [] },
           { tehsil: "Khairpur Tamewali", cities: [] },
+          { tehsil: "Yazman", cities: [] },
         ]
       },
       {
@@ -287,15 +331,16 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
           { tehsil: "Chishtian", cities: [] },
           { tehsil: "Fort Abbas", cities: [] },
           { tehsil: "Haroonabad", cities: [] },
+          { tehsil: "Minchinabad", cities: [] },
         ]
       },
       {
         district: "Rahim Yar Khan",
         tehsils: [
           { tehsil: "Rahim Yar Khan", cities: ["RYK"] },
-          { tehsil: "Liaquatpur", cities: [] },
-          { tehsil: "Sadiqabad", cities: [] },
           { tehsil: "Khanpur", cities: [] },
+          { tehsil: "Liaqatpur", cities: [] },
+          { tehsil: "Sadiqabad", cities: [] },
         ]
       }
     ]
@@ -307,18 +352,16 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         district: "Dera Ghazi Khan",
         tehsils: [
           { tehsil: "Dera Ghazi Khan", cities: ["DG Khan"] },
-          { tehsil: "Taunsa", cities: [] },
+          { tehsil: "De-excluded Area DG Khan", cities: [] },
           { tehsil: "Kot Chutta", cities: [] },
-          { tehsil: "De-Ex-Area", cities: [] },
         ]
       },
       {
-        district: "Muzaffargarh",
+        district: "Taunsa",
         tehsils: [
-          { tehsil: "Muzaffargarh", cities: ["Muzaffargarh"] },
-          { tehsil: "Alipur", cities: [] },
-          { tehsil: "Jatoi", cities: [] },
-          { tehsil: "Kot Addu", cities: [] },
+          { tehsil: "Taunsa", cities: [] },
+          { tehsil: "Kohe Suleiman", cities: [] },
+          { tehsil: "Vevoha", cities: [] },
         ]
       },
       {
@@ -333,8 +376,23 @@ export const PUNJAB_HIERARCHY: PunjabHierarchy[] = [
         district: "Layyah",
         tehsils: [
           { tehsil: "Layyah", cities: [] },
-          { tehsil: "Karor", cities: [] },
-          { tehsil: "Chobara", cities: [] },
+          { tehsil: "Karor Lal Esan", cities: [] },
+          { tehsil: "Chaubara", cities: [] },
+        ]
+      },
+      {
+        district: "Kot Addu",
+        tehsils: [
+          { tehsil: "Kot Addu", cities: [] },
+          { tehsil: "Chowk Sarwar Shaheed", cities: [] },
+        ]
+      },
+      {
+        district: "Muzaffargarh",
+        tehsils: [
+          { tehsil: "Muzaffargarh", cities: ["Muzaffargarh"] },
+          { tehsil: "Alipur", cities: [] },
+          { tehsil: "Jatoi", cities: [] },
         ]
       }
     ]
@@ -404,7 +462,7 @@ export const getCitiesByHierarchy = (division: string, district: string, tehsil:
 export const CITY_TO_HIERARCHY_MAP: Record<string, { division: string; district: string; tehsil: string }> = {
   "Sheikhupura": { division: "Lahore", district: "Sheikhupura", tehsil: "Sheikhupura" },
   "Sialkot": { division: "Gujranwala", district: "Sialkot", tehsil: "Sialkot" },
-  "Gujrat": { division: "Gujranwala", district: "Gujrat", tehsil: "Gujrat" },
+  "Gujrat": { division: "Gujrat", district: "Gujrat", tehsil: "Gujrat" },
   "Jehlum": { division: "Rawalpindi", district: "Jhelum", tehsil: "Jhelum" },
   "Attock": { division: "Rawalpindi", district: "Attock", tehsil: "Attock" },
   "Hassan Abdal": { division: "Rawalpindi", district: "Attock", tehsil: "Hassan Abdal" },
@@ -416,9 +474,9 @@ export const CITY_TO_HIERARCHY_MAP: Record<string, { division: string; district:
   "Murree": { division: "Rawalpindi", district: "Murree", tehsil: "Murree" },
   "Sargodha": { division: "Sargodha", district: "Sargodha", tehsil: "Sargodha" },
   "Mian Wali": { division: "Sargodha", district: "Mianwali", tehsil: "Mianwali" },
-  "Faisalabad": { division: "Faisalabad", district: "Faisalabad", tehsil: "Faisalabad City" },
+  "Faisalabad": { division: "Faisalabad", district: "Faisalabad", tehsil: "Faisalabad" },
   "Multan": { division: "Multan", district: "Multan", tehsil: "Multan City" },
-  "Bahawalpur": { division: "Bahawalpur", district: "Bahawalpur", tehsil: "Bahawalpur" },
+  "Bahawalpur": { division: "Bahawalpur", district: "Bahawalpur", tehsil: "Bahawalpur City" },
   "RYK": { division: "Bahawalpur", district: "Rahim Yar Khan", tehsil: "Rahim Yar Khan" },
   "DG Khan": { division: "Dera Ghazi Khan", district: "Dera Ghazi Khan", tehsil: "Dera Ghazi Khan" },
   "Lahore": { division: "Lahore", district: "Lahore", tehsil: "Lahore City" },

@@ -2,12 +2,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+export interface Milestone {
+  id: string;
+  name: string;
+  duration: number;
+  startDate: string | null;
+  finishDate: string | null;
+}
+
 export interface SubProject {
   id: string;
   name: string;
   actualProgress: number;
   plannedProgress: number;
   weight: number; // Contribution weight to parent project (0-1)
+  startDate?: string | null; // Real deadline from Excel
+  finishDate?: string | null; // Real deadline from Excel
+  milestones?: Milestone[]; // Real activities/milestones from Excel
 }
 
 interface SubProjectCardProps {

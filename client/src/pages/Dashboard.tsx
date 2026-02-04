@@ -26,6 +26,7 @@ import {
   generateMockData,
   InstallationData
 } from "@/data/punjabInstallationData";
+import { getTehsilSubProjectsByPhase, getBahawalpurTehsilProjects, calculateProjectProgress, BahawalpurProject } from "@/data/bahawalpurProjectsData";
 import { 
   ClipboardCheck, 
   Building2, 
@@ -100,13 +101,35 @@ const hasDetailedProgress = (progress: number | PhaseProgress): progress is Phas
   return typeof progress !== 'number';
 };
 
-// Generate sub-projects for a phase (sample data structure)
+// Generate sub-projects for a phase - uses real Excel data for Bahawalpur, fallback for others
 const generateSubProjects = (
   phaseKey: string,
   actualProgress: number,
-  plannedProgress: number
+  plannedProgress: number,
+  division?: string,
+  district?: string,
+  tehsil?: string
 ): SubProject[] => {
-  // Sample sub-project structure - this should be replaced with real data
+  // ALWAYS try to use real Bahawalpur data if available - NO hardcoded fallback for Bahawalpur
+  if (division === 'Bahawalpur' && district && tehsil) {
+    try {
+      const subProjectsByPhase = getTehsilSubProjectsByPhase(district, tehsil);
+      const realSubProjects = subProjectsByPhase[phaseKey];
+      
+      if (realSubProjects && realSubProjects.length > 0) {
+        // Use REAL sub-projects from Excel data with real names, deadlines, and milestones
+        return realSubProjects;
+      }
+      // If no data found for this phase, return empty array (don't use hardcoded templates)
+      return [];
+    } catch (error) {
+      console.warn(`Error loading Bahawalpur sub-projects for ${district}-${tehsil}:`, error);
+      // Return empty array instead of fallback for Bahawalpur
+      return [];
+    }
+  }
+  
+  // Only use hardcoded templates for NON-Bahawalpur divisions
   const subProjectTemplates: Record<string, { names: string[], weights: number[] }> = {
     surveys: {
       names: ["Site Survey & Assessment", "Technical Feasibility Study", "Site Selection & Approval", "Environmental Clearance"],
@@ -139,7 +162,7 @@ const generateSubProjects = (
     weights: [0.33, 0.33, 0.34]
   };
 
-  // Generate sub-projects with variance based on parent progress
+  // Generate sub-projects with variance based on parent progress (only for non-Bahawalpur)
   const variance = actualProgress - plannedProgress;
   
   return template.names.map((name, index) => {
@@ -161,7 +184,10 @@ const generateSubProjects = (
 const convertToPhaseProgress = (
   currentValue: number,
   phaseKey: string,
-  timelineData?: { month: string; [key: string]: number | string }[]
+  timelineData?: { month: string; [key: string]: number | string }[],
+  division?: string,
+  district?: string,
+  tehsil?: string
 ): PhaseProgress => {
   // Generate planned progress (typically 5-10% higher initially, then converges)
   const plannedProgress = Math.min(100, currentValue + (100 - currentValue) * 0.15);
@@ -180,7 +206,7 @@ const convertToPhaseProgress = (
   return {
     actual: currentValue,
     planned: plannedProgress,
-    subProjects: generateSubProjects(phaseKey, currentValue, plannedProgress),
+    subProjects: generateSubProjects(phaseKey, currentValue, plannedProgress, division, district, tehsil),
     timeline: timeline.length > 0 ? timeline : undefined
   };
 };
@@ -372,7 +398,7 @@ const CITY_NAMES: Record<string, string> = {
 };
 
 // Color palette for cards
-const CARD_COLORS = ["emerald", "blue", "orange", "purple", "indigo", "teal", "pink", "cyan", "amber", "red"];
+const CARD_COLORS = ["green", "blue", "orange", "purple", "indigo", "teal", "pink", "cyan", "amber", "red"];
 
 type ProgressRangeMeta = {
   label: "Low Progress" | "Moderate Progress" | "Good Progress" | "High Progress" | "Fully Completed";
@@ -574,6 +600,63 @@ export default function Dashboard() {
 
       if (!itemData) return null;
 
+      // Extract division, district, and tehsil from the key for context
+      let division: string | undefined;
+      let district: string | undefined;
+      let tehsil: string | undefined;
+      
+      if (itemType === "tehsil") {
+        const tehData = getAllTehsilData();
+        const foundKey = Object.keys(tehData).find(key => {
+          const parts = key.split('-');
+          return parts.length >= 3 && parts.slice(2).join('-') === itemName.toLowerCase().replace(/\s+/g, '');
+        });
+        if (foundKey) {
+          const parts = foundKey.split('-');
+          if (parts.length >= 3) {
+            division = parts[0];
+            district = parts[1];
+            tehsil = parts.slice(2).join('-');
+            // Find the actual tehsil name from hierarchy
+            const div = PUNJAB_HIERARCHY.find(d => d.division.toLowerCase().replace(/\s+/g, '') === division);
+            if (div) {
+              const dist = div.districts.find(d => d.district.toLowerCase().replace(/\s+/g, '') === district);
+              if (dist) {
+                const teh = dist.tehsils.find(t => t.tehsil.toLowerCase().replace(/\s+/g, '') === tehsil);
+                if (teh) {
+                  division = div.division;
+                  district = dist.district;
+                  tehsil = teh.tehsil;
+                }
+              }
+            }
+          }
+        }
+      } else if (itemType === "district") {
+        const distData = getAllDistrictData();
+        const foundKey = Object.keys(distData).find(key => {
+          const parts = key.split('-');
+          return parts.length >= 2 && parts.slice(1).join('-') === itemName.toLowerCase().replace(/\s+/g, '');
+        });
+        if (foundKey) {
+          const parts = foundKey.split('-');
+          if (parts.length >= 2) {
+            division = parts[0];
+            district = parts.slice(1).join('-');
+            const div = PUNJAB_HIERARCHY.find(d => d.division.toLowerCase().replace(/\s+/g, '') === division);
+            if (div) {
+              const dist = div.districts.find(d => d.district.toLowerCase().replace(/\s+/g, '') === district);
+              if (dist) {
+                division = div.division;
+                district = dist.district;
+              }
+            }
+          }
+        }
+      } else if (itemType === "division") {
+        division = PUNJAB_HIERARCHY.find(d => d.division.toLowerCase().replace(/\s+/g, '') === itemName.toLowerCase().replace(/\s+/g, ''))?.division;
+      }
+
       // Generate timeline data (6 months progression)
       const timeline = [
         { month: "Jan", surveys: Math.max(0, itemData.surveys - 50), foundations: Math.max(0, itemData.foundations - 75), cabinet: Math.max(0, itemData.cabinet - 73), cable: Math.max(0, itemData.cable - 70), controlRoom: Math.max(0, itemData.controlRoom - 60), ppic3: Math.max(0, itemData.ppic3 - 55), overall: Math.max(0, itemData.overall - 60) },
@@ -585,12 +668,12 @@ export default function Dashboard() {
       ];
       
       return {
-        surveys: convertToPhaseProgress(itemData.surveys, "surveys", timeline),
-        foundations: convertToPhaseProgress(itemData.foundations, "foundations", timeline),
-        cabinet: convertToPhaseProgress(itemData.cabinet, "cabinet", timeline),
-        cable: convertToPhaseProgress(itemData.cable, "cable", timeline),
-        controlRoom: convertToPhaseProgress(itemData.controlRoom, "controlRoom", timeline),
-        ppic3: convertToPhaseProgress(itemData.ppic3, "ppic3", timeline),
+        surveys: convertToPhaseProgress(itemData.surveys, "surveys", timeline, division, district, tehsil),
+        foundations: convertToPhaseProgress(itemData.foundations, "foundations", timeline, division, district, tehsil),
+        cabinet: convertToPhaseProgress(itemData.cabinet, "cabinet", timeline, division, district, tehsil),
+        cable: convertToPhaseProgress(itemData.cable, "cable", timeline, division, district, tehsil),
+        controlRoom: convertToPhaseProgress(itemData.controlRoom, "controlRoom", timeline, division, district, tehsil),
+        ppic3: convertToPhaseProgress(itemData.ppic3, "ppic3", timeline, division, district, tehsil),
         overall: itemData.overall,
         timeline,
       };
@@ -1896,33 +1979,79 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Project Cards */}
+              {/* Project Cards - Show real projects for Bahawalpur, installation phases for others */}
               <div className="w-full">
                 <div className="mb-4">
-                  <h3 className="text-xl font-bold font-heading mb-1">Ongoing Projects</h3>
-                  <p className="text-sm text-muted-foreground">Select a project to view detailed KPIs and charts</p>
+                  <h3 className="text-xl font-bold font-heading mb-1">
+                    {parentDivision === 'Bahawalpur' ? 'Projects' : 'Ongoing Projects'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {parentDivision === 'Bahawalpur' 
+                      ? 'Select a project to view sub-projects and activities' 
+                      : 'Select a project to view detailed KPIs and charts'}
+                  </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {installationPhases.map((phase) => {
-                    const progress = singleItemData[phase.key];
-                    const progressValue = getProgressValue(progress);
-                    
-                    // Format tehsil name for URL (remove spaces, lowercase)
+                {parentDivision === 'Bahawalpur' ? (
+                  // Show real projects from JSON for Bahawalpur tehsils
+                  (() => {
+                    const projects = getBahawalpurTehsilProjects(parentDistrict, selectedItemName);
                     const tehsilSlug = selectedItemName?.toLowerCase().replace(/\s+/g, '') || '';
                     
+                    if (projects.length === 0) {
+                      return (
+                        <Card className="border-border/50">
+                          <CardContent className="p-8 text-center">
+                            <p className="text-muted-foreground">No projects found for {selectedItemName} Tehsil.</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+                    
                     return (
-                      <HierarchyCard
-                        key={phase.key}
-                        title={phase.title}
-                        overallProgress={Math.round(progressValue)}
-                        onClick={() => {
-                          setLocation(`/project/${tehsilSlug}/${phase.key}`);
-                        }}
-                        color={phase.color}
-                      />
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {projects.map((project: BahawalpurProject) => {
+                          const projectProgress = calculateProjectProgress(project);
+                          
+                          return (
+                            <HierarchyCard
+                              key={project.id}
+                              title={project.name}
+                              overallProgress={Math.round(projectProgress.overall)}
+                              onClick={() => {
+                                // Navigate to project detail page
+                                setLocation(`/project/${tehsilSlug}/${project.id}`);
+                              }}
+                              color={CARD_COLORS[projects.indexOf(project) % CARD_COLORS.length]}
+                            />
+                          );
+                        })}
+                      </div>
                     );
-                  })}
-                </div>
+                  })()
+                ) : (
+                  // Show installation phases for non-Bahawalpur tehsils
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {installationPhases.map((phase) => {
+                      const progress = singleItemData[phase.key];
+                      const progressValue = getProgressValue(progress);
+                      
+                      // Format tehsil name for URL (remove spaces, lowercase)
+                      const tehsilSlug = selectedItemName?.toLowerCase().replace(/\s+/g, '') || '';
+                      
+                      return (
+                        <HierarchyCard
+                          key={phase.key}
+                          title={phase.title}
+                          overallProgress={Math.round(progressValue)}
+                          onClick={() => {
+                            setLocation(`/project/${tehsilSlug}/${phase.key}`);
+                          }}
+                          color={phase.color}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           );

@@ -14,6 +14,7 @@ import {
   InstallationData
 } from "@/data/punjabInstallationData";
 import { PUNJAB_HIERARCHY } from "@/data/punjabHierarchy";
+import { getTehsilSubProjectsByPhase, getBahawalpurTehsilProjects, BahawalpurProject, convertToSubProjects } from "@/data/bahawalpurProjectsData";
 import { 
   ClipboardCheck, 
   Building2, 
@@ -72,13 +73,35 @@ const hasDetailedProgress = (progress: number | PhaseProgress): progress is Phas
   return typeof progress !== 'number';
 };
 
-// Generate sub-projects for a phase (sample data structure)
+// Generate sub-projects for a phase - uses real Excel data for Bahawalpur
 const generateSubProjects = (
   phaseKey: string,
   actualProgress: number,
-  plannedProgress: number
+  plannedProgress: number,
+  division?: string,
+  district?: string,
+  tehsil?: string
 ): SubProject[] => {
-  // Sample sub-project structure - this should be replaced with real data
+  // ALWAYS try to use real Bahawalpur data if available - NO hardcoded fallback for Bahawalpur
+  if (division === 'Bahawalpur' && district && tehsil) {
+    try {
+      const subProjectsByPhase = getTehsilSubProjectsByPhase(district, tehsil);
+      const realSubProjects = subProjectsByPhase[phaseKey];
+      
+      if (realSubProjects && realSubProjects.length > 0) {
+        // Use REAL sub-projects from Excel data with real names, deadlines, and milestones
+        return realSubProjects;
+      }
+      // If no data found for this phase, return empty array (don't use hardcoded templates)
+      return [];
+    } catch (error) {
+      console.warn(`Error loading Bahawalpur sub-projects for ${district}-${tehsil}:`, error);
+      // Return empty array instead of fallback for Bahawalpur
+      return [];
+    }
+  }
+  
+  // Only use hardcoded templates for NON-Bahawalpur divisions
   const subProjectTemplates: Record<string, { names: string[], weights: number[] }> = {
     surveys: {
       names: ["Site Survey & Assessment", "Technical Feasibility Study", "Site Selection & Approval", "Environmental Clearance"],
@@ -111,7 +134,7 @@ const generateSubProjects = (
     weights: [0.33, 0.33, 0.34]
   };
 
-  // Generate sub-projects with variance based on parent progress
+  // Generate sub-projects with variance based on parent progress (only for non-Bahawalpur)
   const variance = actualProgress - plannedProgress;
   
   return template.names.map((name, index) => {
@@ -133,7 +156,10 @@ const generateSubProjects = (
 const convertToPhaseProgress = (
   currentValue: number,
   phaseKey: string,
-  timelineData?: { month: string; [key: string]: number | string }[]
+  timelineData?: { month: string; [key: string]: number | string }[],
+  division?: string,
+  district?: string,
+  tehsil?: string
 ): PhaseProgress => {
   // Generate planned progress (typically 5-10% higher initially, then converges)
   const plannedProgress = Math.min(100, currentValue + (100 - currentValue) * 0.15);
@@ -163,8 +189,8 @@ const convertToPhaseProgress = (
   return {
     actual: currentValue,
     planned: plannedProgress,
-    subProjects: generateSubProjects(phaseKey, currentValue, plannedProgress),
-    timeline: defaultTimeline
+    subProjects: generateSubProjects(phaseKey, currentValue, plannedProgress, division, district, tehsil),
+    timeline: defaultTimeline.length > 0 ? defaultTimeline : undefined
   };
 };
 
@@ -220,22 +246,28 @@ export default function ProjectDetail() {
   const tehsilName = pathParts[1] || '';
   const projectId = pathParts[2] || '';
 
-  // Find the actual tehsil name from hierarchy
-  const actualTehsilName = useMemo(() => {
-    if (!tehsilName) return null;
+  // Find the actual tehsil name, division, and district from hierarchy
+  const tehsilContext = useMemo(() => {
+    if (!tehsilName) return { tehsil: null, division: null, district: null };
     const tehsilSlug = tehsilName.toLowerCase().replace(/\s+/g, '');
     for (const div of PUNJAB_HIERARCHY) {
       for (const dist of div.districts) {
         for (const teh of dist.tehsils) {
           const tehSlug = teh.tehsil.toLowerCase().replace(/\s+/g, '');
           if (tehSlug === tehsilSlug || tehSlug.includes(tehsilSlug) || tehsilSlug.includes(tehSlug)) {
-            return teh.tehsil;
+            return {
+              tehsil: teh.tehsil,
+              division: div.division,
+              district: dist.district
+            };
           }
         }
       }
     }
-    return null;
+    return { tehsil: null, division: null, district: null };
   }, [tehsilName]);
+
+  const actualTehsilName = tehsilContext.tehsil;
 
   // Get tehsil data
   const tehsilData = useMemo(() => {
@@ -248,23 +280,73 @@ export default function ProjectDetail() {
     return tehsilKey ? allTehsilData[tehsilKey] : null;
   }, [tehsilName]);
 
-  // Find the selected project phase
+  // Find the selected project - could be installation phase or real Bahawalpur project
   const selectedProject = useMemo(() => {
-    if (!projectId || !tehsilData) return null;
+    if (!projectId) return null;
+    
+    // First check if it's a real Bahawalpur project ID (starts with "project-")
+    if (projectId.startsWith('project-') && tehsilContext.division === 'Bahawalpur' && tehsilContext.district && tehsilContext.tehsil) {
+      const projects = getBahawalpurTehsilProjects(tehsilContext.district, tehsilContext.tehsil);
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        return {
+          key: projectId,
+          title: project.name,
+          icon: Camera, // Default icon
+          color: "blue" as const
+        };
+      }
+    }
+    
+    // Otherwise, it's an installation phase
+    if (!tehsilData) return null;
     return installationPhases.find(p => p.key === projectId);
-  }, [projectId, tehsilData]);
+  }, [projectId, tehsilData, tehsilContext]);
 
-  // Get project-specific data
+  // Get project-specific data - handle both real projects and installation phases
   const projectData = useMemo(() => {
-    if (!selectedProject || !tehsilData) return null;
+    if (!selectedProject) return null;
+    
+    // If it's a real Bahawalpur project
+    if (projectId.startsWith('project-') && tehsilContext.division === 'Bahawalpur' && tehsilContext.district && tehsilContext.tehsil) {
+      const projects = getBahawalpurTehsilProjects(tehsilContext.district, tehsilContext.tehsil);
+      const project = projects.find(p => p.id === projectId);
+      
+      if (project) {
+        // Calculate progress from sub-projects
+        const allSubProjects = convertToSubProjects(project.subProjects, projectId);
+        const totalActual = allSubProjects.reduce((sum, sp) => sum + (sp.actualProgress * sp.weight), 0);
+        const totalPlanned = allSubProjects.reduce((sum, sp) => sum + (sp.plannedProgress * sp.weight), 0);
+        const overall = (totalActual + totalPlanned) / 2;
+        
+        return {
+          progress: {
+            actual: totalActual,
+            planned: totalPlanned,
+            overall: overall,
+            subProjects: allSubProjects
+          },
+          phase: selectedProject,
+          isRealProject: true,
+          project: project
+        };
+      }
+    }
+    
+    // Otherwise, it's an installation phase
+    if (!tehsilData) return null;
     const progress = tehsilData[selectedProject.key];
     return {
       progress,
       phase: selectedProject,
+      isRealProject: false
     };
-  }, [selectedProject, tehsilData]);
+  }, [selectedProject, tehsilData, projectId, tehsilContext]);
 
-  if (!tehsilName || !projectId || !tehsilData || !selectedProject || !projectData) {
+  // Allow real Bahawalpur projects even if tehsilData is null
+  const isRealBahawalpurProject = projectId.startsWith('project-') && tehsilContext.division === 'Bahawalpur';
+  
+  if (!tehsilName || !projectId || (!isRealBahawalpurProject && !tehsilData) || !selectedProject || !projectData) {
     return (
       <Layout title="Project Not Found">
         <div className="space-y-6">
@@ -296,9 +378,16 @@ export default function ProjectDetail() {
       return progress;
     } else {
       const timelineData = (tehsilData as any).timeline;
-      return convertToPhaseProgress(progressValue, projectId, timelineData);
+      return convertToPhaseProgress(
+        progressValue, 
+        projectId, 
+        timelineData,
+        tehsilContext.division || undefined,
+        tehsilContext.district || undefined,
+        tehsilContext.tehsil || undefined
+      );
     }
-  }, [hasDetails, progress, progressValue, projectId, tehsilData]);
+  }, [hasDetails, progress, progressValue, projectId, tehsilData, tehsilContext]);
 
   // Get sub-projects for the selected project
   const subProjects = projectPhaseProgress.subProjects || [];
@@ -442,7 +531,46 @@ export default function ProjectDetail() {
               // A sub-project KPI was selected
               const selectedSubProject = subProjects.find(sp => sp.id === selectedMilestoneKey);
               if (selectedSubProject) {
-                // Create a PhaseProgress for the selected sub-project
+                // Convert milestones to sub-projects format for display in Gantt/WBS
+                const milestoneSubProjects: SubProject[] = [];
+                if (selectedSubProject.milestones && selectedSubProject.milestones.length > 0) {
+                  const totalDuration = selectedSubProject.milestones.reduce((sum, m) => sum + (m.duration || 1), 0);
+                  const now = new Date();
+                  
+                  selectedSubProject.milestones.forEach((milestone, index) => {
+                    // Calculate progress for each milestone based on dates
+                    let milestoneProgress = 0;
+                    if (milestone.finishDate) {
+                      const finishDate = new Date(milestone.finishDate);
+                      if (finishDate <= now) {
+                        milestoneProgress = 100;
+                      } else if (milestone.startDate) {
+                        const startDate = new Date(milestone.startDate);
+                        if (startDate <= now && now < finishDate) {
+                          const totalDays = (finishDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+                          const elapsedDays = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+                          if (totalDays > 0) {
+                            milestoneProgress = Math.min(100, (elapsedDays / totalDays) * 100);
+                          }
+                        }
+                      }
+                    }
+                    
+                    const weight = totalDuration > 0 ? (milestone.duration || 1) / totalDuration : 1 / selectedSubProject.milestones.length;
+                    
+                    milestoneSubProjects.push({
+                      id: `${selectedSubProject.id}-${milestone.id}`,
+                      name: `${milestone.id}: ${milestone.name}`, // Show Activity ID and Name
+                      actualProgress: milestoneProgress,
+                      plannedProgress: 75, // Default planned
+                      weight: weight,
+                      startDate: milestone.startDate,
+                      finishDate: milestone.finishDate,
+                      milestones: [] // Activities don't have sub-activities
+                    });
+                  });
+                }
+                
                 // Use the sub-project's timeline (generate from parent timeline)
                 const subProjectTimeline = projectPhaseProgress.timeline?.map(t => ({
                   month: t.month,
@@ -453,7 +581,7 @@ export default function ProjectDetail() {
                 currentPhase = {
                   actual: selectedSubProject.actualProgress,
                   planned: selectedSubProject.plannedProgress,
-                  subProjects: [], // Sub-project has no further sub-projects
+                  subProjects: milestoneSubProjects, // Show milestones as sub-projects
                   timeline: subProjectTimeline,
                 };
                 currentPhaseTitle = selectedSubProject.name;

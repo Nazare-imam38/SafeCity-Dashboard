@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, X, Plus, Trash2, Edit2, Calendar, AlertTriangle, Clock } from "lucide-react";
+import { AlertCircle, X, Plus, Trash2, Edit2, Calendar, AlertTriangle, Clock, Image as ImageIcon, XCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -96,6 +96,7 @@ export type DelayLog = {
   loggedAt: string; // ISO date string (when log was created)
   delayDate: string; // ISO date string (when delay occurred)
   monthIndex: number; // Which month the delay occurred (for filtering)
+  imageUrl?: string; // Optional image URL (base64 or URL) for delay evidence
 };
 
 // Delay log form data
@@ -104,6 +105,8 @@ type DelayLogFormData = {
   reason: string;
   delayDuration: string;
   delayDate: string; // ISO date string
+  imageFile: File | null;
+  imagePreview: string | null; // base64 preview
 };
 
 // Hardcoded delay reasons for realistic delay logs
@@ -372,6 +375,8 @@ function DelayLogFormDialog({
     reason: existingLog?.reason || "",
     delayDuration: existingLog?.delayDuration.toString() || "1",
     delayDate: getDefaultDate(),
+    imageFile: null,
+    imagePreview: existingLog?.imageUrl || null,
   });
 
   // Reset form when dialog opens/closes or existingLog changes
@@ -382,9 +387,47 @@ function DelayLogFormDialog({
         reason: existingLog?.reason || "",
         delayDuration: existingLog?.delayDuration.toString() || "1",
         delayDate: getDefaultDate(),
+        imageFile: null,
+        imagePreview: existingLog?.imageUrl || null,
       });
     }
   }, [open, existingLog, defaultDate]);
+
+  // Handle image file selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({
+          ...formData,
+          imageFile: file,
+          imagePreview: reader.result as string,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove image
+  const handleRemoveImage = () => {
+    setFormData({
+      ...formData,
+      imageFile: null,
+      imagePreview: null,
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -409,10 +452,18 @@ function DelayLogFormDialog({
       loggedAt: existingLog?.loggedAt || new Date().toISOString(),
       delayDate: new Date(formData.delayDate).toISOString(),
       monthIndex: calculatedMonthIndex >= 0 ? calculatedMonthIndex : monthIndex,
+      imageUrl: formData.imagePreview || undefined,
     };
 
     onSave(delayLog);
-    setFormData({ loggedBy: "", reason: "", delayDuration: "1", delayDate: new Date().toISOString().split('T')[0] });
+    setFormData({ 
+      loggedBy: "", 
+      reason: "", 
+      delayDuration: "1", 
+      delayDate: new Date().toISOString().split('T')[0],
+      imageFile: null,
+      imagePreview: null,
+    });
     onOpenChange(false);
   };
 
@@ -471,6 +522,44 @@ function DelayLogFormDialog({
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="image">Delay Evidence Image (Optional)</Label>
+              <div className="space-y-2">
+                {formData.imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={formData.imagePreview}
+                      alt="Delay evidence"
+                      className="w-full h-48 object-cover rounded-lg border border-border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={handleRemoveImage}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <Label htmlFor="image" className="cursor-pointer">
+                      <span className="text-sm text-muted-foreground">Click to upload image</span>
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">Max 5MB</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -528,18 +617,9 @@ function DelayLogCards({
     return null;
   }
 
-  // Group delay logs by task
-  const logsByTask = delayLogs.reduce((acc, log) => {
-    if (!acc[log.taskId]) {
-      acc[log.taskId] = [];
-    }
-    acc[log.taskId].push(log);
-    return acc;
-  }, {} as Record<string, DelayLog[]>);
-
-  // Sort tasks by number of delays (most delayed first)
-  const sortedTaskIds = Object.keys(logsByTask).sort(
-    (a, b) => logsByTask[b].length - logsByTask[a].length
+  // Sort logs by date (newest first)
+  const sortedLogs = [...delayLogs].sort((a, b) => 
+    new Date(b.delayDate).getTime() - new Date(a.delayDate).getTime()
   );
 
   return (
@@ -552,16 +632,15 @@ function DelayLogCards({
       </div>
       
       <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : isTablet ? 'grid-cols-2' : 'grid-cols-3'}`}>
-        {sortedTaskIds.map((taskId) => {
-          const taskLogs = logsByTask[taskId];
-          const taskName = getTaskName(taskId);
-          const subProject = subProjects?.find(sp => sp.id === taskId);
+        {sortedLogs.map((log) => {
+          const taskName = getTaskName(log.taskId);
+          const subProject = subProjects?.find(sp => sp.id === log.taskId);
           const variance = subProject 
             ? subProject.plannedProgress - subProject.actualProgress 
             : 0;
 
           return (
-            <Card key={taskId} className="border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20">
+            <Card key={log.id} className="border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20">
               <CardContent className="p-4">
                 <div className="space-y-3">
                   {/* Task header */}
@@ -576,40 +655,55 @@ function DelayLogCards({
                     )}
                   </div>
 
-                  {/* Delay logs list */}
+                  {/* Delay log details */}
                   <div className="space-y-2">
-                    {taskLogs.map((log) => (
-                      <div
-                        key={log.id}
-                        className="border border-orange-200 dark:border-orange-900 rounded-lg p-2.5 bg-white dark:bg-card/50"
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge variant="outline" className="text-[10px] gap-1">
-                              <Calendar className="h-2.5 w-2.5" />
-                              {months[log.monthIndex] || `M${log.monthIndex + 1}`}
-                            </Badge>
-                            <Badge variant="secondary" className="text-[10px]">
-                              <Clock className="h-2.5 w-2.5 mr-1" />
-                              {log.delayDuration} day{log.delayDuration !== 1 ? 's' : ''}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-[11px] text-muted-foreground mb-1.5 line-clamp-2" title={log.reason}>
-                          {log.reason}
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                          <span>By: {log.loggedBy}</span>
-                          <span>{new Date(log.delayDate).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="outline" className="text-[10px] gap-1">
+                        <Calendar className="h-2.5 w-2.5" />
+                        {months[log.monthIndex] || `M${log.monthIndex + 1}`}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px]">
+                        <Clock className="h-2.5 w-2.5 mr-1" />
+                        {log.delayDuration} day{log.delayDuration !== 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                    
+                    <div className="text-[11px] text-muted-foreground" title={log.reason}>
+                      {log.reason}
+                    </div>
+
+                    {/* Image display */}
+                    {log.imageUrl && (
+                      <div className="relative rounded-lg overflow-hidden border border-orange-200 dark:border-orange-900">
+                        <img
+                          src={log.imageUrl}
+                          alt="Delay evidence"
+                          className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => {
+                            // Open image in new window/modal for full view
+                            const newWindow = window.open();
+                            if (newWindow) {
+                              newWindow.document.write(`
+                                <html>
+                                  <head><title>Delay Evidence</title></head>
+                                  <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000;">
+                                    <img src="${log.imageUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;" />
+                                  </body>
+                                </html>
+                              `);
+                            }
+                          }}
+                        />
+                        <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded flex items-center gap-1">
+                          <ImageIcon className="h-3 w-3" />
+                          Evidence
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    )}
 
-                  {/* Summary */}
-                  <div className="pt-2 border-t border-orange-200 dark:border-orange-900">
-                    <div className="text-[10px] text-muted-foreground">
-                      {taskLogs.length} delay{taskLogs.length !== 1 ? 's' : ''} • Total: {taskLogs.reduce((sum, log) => sum + log.delayDuration, 0)} days
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-orange-200 dark:border-orange-900">
+                      <span>By: {log.loggedBy}</span>
+                      <span>{new Date(log.delayDate).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
@@ -1285,12 +1379,39 @@ function GanttMini({
                                       <AlertTriangle className="h-1.5 w-1.5 text-white" />
                                     </div>
                                     {/* Tooltip */}
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-xl">
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded px-2 py-1 shadow-xl max-w-xs">
                                       <div className="font-semibold flex items-center gap-1">
                                         <Clock className="h-3 w-3" />
                                         Delay Logged
                                       </div>
                                       <div className="text-[10px] opacity-90 mt-0.5">{log.reason}</div>
+                                      {log.imageUrl && (
+                                        <div className="mt-2 border-t border-gray-700 pt-2">
+                                          <div className="text-[10px] opacity-75 mb-1 flex items-center gap-1">
+                                            <ImageIcon className="h-3 w-3" />
+                                            Evidence Image:
+                                          </div>
+                                          <img
+                                            src={log.imageUrl}
+                                            alt="Delay evidence"
+                                            className="w-full h-24 object-cover rounded mt-1 cursor-pointer hover:opacity-80"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              const newWindow = window.open();
+                                              if (newWindow) {
+                                                newWindow.document.write(`
+                                                  <html>
+                                                    <head><title>Delay Evidence</title></head>
+                                                    <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000;">
+                                                      <img src="${log.imageUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;" />
+                                                    </body>
+                                                  </html>
+                                                `);
+                                              }
+                                            }}
+                                          />
+                                        </div>
+                                      )}
                                       <div className="text-[10px] opacity-75">{log.delayDuration} days • {new Date(log.delayDate).toLocaleDateString()}</div>
                                       <div className="text-[10px] opacity-75">By: {log.loggedBy}</div>
                                       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900" />
@@ -1366,11 +1487,38 @@ function GanttMini({
                             <AlertTriangle className="h-2 w-2 text-white" />
                           </div>
                           {/* Tooltip on hover */}
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-xl">
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded px-2 py-1 shadow-xl max-w-xs">
                             <div className="font-semibold">Delay Logged</div>
                             <div className="text-[10px] opacity-90">{log.reason}</div>
                             <div className="text-[10px] opacity-75">{log.delayDuration} days • {new Date(log.delayDate).toLocaleDateString()}</div>
                             <div className="text-[10px] opacity-75">By: {log.loggedBy}</div>
+                            {log.imageUrl && (
+                              <div className="mt-2 border-t border-gray-700 pt-2">
+                                <div className="text-[10px] opacity-75 mb-1 flex items-center gap-1">
+                                  <ImageIcon className="h-3 w-3" />
+                                  Evidence Image:
+                                </div>
+                                <img
+                                  src={log.imageUrl}
+                                  alt="Delay evidence"
+                                  className="w-full h-24 object-cover rounded mt-1 cursor-pointer hover:opacity-80"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newWindow = window.open();
+                                    if (newWindow) {
+                                      newWindow.document.write(`
+                                        <html>
+                                          <head><title>Delay Evidence</title></head>
+                                          <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000;">
+                                            <img src="${log.imageUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;" />
+                                          </body>
+                                        </html>
+                                      `);
+                                    }
+                                  }}
+                                />
+                              </div>
+                            )}
                             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900" />
                           </div>
                         </div>
@@ -1465,10 +1613,37 @@ function GanttMini({
                                               <AlertTriangle className="h-1 w-1 text-white" />
                                             </div>
                                             {/* Tooltip */}
-                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block z-50 bg-gray-900 text-white text-[10px] rounded px-1.5 py-0.5 whitespace-nowrap shadow-xl">
+                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block z-50 bg-gray-900 text-white text-[10px] rounded px-1.5 py-0.5 shadow-xl max-w-xs">
                                               <div className="font-semibold">Delay</div>
                                               <div className="opacity-90">{log.reason}</div>
                                               <div className="opacity-75">{log.delayDuration}d</div>
+                                              {log.imageUrl && (
+                                                <div className="mt-1 border-t border-gray-700 pt-1">
+                                                  <div className="opacity-75 mb-1 flex items-center gap-1">
+                                                    <ImageIcon className="h-2.5 w-2.5" />
+                                                    Evidence:
+                                                  </div>
+                                                  <img
+                                                    src={log.imageUrl}
+                                                    alt="Delay evidence"
+                                                    className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      const newWindow = window.open();
+                                                      if (newWindow) {
+                                                        newWindow.document.write(`
+                                                          <html>
+                                                            <head><title>Delay Evidence</title></head>
+                                                            <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000;">
+                                                              <img src="${log.imageUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;" />
+                                                            </body>
+                                                          </html>
+                                                        `);
+                                                      }
+                                                    }}
+                                                  />
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                         );
@@ -1542,10 +1717,37 @@ function GanttMini({
                                     <AlertTriangle className="h-1.5 w-1.5 text-white" />
                                   </div>
                                   {/* Tooltip on hover */}
-                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block z-50 bg-gray-900 text-white text-[10px] rounded px-1.5 py-0.5 whitespace-nowrap shadow-xl">
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block z-50 bg-gray-900 text-white text-[10px] rounded px-1.5 py-0.5 shadow-xl max-w-xs">
                                     <div className="font-semibold">Delay</div>
                                     <div className="opacity-90">{log.reason}</div>
                                     <div className="opacity-75">{log.delayDuration}d</div>
+                                    {log.imageUrl && (
+                                      <div className="mt-1 border-t border-gray-700 pt-1">
+                                        <div className="opacity-75 mb-1 flex items-center gap-1">
+                                          <ImageIcon className="h-2.5 w-2.5" />
+                                          Evidence:
+                                        </div>
+                                        <img
+                                          src={log.imageUrl}
+                                          alt="Delay evidence"
+                                          className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const newWindow = window.open();
+                                            if (newWindow) {
+                                              newWindow.document.write(`
+                                                <html>
+                                                  <head><title>Delay Evidence</title></head>
+                                                  <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000;">
+                                                    <img src="${log.imageUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;" />
+                                                  </body>
+                                                </html>
+                                              `);
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               );

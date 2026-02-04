@@ -2,6 +2,7 @@
 // Division -> District -> Tehsil -> Cities
 
 import { PUNJAB_HIERARCHY } from './punjabHierarchy';
+import { getTehsilSubProjectsByPhase, getBahawalpurTehsilProjects } from './bahawalpurProjectsData';
 
 export interface InstallationData {
   surveys: number;
@@ -359,6 +360,60 @@ export const getAllTehsilData = (): Record<string, InstallationData> => {
   PUNJAB_HIERARCHY.forEach(division => {
     division.districts.forEach(district => {
       district.tehsils.forEach(tehsil => {
+        const key = `${division.division}-${district.district}-${tehsil.tehsil}`.toLowerCase().replace(/\s+/g, '');
+        
+        // Check if this is a Bahawalpur division tehsil with real project data
+        if (division.division === 'Bahawalpur') {
+          try {
+            const projects = getBahawalpurTehsilProjects(district.district, tehsil.tehsil);
+            
+            if (projects && projects.length > 0) {
+              // Use real project data from Excel
+              const subProjectsByPhase = getTehsilSubProjectsByPhase(district.district, tehsil.tehsil);
+              
+              // Calculate progress for each phase based on sub-projects
+              const calculatePhaseProgress = (phaseKey: string): number => {
+                const subProjects = subProjectsByPhase[phaseKey] || [];
+                if (subProjects.length === 0) return 0;
+                
+                const totalWeight = subProjects.reduce((sum, sp) => sum + sp.weight, 0);
+                if (totalWeight === 0) return 0;
+                
+                const weightedProgress = subProjects.reduce((sum, sp) => 
+                  sum + (sp.actualProgress * sp.weight), 0
+                );
+                
+                return Math.round(weightedProgress / totalWeight);
+              };
+              
+              const surveys = calculatePhaseProgress('surveys');
+              const foundations = calculatePhaseProgress('foundations');
+              const cabinet = calculatePhaseProgress('cabinet');
+              const cable = calculatePhaseProgress('cable');
+              const controlRoom = calculatePhaseProgress('controlRoom');
+              const ppic3 = calculatePhaseProgress('ppic3');
+              const overall = Math.round((surveys + foundations + cabinet + cable + controlRoom + ppic3) / 6);
+              
+              data[key] = {
+                surveys,
+                foundations,
+                cabinet,
+                cable,
+                controlRoom,
+                ppic3,
+                overall,
+              };
+              
+              // Continue to next tehsil
+              return;
+            }
+          } catch (error) {
+            console.warn(`Error loading Bahawalpur data for ${district.district}-${tehsil.tehsil}:`, error);
+            // Fall through to default data generation
+          }
+        }
+        
+        // Default data generation for non-Bahawalpur or tehsils without project data
         const allCities: InstallationData[] = [];
         
         tehsil.cities.forEach(city => {
@@ -369,7 +424,6 @@ export const getAllTehsilData = (): Record<string, InstallationData> => {
           }
         });
         
-        const key = `${division.division}-${district.district}-${tehsil.tehsil}`.toLowerCase().replace(/\s+/g, '');
         if (allCities.length > 0) {
           data[key] = {
             surveys: Math.round(allCities.reduce((sum, c) => sum + c.surveys, 0) / allCities.length),
