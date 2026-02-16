@@ -5,6 +5,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.validators import FileExtensionValidator
 # from .utils import project_doc_file_path, project_image_file_path
 from dateutil.relativedelta import relativedelta
+
+# --------------------------------------------------------
+# User Manager Model
+# --------------------------------------------------------
+
 class MyUserManager(BaseUserManager):
     def create_user(self, email, company_name, password=None):
         """
@@ -37,6 +42,10 @@ class MyUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
     
+# --------------------------------------------------------
+# Stakeholder Model
+# --------------------------------------------------------
+
 class Stakeholder(models.Model):
     # TYPE_CHOICES = (
     #     ('Client', 'Client'),
@@ -56,6 +65,10 @@ class Stakeholder(models.Model):
     )
     status = models.CharField(max_length=255, choices=status_choices, default='active')
 
+# --------------------------------------------------------
+# Custom User Model
+# --------------------------------------------------------
+
 class MyUser(AbstractBaseUser):
     email = models.EmailField(
         max_length=255,
@@ -67,7 +80,7 @@ class MyUser(AbstractBaseUser):
     company_name = models.CharField(max_length=255)
     # companyLogo  = models.URLField(null=True,blank=True)
     companyLogo = models.ImageField(
-        upload_to=project_image_file_path,
+        # upload_to=project_image_file_path,
         null=True,
         blank=True
     )
@@ -79,11 +92,10 @@ class MyUser(AbstractBaseUser):
     is_admin = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     profileImage  =  models.ImageField(
-        upload_to=project_image_file_path,
+        # upload_to=project_image_file_path,
         null=True,
         blank=True
     )
-    
 
     objects = MyUserManager()
 
@@ -123,3 +135,46 @@ class MyUser(AbstractBaseUser):
             'refresh': str(refresh),
             'access': str(refresh.access_token)
         }
+
+# --------------------------------------------------------
+# Provices Administrative Divisions
+# --------------------------------------------------------
+class Province(models.Model):
+    province_name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.province_name
+
+# --------------------------------------------------------
+# Divisions Administrative Divisions
+# --------------------------------------------------------
+class Division(models.Model):
+    division_name = models.CharField(max_length=100)
+    province = models.ForeignKey(Province, on_delete=models.CASCADE, related_name='divisions')
+
+    def __str__(self):
+        return self.division_name
+
+# --------------------------------------------------------
+# Districts Administrative Divisions
+# --------------------------------------------------------
+class District(models.Model):
+    district_name = models.CharField(max_length=100)
+    division = models.ForeignKey(Division, on_delete=models.CASCADE, related_name='districts')
+    province = models.ForeignKey(Province, on_delete=models.CASCADE, related_name='districts')
+
+    def __str__(self):
+        return self.district_name
+
+# --------------------------------------------------------
+# Tehsils Administrative Divisions
+# --------------------------------------------------------
+class Tehsil(models.Model):
+    tehsil_name = models.CharField(max_length=100)
+    district = models.ForeignKey(District, on_delete=models.CASCADE, related_name='tehsils')
+    division = models.ForeignKey(Division, on_delete=models.CASCADE, related_name='tehsils')
+    province = models.ForeignKey(Province, on_delete=models.CASCADE, related_name='tehsils')
+
+    def __str__(self):
+        return self.tehsil_name
+    
