@@ -163,7 +163,7 @@ export function Sidebar() {
 
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="md:hidden fixed top-4 left-4 z-40 bg-card">
+          <Button variant="outline" size="icon" className="md:hidden fixed top-4 left-4 z-50 bg-card">
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>

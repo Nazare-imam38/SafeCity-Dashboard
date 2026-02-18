@@ -1519,17 +1519,17 @@ export default function Dashboard() {
           />
 
           {/* Filter Bar Section - Radio Buttons */}
-          <div className={`relative transition-all duration-300 ${isFilterBarExpanded ? 'border-b border-border/30 pb-3 px-6 pt-4' : 'pb-2 px-4 pt-3'
+          <div className={`relative transition-all duration-300 ${isFilterBarExpanded ? 'border-b border-border/30 pb-3 px-3 sm:px-6 pt-3 sm:pt-4' : 'pb-2 px-3 sm:px-4 pt-2 sm:pt-3'
             }`}>
             <div className="flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
-              <div className="flex items-center gap-4 flex-wrap flex-1">
+              <div className="flex items-center gap-2 sm:gap-4 flex-wrap flex-1 min-w-0">
                 {/* Filters Label / Toggle */}
                 <div
-                  className="flex items-center gap-2 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => setShowFilters(!showFilters)}
                 >
-                  <Filter className={`h-4 w-4 text-primary transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`} />
-                  <span className="text-sm font-semibold text-foreground">View:</span>
+                  <Filter className={`h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`} />
+                  <span className="text-xs sm:text-sm font-semibold text-foreground">View:</span>
                 </div>
 
                 {/* Radio Button Group with Animation */}
@@ -1540,7 +1540,7 @@ export default function Dashboard() {
                       animate={{ width: "auto", opacity: 1, x: 0 }}
                       exit={{ width: 0, opacity: 0, x: -20 }}
                       transition={{ duration: 0.4, ease: "circOut" }}
-                      className="overflow-hidden flex items-center"
+                      className="overflow-hidden flex items-center min-w-0"
                     >
                       <RadioGroup
                         value={viewType}
@@ -1565,24 +1565,27 @@ export default function Dashboard() {
                           }
                           setTehsilSearchQuery("");
                         }}
-                        className="flex items-center gap-3 sm:gap-6 whitespace-nowrap pl-2 flex-wrap"
+                        className="flex items-center gap-2 sm:gap-4 md:gap-6 whitespace-nowrap pl-1 sm:pl-2 flex-wrap"
                       >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="divisions" id="divisions" />
-                          <Label htmlFor="divisions" className="text-sm font-medium text-foreground cursor-pointer">
-                            All Divisions
+                        <div className="flex items-center space-x-1.5 sm:space-x-2">
+                          <RadioGroupItem value="divisions" id="divisions" className="h-4 w-4 sm:h-5 sm:w-5" />
+                          <Label htmlFor="divisions" className="text-xs sm:text-sm font-medium text-foreground cursor-pointer">
+                            <span className="hidden sm:inline">All Divisions</span>
+                            <span className="sm:hidden">Divisions</span>
                           </Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="districts" id="districts" />
-                          <Label htmlFor="districts" className="text-sm font-medium text-foreground cursor-pointer">
-                            All Districts
+                        <div className="flex items-center space-x-1.5 sm:space-x-2">
+                          <RadioGroupItem value="districts" id="districts" className="h-4 w-4 sm:h-5 sm:w-5" />
+                          <Label htmlFor="districts" className="text-xs sm:text-sm font-medium text-foreground cursor-pointer">
+                            <span className="hidden sm:inline">All Districts</span>
+                            <span className="sm:hidden">Districts</span>
                           </Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="tehsils" id="tehsils" />
-                          <Label htmlFor="tehsils" className="text-sm font-medium text-foreground cursor-pointer">
-                            All Tehsils
+                        <div className="flex items-center space-x-1.5 sm:space-x-2">
+                          <RadioGroupItem value="tehsils" id="tehsils" className="h-4 w-4 sm:h-5 sm:w-5" />
+                          <Label htmlFor="tehsils" className="text-xs sm:text-sm font-medium text-foreground cursor-pointer">
+                            <span className="hidden sm:inline">All Tehsils</span>
+                            <span className="sm:hidden">Tehsils</span>
                           </Label>
                         </div>
                       </RadioGroup>
