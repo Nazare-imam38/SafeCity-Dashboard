@@ -77,7 +77,7 @@ export default function DivisionManagement() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Province</Label>
                                 <Select onValueChange={(v) => setFormData({ ...formData, province: v })} value={formData.province}>
@@ -100,7 +100,7 @@ export default function DivisionManagement() {
                                     className="h-10"
                                 />
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2 lg:col-span-1">
                                 <Button onClick={handleCreate} className="bg-secondary hover:bg-secondary/90 text-white w-full h-10">
                                     <Plus className="h-4 w-4 mr-2" /> Create Division
                                 </Button>
@@ -113,9 +113,9 @@ export default function DivisionManagement() {
                 </Card>
 
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <h2 className="text-xl font-bold text-primary">Division List</h2>
-                        <div className="relative w-72">
+                        <div className="relative w-full sm:w-72">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search by name .."
@@ -127,54 +127,56 @@ export default function DivisionManagement() {
                     </div>
 
                     <Card className="border-none shadow-sm overflow-hidden">
-                        <Table>
-                            <TableHeader className="bg-muted/50">
-                                <TableRow>
-                                    <TableHead className="w-20">#</TableHead>
-                                    <TableHead>Province</TableHead>
-                                    <TableHead>Division</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredDivisions.map((division, index) => (
-                                    <TableRow key={division.id}>
-                                        <TableCell className="font-medium">{index + 1}</TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs uppercase">
-                                                    {division.province.substring(0, 2)}
-                                                </div>
-                                                {division.province}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="font-semibold text-primary">{division.name}</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted">
-                                                    <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleDelete(division.id)}
-                                                    className="h-8 border border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {filteredDivisions.length === 0 && (
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader className="bg-muted/50">
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                            No divisions found.
-                                        </TableCell>
+                                        <TableHead className="w-20">#</TableHead>
+                                        <TableHead>Province</TableHead>
+                                        <TableHead>Division</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredDivisions.map((division, index) => (
+                                        <TableRow key={division.id}>
+                                            <TableCell className="font-medium">{index + 1}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                                                        {division.province.substring(0, 2)}
+                                                    </div>
+                                                    <span className="truncate">{division.province}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="font-semibold text-primary">{division.name}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted whitespace-nowrap">
+                                                        <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(division.id)}
+                                                        className="h-8 border border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 whitespace-nowrap"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {filteredDivisions.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                                No divisions found.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </Card>
                 </div>
             </div>

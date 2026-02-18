@@ -84,7 +84,7 @@ export default function ProvinceManagement() {
                                     className="h-10"
                                 />
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <Button onClick={handleCreate} className="bg-secondary hover:bg-secondary/90 text-white w-full h-10">
                                     <Plus className="h-4 w-4 mr-2" /> Create Province
                                 </Button>
@@ -97,9 +97,9 @@ export default function ProvinceManagement() {
                 </Card>
 
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <h2 className="text-xl font-bold text-primary">Province List</h2>
-                        <div className="relative w-72">
+                        <div className="relative w-full sm:w-72">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search by name .."
@@ -111,45 +111,47 @@ export default function ProvinceManagement() {
                     </div>
 
                     <Card className="border-none shadow-sm overflow-hidden">
-                        <Table>
-                            <TableHeader className="bg-muted/50">
-                                <TableRow>
-                                    <TableHead className="w-20">#</TableHead>
-                                    <TableHead>Province</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredProvinces.map((province, index) => (
-                                    <TableRow key={province.id}>
-                                        <TableCell className="font-medium">{index + 1}</TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-secondary/10 text-secondary flex items-center justify-center font-bold text-xs">
-                                                    {province.name.substring(0, 2).toUpperCase()}
-                                                </div>
-                                                {province.name}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted">
-                                                    <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleDelete(province.id)}
-                                                    className="h-8 border border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
-                                                </Button>
-                                            </div>
-                                        </TableCell>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader className="bg-muted/50">
+                                    <TableRow>
+                                        <TableHead className="w-20">#</TableHead>
+                                        <TableHead>Province</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredProvinces.map((province, index) => (
+                                        <TableRow key={province.id}>
+                                            <TableCell className="font-medium">{index + 1}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-full bg-secondary/10 text-secondary flex items-center justify-center font-bold text-xs shrink-0">
+                                                        {province.name.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <span className="truncate">{province.name}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted whitespace-nowrap">
+                                                        <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(province.id)}
+                                                        className="h-8 border border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 whitespace-nowrap"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </Card>
                 </div>
             </div>

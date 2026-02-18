@@ -1,16 +1,13 @@
 import { Layout } from "@/components/layout/Layout";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MapPin, Plus, Edit2, Trash2, Search, X, Globe, Upload, Check, ChevronRight, ArrowLeft } from "lucide-react";
+import { Plus, Edit2, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
-import { CityMap } from "@/components/dashboard/CityMap";
-import { LayerType } from "@/pages/GISLayers";
 
 export default function TehsilManagement() {
     const [tehsils, setTehsils] = useState([
@@ -86,7 +83,7 @@ export default function TehsilManagement() {
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Province</Label>
                                 <Select onValueChange={(v) => setFormData({ ...formData, province: v })} value={formData.province}>
-                                    <SelectTrigger className="h-10 text-xs">
+                                    <SelectTrigger className="h-10 text-xs text-foreground">
                                         <SelectValue placeholder="Select province" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -99,7 +96,7 @@ export default function TehsilManagement() {
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Division</Label>
                                 <Select onValueChange={(v) => setFormData({ ...formData, division: v })} value={formData.division} disabled={!formData.province}>
-                                    <SelectTrigger className="h-10 text-xs">
+                                    <SelectTrigger className="h-10 text-xs text-foreground">
                                         <SelectValue placeholder="Select division" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -111,7 +108,7 @@ export default function TehsilManagement() {
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">District</Label>
                                 <Select onValueChange={(v) => setFormData({ ...formData, district: v })} value={formData.district} disabled={!formData.division}>
-                                    <SelectTrigger className="h-10 text-xs">
+                                    <SelectTrigger className="h-10 text-xs text-foreground">
                                         <SelectValue placeholder="Select district" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -129,7 +126,7 @@ export default function TehsilManagement() {
                                     className="h-10 text-xs"
                                 />
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <Button onClick={handleCreate} className="bg-secondary hover:bg-secondary/90 text-white w-full h-10 text-xs">
                                     <Plus className="h-3 w-3 mr-2" /> Create Tehsil
                                 </Button>
@@ -139,9 +136,9 @@ export default function TehsilManagement() {
                 </Card>
 
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <h2 className="text-xl font-bold text-primary">Tehsil List</h2>
-                        <div className="relative w-72">
+                        <div className="relative w-full sm:w-72">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search by name .."
@@ -153,51 +150,53 @@ export default function TehsilManagement() {
                     </div>
 
                     <Card className="border-none shadow-sm overflow-hidden">
-                        <Table>
-                            <TableHeader className="bg-muted/50">
-                                <TableRow>
-                                    <TableHead className="w-16">#</TableHead>
-                                    <TableHead>Province</TableHead>
-                                    <TableHead>Division</TableHead>
-                                    <TableHead>District</TableHead>
-                                    <TableHead>Tehsil</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredTehsils.map((tehsil, index) => (
-                                    <TableRow key={tehsil.id}>
-                                        <TableCell className="font-medium">{index + 1}</TableCell>
-                                        <TableCell>{tehsil.province}</TableCell>
-                                        <TableCell>{tehsil.division}</TableCell>
-                                        <TableCell>{tehsil.district}</TableCell>
-                                        <TableCell className="font-semibold text-primary">{tehsil.name}</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted">
-                                                    <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleDelete(tehsil.id)}
-                                                    className="h-8 border border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {filteredTehsils.length === 0 && (
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader className="bg-muted/50">
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                            No tehsils found.
-                                        </TableCell>
+                                        <TableHead className="w-16">#</TableHead>
+                                        <TableHead>Province</TableHead>
+                                        <TableHead>Division</TableHead>
+                                        <TableHead>District</TableHead>
+                                        <TableHead>Tehsil</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredTehsils.map((tehsil, index) => (
+                                        <TableRow key={tehsil.id}>
+                                            <TableCell className="font-medium">{index + 1}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{tehsil.province}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{tehsil.division}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{tehsil.district}</TableCell>
+                                            <TableCell className="font-semibold text-primary whitespace-nowrap">{tehsil.name}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted whitespace-nowrap">
+                                                        <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(tehsil.id)}
+                                                        className="h-8 border border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 whitespace-nowrap"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {filteredTehsils.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                                No tehsils found.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </Card>
                 </div>
             </div>

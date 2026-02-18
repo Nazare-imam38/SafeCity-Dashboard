@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
-import { Camera, AlertTriangle, Truck, Shield, Activity, Landmark, Construction, Upload, MapPin, Info, X } from "lucide-react";
+import { Camera, AlertTriangle, Truck, Shield, Activity, Landmark, Construction, Upload, MapPin, Info, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LayerType } from "@/pages/GISLayers";
 
@@ -151,6 +151,7 @@ export function CityMap({
   const [isMounted, setIsMounted] = useState(false);
   const [constructionSites, setConstructionSites] = useState(MOCK_DATA.construction);
   const center = CITY_COORDINATES[city.toLowerCase()] || CITY_COORDINATES.lahore;
+  const [isLegendCollapsed, setIsLegendCollapsed] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
@@ -425,68 +426,68 @@ export function CityMap({
 
       {/* Floating Legend Overlay */}
       {showLegend && (
-        <div className="absolute top-6 left-6 z-[400] w-64">
-          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10 overflow-hidden">
-            <div className="bg-primary px-4 py-2.5 flex items-center justify-between border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <Info className="h-3.5 w-3.5 text-secondary" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white">Map Legend</span>
+        <div className="absolute top-4 left-4 z-[400] w-52 transition-all duration-300">
+          <div className="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl border border-primary/10 overflow-hidden">
+            <div
+              className="bg-primary px-3 py-1.5 flex items-center justify-between border-b border-white/10 cursor-pointer"
+              onClick={() => setIsLegendCollapsed(!isLegendCollapsed)}
+            >
+              <div className="flex items-center gap-1.5">
+                <Info className="h-3 w-3 text-secondary" />
+                <span className="text-[9px] font-bold uppercase tracking-widest text-white">Map Legend</span>
               </div>
               <button
-                onClick={onLegendClose}
                 className="text-white/70 hover:text-white transition-colors"
               >
-                <X className="h-3.5 w-3.5" />
+                {isLegendCollapsed ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
             </div>
-            <div className="p-4 space-y-3">
-              <div className="grid grid-cols-1 gap-2.5">
-                <div className="flex items-center gap-3">
-                  <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-sm"></div>
-                  <span className="text-[11px] font-semibold text-primary/80">Online Camera</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white shadow-sm"></div>
-                  <span className="text-[11px] font-semibold text-primary/80">Offline Camera</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3.5 h-3.5 rounded-full bg-destructive border-2 border-white animate-pulse shadow-sm"></div>
-                  <span className="text-[11px] font-semibold text-primary/80">High Severity Incident</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3.5 h-3.5 rounded-full bg-orange-600 border-2 border-white shadow-sm"></div>
-                  <span className="text-[11px] font-semibold text-primary/80">Medium Severity</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white animate-pulse shadow-sm"></div>
-                  <span className="text-[11px] font-semibold text-primary/80">Active Patrol Unit</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3.5 h-3.5 rounded-lg bg-orange-500 border-2 border-white shadow-sm"></div>
-                  <span className="text-[11px] font-semibold text-primary/80">Construction Site</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3.5 h-3.5 rounded-lg bg-primary border-2 border-white shadow-sm"></div>
-                  <span className="text-[11px] font-semibold text-primary/80">Police Station</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-1.5 bg-red-500 rounded-full"></div>
-                      <span className="text-[11px] font-semibold text-primary/80">High Traffic</span>
-                    </div>
+            {!isLegendCollapsed && (
+              <div className="p-2.5">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-2 pb-2 border-b border-primary/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 border border-white shadow-sm shrink-0"></div>
+                    <span className="text-[9px] font-bold text-primary/80 leading-tight">Online Cam</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500 border border-white shadow-sm shrink-0"></div>
+                    <span className="text-[9px] font-bold text-primary/80 leading-tight">Offline Cam</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-destructive border border-white animate-pulse shadow-sm shrink-0"></div>
+                    <span className="text-[9px] font-bold text-primary/80 leading-tight">High Risk</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-orange-600 border border-white shadow-sm shrink-0"></div>
+                    <span className="text-[9px] font-bold text-primary/80 leading-tight">Med Risk</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 border border-white animate-pulse shadow-sm shrink-0"></div>
+                    <span className="text-[9px] font-bold text-primary/80 leading-tight">Patrol</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded bg-orange-500 border border-white shadow-sm shrink-0"></div>
+                    <span className="text-[9px] font-bold text-primary/80 leading-tight">Const Site</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col gap-0.5">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded bg-primary border border-white shadow-sm shrink-0"></div>
+                    <span className="text-[9px] font-bold text-primary/80 leading-tight">Police Station</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-1.5 bg-emerald-500 rounded-full"></div>
-                      <span className="text-[11px] font-semibold text-primary/80">Low Traffic</span>
+                      <div className="w-5 h-0.5 bg-red-500 rounded-full"></div>
+                      <span className="text-[9px] font-bold text-primary/80 leading-tight">High Traffic</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-0.5 bg-emerald-500 rounded-full"></div>
+                      <span className="text-[9px] font-bold text-primary/80 leading-tight">Low Traffic</span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

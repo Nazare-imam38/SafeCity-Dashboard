@@ -565,15 +565,15 @@ export default function Finance() {
                 const variance = item.actual - item.planned;
 
                 return (
-                  <div key={item.department} className="space-y-2">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-semibold">{item.department}</span>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="font-mono text-xs text-muted-foreground">Planned: {formatPKR(item.planned)}</div>
-                          <div className="font-mono font-bold">Actual: {formatPKR(item.actual)}</div>
+                  <div key={item.department} className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
+                      <span className="font-bold text-primary">{item.department}</span>
+                      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 bg-muted/30 sm:bg-transparent p-2 sm:p-0 rounded-lg">
+                        <div className="text-left sm:text-right">
+                          <div className="font-mono text-[10px] text-muted-foreground">Planned: {formatPKR(item.planned)}</div>
+                          <div className="font-mono font-bold text-xs sm:text-sm">Actual: {formatPKR(item.actual)}</div>
                         </div>
-                        <div className={`text-sm font-bold ${variance < 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        <div className={`text-xs sm:text-sm font-bold whitespace-nowrap px-2 py-1 rounded ${variance < 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                           {variance < 0 ? '-' : '+'}{formatPKR(Math.abs(variance))}
                         </div>
                       </div>
