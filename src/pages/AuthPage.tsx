@@ -391,10 +391,7 @@ export default function AuthPage() {
                     <div className="mt-16 text-center">
                         <div className="flex items-center justify-center gap-4 text-muted-foreground/20">
                             <div className="h-px flex-1 bg-current" />
-                            <div className="flex items-center gap-2">
-                                <Shield className="h-3 w-3" />
-                                <span className="text-[9px] font-black uppercase tracking-[0.3em]">End-to-End Encrypted</span>
-                            </div>
+
                             <div className="h-px flex-1 bg-current" />
                         </div>
                     </div>
