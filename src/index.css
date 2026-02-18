@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Global overflow guard: prevents accidental horizontal scroll on small screens */
+html,
+body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 /* Hide scrollbar for horizontal scroll */
 .scrollbar-hide {
   -ms-overflow-style: none;

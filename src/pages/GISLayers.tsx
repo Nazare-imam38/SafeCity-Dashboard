@@ -156,9 +156,9 @@ export default function GISLayers() {
             <h2 className="text-xl font-bold font-heading text-primary">Operations Center</h2>
 
 
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center">
               <Select value={selectedCity} onValueChange={setSelectedCity}>
-                <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -175,15 +175,15 @@ export default function GISLayers() {
               >
                 <Download className="h-3 w-3 mr-1" /> Export
               </Button>
-              <Badge variant="secondary" className="px-3 py-1 font-mono text-[10px]">
+              <Badge variant="secondary" className="px-2 py-1 font-mono text-[10px] hidden sm:inline-flex">
                 {selectedCity.toUpperCase()}_GRID_ACTIVE
               </Badge>
               <Badge className="bg-emerald-500 hover:bg-emerald-600 px-3 py-1 font-mono text-[10px]">SYNCED</Badge>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* GIS Explorer Sidebar */}
               <div className="lg:col-span-4 space-y-6">
                 <Card className="border-primary/10">

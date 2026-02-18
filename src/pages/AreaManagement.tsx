@@ -318,7 +318,7 @@ export default function AreaManagement() {
                         animate={{ opacity: 1, x: 0 }}
                         className="w-full h-full"
                     >
-                        <Card className="border-none shadow-[0_8px_40px_rgb(0,0,0,0.06)] overflow-hidden flex flex-col h-full min-h-[600px]">
+                        <Card className="border-none shadow-[0_8px_40px_rgb(0,0,0,0.06)] overflow-hidden flex flex-col h-full min-h-[420px] sm:min-h-[520px] lg:min-h-[600px]">
                             <CardHeader className="bg-white/80 backdrop-blur-md border-b z-10 py-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">

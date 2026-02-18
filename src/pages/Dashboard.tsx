@@ -1030,7 +1030,7 @@ export default function Dashboard() {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {installationPhases.map((phase) => {
               const progress = data[phase.key];
               const progressValue = getProgressValue(progress);
@@ -1073,7 +1073,7 @@ export default function Dashboard() {
             <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-card/95 mb-6">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
               <CardContent className="relative p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
@@ -1087,7 +1087,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                  <div className="text-center md:text-right">
+                  <div className="text-center sm:text-right">
                     <div className="inline-block">
                       <div className="text-4xl font-bold font-heading bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
                         {overall}
@@ -1521,7 +1521,7 @@ export default function Dashboard() {
           {/* Filter Bar Section - Radio Buttons */}
           <div className={`relative transition-all duration-300 ${isFilterBarExpanded ? 'border-b border-border/30 pb-3 px-6 pt-4' : 'pb-2 px-4 pt-3'
             }`}>
-            <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
               <div className="flex items-center gap-4 flex-wrap flex-1">
                 {/* Filters Label / Toggle */}
                 <div
@@ -1565,7 +1565,7 @@ export default function Dashboard() {
                           }
                           setTehsilSearchQuery("");
                         }}
-                        className="flex items-center gap-6 whitespace-nowrap pl-2"
+                        className="flex items-center gap-3 sm:gap-6 whitespace-nowrap pl-2 flex-wrap"
                       >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="divisions" id="divisions" />
@@ -1617,7 +1617,7 @@ export default function Dashboard() {
                   <Camera className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-bold font-heading bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <h1 className="text-xl sm:text-3xl md:text-4xl font-bold font-heading bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {selectedItemName && selectedItemType === "division"
                       ? `${selectedItemName} Division`
                       : selectedItemName && selectedItemType === "district"
@@ -1664,7 +1664,7 @@ export default function Dashboard() {
               ) : null}
             </div>
 
-            <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <Button
                 variant="outline"
                 size="icon"
@@ -1713,8 +1713,8 @@ export default function Dashboard() {
                     }
                   }}
                 >
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Export Operation pptx
+                  <FileDown className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Export Operation pptx</span>
                 </Button>
               )}
             </div>
@@ -1775,7 +1775,7 @@ export default function Dashboard() {
                     Back to All Divisions
                   </Button>
                   <div>
-                    <h2 className="text-2xl font-bold font-heading">Districts in {selectedItemName} Division</h2>
+                    <h2 className="text-lg sm:text-2xl font-bold font-heading">Districts in {selectedItemName} Division</h2>
                     <p className="text-sm text-muted-foreground">{selectedItemName} Division</p>
                   </div>
                 </div>
@@ -1903,7 +1903,7 @@ export default function Dashboard() {
                     Back to {division.division} Division
                   </Button>
                   <div>
-                    <h2 className="text-2xl font-bold font-heading">Tehsils in {selectedItemName} District ({division.division} Division)</h2>
+                    <h2 className="text-lg sm:text-2xl font-bold font-heading">Tehsils in {selectedItemName} District ({division.division} Division)</h2>
                     <p className="text-sm text-muted-foreground">{selectedItemName} District</p>
                   </div>
                 </div>
@@ -1989,7 +1989,7 @@ export default function Dashboard() {
                     Back to {parentDistrict} District
                   </Button>
                   <div>
-                    <h2 className="text-2xl font-bold font-heading">Ongoing projects in {selectedItemName} Tehsil</h2>
+                    <h2 className="text-lg sm:text-2xl font-bold font-heading">Ongoing projects in {selectedItemName} Tehsil</h2>
                     <p className="text-sm text-muted-foreground">{selectedItemName} Tehsil</p>
                   </div>
                 </div>

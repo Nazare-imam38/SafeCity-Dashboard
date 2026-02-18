@@ -344,7 +344,7 @@ export default function Finance() {
 
 
         {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           {Object.entries(kpiDataWithIcons).map(([key, kpi]) => {
             const Icon = kpi.icon;
             const isPositive = kpi.trend >= 0;
