@@ -50,13 +50,7 @@ interface Stakeholder {
 }
 
 export default function StakeholderManagement() {
-    const [stakeholders, setStakeholders] = useState<Stakeholder[]>([
-        { id: 1, type: "Client", title: "Department of Fisheries - Govt. of Punjab", status: "Active" },
-        { id: 2, type: "Client", title: "Traffic Engineering & Planning Agency - TEPA", status: "Active" },
-        { id: 3, type: "Client", title: "Lahore Development Authority - LDA", status: "Active" },
-        { id: 4, type: "Client", title: "Punjab Central Business District Development Authority - PCBDDA", status: "Active" },
-        { id: 5, type: "Client", title: "River Ravi Urban Development Authority - RRUDA", status: "Active" },
-    ]);
+    const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
 
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [editingStakeholder, setEditingStakeholder] = useState<Stakeholder | null>(null);

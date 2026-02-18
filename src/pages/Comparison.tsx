@@ -78,6 +78,9 @@ export default function Comparison() {
         {/* City Completion Comparison Chart */}
         <CityCompletionChart cityData={divisionCompletionData} description="Division Wise Progress" />
 
+        {/* Heatmap Chart */}
+        <HeatmapChart data={stackedData} />
+
         {/* Stacked Phase Chart */}
         <StackedPhaseChart data={stackedData} />
 
@@ -86,8 +89,7 @@ export default function Comparison() {
 
 
 
-        {/* Heatmap Chart */}
-        <HeatmapChart data={stackedData} />
+
       </div>
     </Layout>
   );

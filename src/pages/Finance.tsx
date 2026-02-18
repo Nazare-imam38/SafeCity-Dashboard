@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { cn } from "@/lib/utils";
-import { 
+import {
   getAllDivisions,
   getDistrictsByDivision,
   getTehsilsByDivisionAndDistrict,
@@ -54,7 +54,7 @@ const generateFinanceData = (
   // Create a seed based on the filter selection
   const filterKey = `${division}-${district}-${tehsil}`;
   const seed = hashString(filterKey);
-  
+
   // Generate base multiplier based on hierarchy level
   let baseMultiplier = 1;
   if (division !== "all") {
@@ -66,7 +66,7 @@ const generateFinanceData = (
       }
     }
   }
-  
+
   // Generate monthly budget data
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
   const budgetData = months.map((month, index) => {
@@ -75,7 +75,7 @@ const generateFinanceData = (
     const variancePercent = -10 + ((monthSeed % 200) / 10); // -10% to +10%
     const actual = Math.floor(planned * (1 + variancePercent / 100));
     const variance = actual - planned;
-    
+
     return {
       month,
       planned,
@@ -83,7 +83,7 @@ const generateFinanceData = (
       variance,
     };
   });
-  
+
   // Generate department expense data
   const departments = [
     { name: "Infrastructure", color: "#3b82f6" },
@@ -91,13 +91,13 @@ const generateFinanceData = (
     { name: "Maintenance", color: "#f59e0b" },
     { name: "Software Licenses", color: "#a855f7" },
   ];
-  
+
   const expenseData = departments.map((dept, index) => {
     const deptSeed = hashString(`${filterKey}-${dept.name}`);
     const planned = Math.floor((200000000 + (deptSeed % 1500000000)) * baseMultiplier);
     const variancePercent = -15 + ((deptSeed % 300) / 10); // -15% to +15%
     const actual = Math.floor(planned * (1 + variancePercent / 100));
-    
+
     return {
       department: dept.name,
       planned,
@@ -105,14 +105,14 @@ const generateFinanceData = (
       color: dept.color,
     };
   });
-  
+
   // Calculate KPIs
   const totalPlanned = budgetData.reduce((sum, item) => sum + item.planned, 0);
   const totalActual = budgetData.reduce((sum, item) => sum + item.actual, 0);
   const variance = totalActual - totalPlanned;
   const remaining = totalPlanned - totalActual;
   const ytdUtilization = totalActual;
-  
+
   return {
     budgetData,
     expenseData,
@@ -130,7 +130,7 @@ export default function Finance() {
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("all");
   const [selectedTehsil, setSelectedTehsil] = useState<string>("all");
-  
+
   const isMobile = width < 640;
   const isTablet = width >= 640 && width < 1024;
 
@@ -256,94 +256,92 @@ export default function Finance() {
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
-            {/* Division Filter */}
+              {/* Division Filter */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 sm:flex-shrink-0">
                 <label className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">Division:</label>
-              <Select value={selectedDivision} onValueChange={handleDivisionChange}>
+                <Select value={selectedDivision} onValueChange={handleDivisionChange}>
                   <SelectTrigger className="w-full sm:w-[160px] h-9 border-border/50 bg-background rounded-md">
-                  <SelectValue placeholder="All Divisions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Divisions</SelectItem>
-                  {getAllDivisions().map(div => (
-                    <SelectItem key={div} value={div}>{div}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    <SelectValue placeholder="All Divisions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Divisions</SelectItem>
+                    {getAllDivisions().map(div => (
+                      <SelectItem key={div} value={div}>{div}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* District Filter */}
+              {/* District Filter */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 sm:flex-shrink-0">
                 <label className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">District:</label>
-              <Select 
-                value={selectedDistrict} 
-                onValueChange={handleDistrictChange}
-                disabled={selectedDivision === "all"}
-              >
-                <SelectTrigger 
-                    className={`w-full sm:w-[160px] h-9 border-border/50 bg-background rounded-md ${
-                    selectedDivision === "all" ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                <Select
+                  value={selectedDistrict}
+                  onValueChange={handleDistrictChange}
                   disabled={selectedDivision === "all"}
                 >
-                  <SelectValue placeholder="All Districts" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Districts</SelectItem>
-                  {selectedDivision !== "all" && getDistrictsByDivision(selectedDivision).map(dist => (
-                    <SelectItem key={dist} value={dist}>{dist}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  <SelectTrigger
+                    className={`w-full sm:w-[160px] h-9 border-border/50 bg-background rounded-md ${selectedDivision === "all" ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    disabled={selectedDivision === "all"}
+                  >
+                    <SelectValue placeholder="All Districts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Districts</SelectItem>
+                    {selectedDivision !== "all" && getDistrictsByDivision(selectedDivision).map(dist => (
+                      <SelectItem key={dist} value={dist}>{dist}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Tehsil Filter */}
+              {/* Tehsil Filter */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 sm:flex-shrink-0">
                 <label className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">Tehsil:</label>
-              <Select 
-                value={selectedTehsil} 
-                onValueChange={setSelectedTehsil}
-                disabled={selectedDivision === "all" || selectedDistrict === "all"}
-              >
-                <SelectTrigger 
-                    className={`w-full sm:w-[160px] h-9 border-border/50 bg-background rounded-md ${
-                    selectedDivision === "all" || selectedDistrict === "all" ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                <Select
+                  value={selectedTehsil}
+                  onValueChange={setSelectedTehsil}
                   disabled={selectedDivision === "all" || selectedDistrict === "all"}
                 >
-                  <SelectValue placeholder="All Tehsils" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Tehsils</SelectItem>
-                  {selectedDivision !== "all" && selectedDistrict !== "all" && 
-                    getTehsilsByDivisionAndDistrict(selectedDivision, selectedDistrict).map(teh => (
-                      <SelectItem key={teh} value={teh}>{teh}</SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
-            </div>
+                  <SelectTrigger
+                    className={`w-full sm:w-[160px] h-9 border-border/50 bg-background rounded-md ${selectedDivision === "all" || selectedDistrict === "all" ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    disabled={selectedDivision === "all" || selectedDistrict === "all"}
+                  >
+                    <SelectValue placeholder="All Tehsils" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tehsils</SelectItem>
+                    {selectedDivision !== "all" && selectedDistrict !== "all" &&
+                      getTehsilsByDivisionAndDistrict(selectedDivision, selectedDistrict).map(teh => (
+                        <SelectItem key={teh} value={teh}>{teh}</SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Clear Filters Button */}
-            {(selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedDivision("all");
-                  setSelectedDistrict("all");
-                  setSelectedTehsil("all");
-                }}
-                  className="h-9 px-3 text-xs font-medium w-full sm:w-auto mt-2 sm:mt-0"
-              >
-                Clear Filters
-              </Button>
-            )}
+              {/* Clear Filters Button */}
+              {(selectedDivision !== "all" || selectedDistrict !== "all" || selectedTehsil !== "all") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDivision("all");
+                    setSelectedDistrict("all");
+                    setSelectedTehsil("all");
+                  }}
+                  className="h-9 px-3 text-xs font-medium w-full sm:w-auto mt-2 sm:mt-0 color-darkblue"
+                >
+                  Clear Filters
+                </Button>
+              )}
             </div>
           </div>
         </div>
 
-        
+
 
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -352,7 +350,7 @@ export default function Finance() {
             const isPositive = kpi.trend >= 0;
             const isVariance = key === 'variance';
             const variant = getKpiVariant(key, kpi.value);
-            
+
             return (
               <Card
                 key={key}
@@ -418,25 +416,25 @@ export default function Finance() {
                 <ComposedChart data={budgetData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorPlanned" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis 
+                  <YAxis
                     tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
                     tickFormatter={(value) => `${(value / 1_000_000).toFixed(1)}M`}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "hsl(var(--card))", 
-                      borderColor: "hsl(var(--border))", 
-                      borderRadius: "8px" 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      borderColor: "hsl(var(--border))",
+                      borderRadius: "8px"
                     }}
                     formatter={(value: number, name: string) => {
                       // Map dataKey to display name
@@ -454,10 +452,10 @@ export default function Finance() {
                   <Legend />
                   <Bar dataKey="planned" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Planned" />
                   <Bar dataKey="actual" fill="#10b981" radius={[4, 4, 0, 0]} name="Actual" />
-                  <Line 
-                    type="monotone" 
-                    dataKey="variance" 
-                    stroke="#ef4444" 
+                  <Line
+                    type="monotone"
+                    dataKey="variance"
+                    stroke="#ef4444"
                     strokeWidth={2}
                     strokeDasharray="5 5"
                     name="Variance"
@@ -481,7 +479,7 @@ export default function Finance() {
                   <span className="font-bold">{utilizationRate.toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-muted h-3 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="bg-primary h-full rounded-full transition-all"
                     style={{ width: `${utilizationRate}%` }}
                   />
@@ -524,22 +522,22 @@ export default function Finance() {
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={expenseData} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="department" 
+                <XAxis
+                  dataKey="department"
                   angle={-45}
                   textAnchor="end"
                   height={80}
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                 />
-                <YAxis 
+                <YAxis
                   tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
                   tickFormatter={(value) => `${(value / 1_000_000).toFixed(1)}M`}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: "hsl(var(--card))", 
-                    borderColor: "hsl(var(--border))", 
-                    borderRadius: "8px" 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    borderColor: "hsl(var(--border))",
+                    borderRadius: "8px"
                   }}
                   formatter={(value: number, name: string) => {
                     // The name comes from the Bar component's name prop
@@ -565,7 +563,7 @@ export default function Finance() {
               {expenseData.map((item) => {
                 const utilization = (item.actual / item.planned) * 100;
                 const variance = item.actual - item.planned;
-                
+
                 return (
                   <div key={item.department} className="space-y-2">
                     <div className="flex justify-between items-center text-sm">
@@ -581,11 +579,11 @@ export default function Finance() {
                       </div>
                     </div>
                     <div className="w-full bg-muted h-3 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full rounded-full transition-all"
-                        style={{ 
+                        style={{
                           width: `${utilization}%`,
-                          backgroundColor: item.color 
+                          backgroundColor: item.color
                         }}
                       />
                     </div>

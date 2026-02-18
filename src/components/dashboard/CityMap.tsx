@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
-import { Camera, AlertTriangle, Truck, Shield, Activity, Landmark, Construction, Upload, MapPin } from "lucide-react";
+import { Camera, AlertTriangle, Truck, Shield, Activity, Landmark, Construction, Upload, MapPin, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LayerType } from "@/pages/GISLayers";
 
@@ -135,7 +135,9 @@ export function CityMap({
   searchQuery = "",
   onMapReady,
   geoData,
-  showStats = true
+  showStats = true,
+  showLegend = true,
+  onLegendClose
 }: {
   city?: string;
   activeLayers?: Set<LayerType>;
@@ -143,6 +145,8 @@ export function CityMap({
   onMapReady?: (map: any) => void;
   geoData?: any;
   showStats?: boolean;
+  showLegend?: boolean;
+  onLegendClose?: () => void;
 }) {
   const [isMounted, setIsMounted] = useState(false);
   const [constructionSites, setConstructionSites] = useState(MOCK_DATA.construction);
@@ -161,16 +165,20 @@ export function CityMap({
     }
   };
 
-  // Filter data based on search query
-  const filteredCameras = MOCK_DATA.cameras.filter(cam =>
+  // Filter data based on search query AND active layers
+  const filteredCameras = (activeLayers.has("cameras") ? MOCK_DATA.cameras : []).filter(cam =>
     !searchQuery || cam.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const filteredIncidents = MOCK_DATA.incidents.filter(inc =>
+  const filteredIncidents = (activeLayers.has("incidents") ? MOCK_DATA.incidents : []).filter(inc =>
     !searchQuery || inc.type.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const filteredPatrols = MOCK_DATA.patrols.filter(unit =>
+  const filteredPatrols = (activeLayers.has("patrols") ? MOCK_DATA.patrols : []).filter(unit =>
     !searchQuery || unit.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const filteredConstruction = activeLayers.has("construction") ? constructionSites : [];
+  const filteredTraffic = activeLayers.has("traffic") ? MOCK_DATA.traffic : [];
+  const filteredStations = activeLayers.has("stations") ? MOCK_DATA.stations : [];
+  const filteredHotspots = activeLayers.has("hotspots") ? MOCK_DATA.incidents : [];
 
   useEffect(() => {
     setIsMounted(true);
@@ -217,182 +225,168 @@ export function CityMap({
             />
           </LayersControl.BaseLayer>
 
-          {activeLayers.has("cameras") && (
-            <LayersControl.Overlay checked name="CCTV Coverage">
-              <LayerGroup>
-                {filteredCameras.map(cam => (
-                  <Circle
-                    key={cam.id}
-                    center={cam.pos as [number, number]}
-                    radius={cam.status === 'Online' ? 300 : 50}
-                    pathOptions={{
-                      color: cam.status === 'Online' ? '#3b82f6' : '#ef4444',
-                      fillOpacity: 0.2
-                    }}
-                  >
-                    <Popup>
-                      <div className="p-2 w-48 font-sans">
-                        <div className="flex items-center gap-2 border-b pb-2 mb-2">
-                          <Camera className="h-4 w-4 text-primary" />
-                          <span className="font-bold text-sm">{cam.label}</span>
-                        </div>
-                        <p className="text-xs">STATUS: <span className={cam.status === 'Online' ? 'text-emerald-500' : 'text-destructive'}>{cam.status}</span></p>
-                        <button className="w-full mt-3 bg-primary text-white text-[10px] py-1.5 rounded uppercase font-bold tracking-widest hover:bg-primary/90">Request Feed</button>
+          <LayersControl.Overlay checked name="CCTV Coverage">
+            <LayerGroup>
+              {filteredCameras.map(cam => (
+                <Circle
+                  key={cam.id}
+                  center={cam.pos as [number, number]}
+                  radius={cam.status === 'Online' ? 300 : 50}
+                  pathOptions={{
+                    color: cam.status === 'Online' ? '#3b82f6' : '#ef4444',
+                    fillOpacity: 0.2
+                  }}
+                >
+                  <Popup>
+                    <div className="p-2 w-48 font-sans">
+                      <div className="flex items-center gap-2 border-b pb-2 mb-2">
+                        <Camera className="h-4 w-4 text-primary" />
+                        <span className="font-bold text-sm">{cam.label}</span>
                       </div>
-                    </Popup>
-                  </Circle>
-                ))}
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
+                      <p className="text-xs">STATUS: <span className={cam.status === 'Online' ? 'text-emerald-500' : 'text-destructive'}>{cam.status}</span></p>
+                      <button className="w-full mt-3 bg-primary text-white text-[10px] py-1.5 rounded uppercase font-bold tracking-widest hover:bg-primary/90">Request Feed</button>
+                    </div>
+                  </Popup>
+                </Circle>
+              ))}
+            </LayerGroup>
+          </LayersControl.Overlay>
 
-          {activeLayers.has("incidents") && (
-            <LayersControl.Overlay checked name="Live Incidents">
-              <LayerGroup>
-                {filteredIncidents.map(inc => (
-                  <Marker key={inc.id} position={inc.pos as [number, number]} icon={getIncidentIcon(inc.severity)}>
+          <LayersControl.Overlay checked name="Live Incidents">
+            <LayerGroup>
+              {filteredIncidents.map(inc => (
+                <Marker key={inc.id} position={inc.pos as [number, number]} icon={getIncidentIcon(inc.severity)}>
+                  <Popup>
+                    <div className="p-2 w-48 font-sans">
+                      <div className="flex items-center gap-2 border-b pb-2 mb-2">
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                        <span className="font-bold text-sm">{inc.type}</span>
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <p><span className="font-bold">Severity:</span> {inc.severity}</p>
+                        <p><span className="font-bold">Time:</span> {inc.time}</p>
+                        <p><span className="font-bold">Status:</span> {inc.status}</p>
+                      </div>
+                      <Button variant="outline" className="w-full mt-3 text-[10px] h-7 border-destructive/20 text-destructive hover:bg-destructive hover:text-white">Dispatch Quick Response</Button>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </LayerGroup>
+          </LayersControl.Overlay>
+
+          <LayersControl.Overlay checked name="Patrol Units">
+            <LayerGroup>
+              {filteredPatrols.map(unit => (
+                <Marker key={unit.id} position={unit.pos as [number, number]} icon={getPatrolIcon(unit.color)}>
+                  <Popup>
+                    <div className="p-2 text-xs font-sans">
+                      <p className="font-bold border-b pb-1 mb-1">{unit.label}</p>
+                      <p>STATUS: {unit.status}</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </LayerGroup>
+          </LayersControl.Overlay>
+
+          <LayersControl.Overlay checked name="Construction Projects">
+            <LayerGroup>
+              {filteredConstruction.map(site => (
+                <Marker key={site.id} position={site.pos as [number, number]} icon={getConstructionIcon()}>
+                  <Popup>
+                    <div className="p-2 w-52 font-sans">
+                      <div className="flex items-center gap-2 border-b pb-2 mb-2">
+                        <Construction className="h-4 w-4 text-orange-500" />
+                        <span className="font-bold text-sm">{site.label}</span>
+                      </div>
+                      <div className="aspect-video bg-muted rounded overflow-hidden mb-2 relative group">
+                        <img src={site.image} alt={site.label} className="w-full h-full object-cover" />
+                        <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                          <Upload className="h-6 w-6 text-white" />
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, site.id)} />
+                        </label>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground font-medium uppercase tracking-tighter">Progress</span>
+                        <span className="font-bold text-orange-500">{site.progress}</span>
+                      </div>
+                      <div className="w-full bg-muted h-1 rounded-full mt-1 overflow-hidden">
+                        <div className="bg-orange-500 h-full" style={{ width: site.progress }} />
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </LayerGroup>
+          </LayersControl.Overlay>
+
+          <LayersControl.Overlay name="Police Stations">
+            <LayerGroup>
+              {filteredStations.map(station => (
+                <LayerGroup key={station.id}>
+                  <Marker position={station.pos as [number, number]} icon={getPoliceIcon()}>
                     <Popup>
-                      <div className="p-2 w-48 font-sans">
-                        <div className="flex items-center gap-2 border-b pb-2 mb-2">
-                          <AlertTriangle className="h-4 w-4 text-destructive" />
-                          <span className="font-bold text-sm">{inc.type}</span>
-                        </div>
-                        <div className="space-y-1 text-xs">
-                          <p><span className="font-bold">Severity:</span> {inc.severity}</p>
-                          <p><span className="font-bold">Time:</span> {inc.time}</p>
-                          <p><span className="font-bold">Status:</span> {inc.status}</p>
-                        </div>
-                        <Button variant="outline" className="w-full mt-3 text-[10px] h-7 border-destructive/20 text-destructive hover:bg-destructive hover:text-white">Dispatch Quick Response</Button>
+                      <div className="p-2 text-xs">
+                        <p className="font-bold">{station.name}</p>
+                        <p>ACTIVE UNITS: {station.units}</p>
                       </div>
                     </Popup>
                   </Marker>
-                ))}
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
+                  <Circle center={station.pos as [number, number]} radius={station.radius} pathOptions={{ color: 'rgba(30, 58, 138, 0.2)', dashArray: '5, 10' }} />
+                </LayerGroup>
+              ))}
+            </LayerGroup>
+          </LayersControl.Overlay>
 
-          {activeLayers.has("patrols") && (
-            <LayersControl.Overlay checked name="Patrol Units">
-              <LayerGroup>
-                {filteredPatrols.map(unit => (
-                  <Marker key={unit.id} position={unit.pos as [number, number]} icon={getPatrolIcon(unit.color)}>
-                    <Popup>
-                      <div className="p-2 text-xs font-sans">
-                        <p className="font-bold border-b pb-1 mb-1">{unit.label}</p>
-                        <p>STATUS: {unit.status}</p>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
+          <LayersControl.Overlay checked name="Traffic Density">
+            <LayerGroup>
+              {filteredTraffic.map(route => (
+                <Polyline
+                  key={route.id}
+                  positions={route.path as [number, number][]}
+                  pathOptions={{
+                    color: route.level === 'High' ? '#ef4444' : '#10b981',
+                    weight: 6,
+                    opacity: 0.8
+                  }}
+                >
+                  <Popup>
+                    <div className="text-xs">
+                      <p className="font-bold">Congestion: {route.level}</p>
+                      <p>Avg Speed: {route.speed}</p>
+                    </div>
+                  </Popup>
+                </Polyline>
+              ))}
+            </LayerGroup>
+          </LayersControl.Overlay>
 
-          {activeLayers.has("construction") && (
-            <LayersControl.Overlay checked name="Construction Projects">
-              <LayerGroup>
-                {constructionSites.map(site => (
-                  <Marker key={site.id} position={site.pos as [number, number]} icon={getConstructionIcon()}>
-                    <Popup>
-                      <div className="p-2 w-52 font-sans">
-                        <div className="flex items-center gap-2 border-b pb-2 mb-2">
-                          <Construction className="h-4 w-4 text-orange-500" />
-                          <span className="font-bold text-sm">{site.label}</span>
-                        </div>
-                        <div className="aspect-video bg-muted rounded overflow-hidden mb-2 relative group">
-                          <img src={site.image} alt={site.label} className="w-full h-full object-cover" />
-                          <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                            <Upload className="h-6 w-6 text-white" />
-                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, site.id)} />
-                          </label>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground font-medium uppercase tracking-tighter">Progress</span>
-                          <span className="font-bold text-orange-500">{site.progress}</span>
-                        </div>
-                        <div className="w-full bg-muted h-1 rounded-full mt-1 overflow-hidden">
-                          <div className="bg-orange-500 h-full" style={{ width: site.progress }} />
-                        </div>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
-
-          {activeLayers.has("stations") && (
-            <LayersControl.Overlay name="Police Stations">
-              <LayerGroup>
-                {MOCK_DATA.stations.map(station => (
-                  <LayerGroup key={station.id}>
-                    <Marker position={station.pos as [number, number]} icon={getPoliceIcon()}>
-                      <Popup>
-                        <div className="p-2 text-xs">
-                          <p className="font-bold">{station.name}</p>
-                          <p>ACTIVE UNITS: {station.units}</p>
-                        </div>
-                      </Popup>
-                    </Marker>
-                    <Circle center={station.pos as [number, number]} radius={station.radius} pathOptions={{ color: 'rgba(30, 58, 138, 0.2)', dashArray: '5, 10' }} />
-                  </LayerGroup>
-                ))}
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
-
-          {activeLayers.has("traffic") && (
-            <LayersControl.Overlay checked name="Traffic Density">
-              <LayerGroup>
-                {MOCK_DATA.traffic.map(route => (
-                  <Polyline
-                    key={route.id}
-                    positions={route.path as [number, number][]}
-                    pathOptions={{
-                      color: route.level === 'High' ? '#ef4444' : '#10b981',
-                      weight: 6,
-                      opacity: 0.8
-                    }}
-                  >
-                    <Popup>
-                      <div className="text-xs">
-                        <p className="font-bold">Congestion: {route.level}</p>
-                        <p>Avg Speed: {route.speed}</p>
-                      </div>
-                    </Popup>
-                  </Polyline>
-                ))}
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
-
-          {activeLayers.has("hotspots") && (
-            <LayersControl.Overlay name="Incident Hotspots">
-              <LayerGroup>
-                {/* Heatmap circles for hotspots */}
-                {MOCK_DATA.incidents.map(inc => (
-                  <Circle
-                    key={`hotspot-${inc.id}`}
-                    center={inc.pos as [number, number]}
-                    radius={inc.severity === 'High' ? 500 : 300}
-                    pathOptions={{
-                      color: inc.severity === 'High' ? '#ef4444' : '#f97316',
-                      fillColor: inc.severity === 'High' ? '#ef4444' : '#f97316',
-                      fillOpacity: 0.3,
-                      weight: 2
-                    }}
-                  >
-                    <Popup>
-                      <div className="text-xs">
-                        <p className="font-bold">{inc.type}</p>
-                        <p>Hotspot Radius: {inc.severity === 'High' ? '500m' : '300m'}</p>
-                      </div>
-                    </Popup>
-                  </Circle>
-                ))}
-              </LayerGroup>
-            </LayersControl.Overlay>
-          )}
+          <LayersControl.Overlay name="Incident Hotspots">
+            <LayerGroup>
+              {/* Heatmap circles for hotspots */}
+              {filteredHotspots.map(inc => (
+                <Circle
+                  key={`hotspot-${inc.id}`}
+                  center={inc.pos as [number, number]}
+                  radius={inc.severity === 'High' ? 500 : 300}
+                  pathOptions={{
+                    color: inc.severity === 'High' ? '#ef4444' : '#f97316',
+                    fillColor: inc.severity === 'High' ? '#ef4444' : '#f97316',
+                    fillOpacity: 0.3,
+                    weight: 2
+                  }}
+                >
+                  <Popup>
+                    <div className="text-xs">
+                      <p className="font-bold">{inc.type}</p>
+                      <p>Hotspot Radius: {inc.severity === 'High' ? '500m' : '300m'}</p>
+                    </div>
+                  </Popup>
+                </Circle>
+              ))}
+            </LayerGroup>
+          </LayersControl.Overlay>
 
           {geoData && (
             <LayersControl.Overlay checked name="Proposed Area Boundary">
@@ -424,6 +418,74 @@ export function CityMap({
               <span className="text-secondary font-bold tracking-widest">ALERTS: 12</span>
               <span className="text-emerald-400 font-bold tracking-widest">PATROLS: 86</span>
               <span className="text-orange-400 font-bold tracking-widest">CONST: 8</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Legend Overlay */}
+      {showLegend && (
+        <div className="absolute top-6 left-6 z-[400] w-64">
+          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10 overflow-hidden">
+            <div className="bg-primary px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Info className="h-3.5 w-3.5 text-secondary" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white">Map Legend</span>
+              </div>
+              <button
+                onClick={onLegendClose}
+                className="text-white/70 hover:text-white transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="grid grid-cols-1 gap-2.5">
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-sm"></div>
+                  <span className="text-[11px] font-semibold text-primary/80">Online Camera</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white shadow-sm"></div>
+                  <span className="text-[11px] font-semibold text-primary/80">Offline Camera</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-destructive border-2 border-white animate-pulse shadow-sm"></div>
+                  <span className="text-[11px] font-semibold text-primary/80">High Severity Incident</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-orange-600 border-2 border-white shadow-sm"></div>
+                  <span className="text-[11px] font-semibold text-primary/80">Medium Severity</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white animate-pulse shadow-sm"></div>
+                  <span className="text-[11px] font-semibold text-primary/80">Active Patrol Unit</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-lg bg-orange-500 border-2 border-white shadow-sm"></div>
+                  <span className="text-[11px] font-semibold text-primary/80">Construction Site</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-lg bg-primary border-2 border-white shadow-sm"></div>
+                  <span className="text-[11px] font-semibold text-primary/80">Police Station</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-1.5 bg-red-500 rounded-full"></div>
+                      <span className="text-[11px] font-semibold text-primary/80">High Traffic</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-1.5 bg-emerald-500 rounded-full"></div>
+                      <span className="text-[11px] font-semibold text-primary/80">Low Traffic</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
