@@ -1616,9 +1616,6 @@ export default function Dashboard() {
             }`}>
             <div className="space-y-3 flex-1">
               <div className="flex items-center gap-3 flex-wrap">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
-                  <Camera className="h-6 w-6 text-white" />
-                </div>
                 <div>
                   <h1 className="text-xl sm:text-3xl md:text-4xl font-bold font-heading bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {selectedItemName && selectedItemType === "division"
@@ -1641,14 +1638,40 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-7 w-32 rounded-full" />
                 </div>
-              ) : (selectedItemName && singleItemData) || aggregatedData ? (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <Badge className="px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
-                      <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400" />
-                      Overall: {selectedItemName && singleItemData ? singleItemData.overall : aggregatedData?.overall || 0}%
-                    </Badge>
-                  </div>
+              ) : (selectedItemName && singleItemData) || aggregatedData ? (() => {
+                const overall = selectedItemName && singleItemData ? singleItemData.overall : aggregatedData?.overall || 0;
+                const meta = getProgressRangeMeta(overall);
+                
+                // Map color to Tailwind classes
+                const getBadgeClasses = (color: string) => {
+                  if (color === "#ef4444") { // red - Low
+                    return "px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors";
+                  } else if (color === "#f59e0b") { // orange/amber - Moderate
+                    return "px-4 py-1.5 text-sm font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors";
+                  } else if (color === "#3b82f6") { // blue - Good
+                    return "px-4 py-1.5 text-sm font-semibold bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors";
+                  } else if (color === "#22c55e" || color === "#10b981") { // green/emerald - High/Fully Completed
+                    return "px-4 py-1.5 text-sm font-semibold bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors";
+                  }
+                  return "px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors";
+                };
+                
+                const getIconClasses = (color: string) => {
+                  if (color === "#ef4444") return "h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400";
+                  else if (color === "#f59e0b") return "h-3.5 w-3.5 mr-1.5 text-amber-600 dark:text-amber-400";
+                  else if (color === "#3b82f6") return "h-3.5 w-3.5 mr-1.5 text-blue-600 dark:text-blue-400";
+                  else if (color === "#22c55e" || color === "#10b981") return "h-3.5 w-3.5 mr-1.5 text-green-600 dark:text-green-400";
+                  return "h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400";
+                };
+                
+                return (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <Badge className={getBadgeClasses(meta.color)}>
+                        <TrendingUp className={getIconClasses(meta.color)} />
+                        Overall: {overall}%
+                      </Badge>
+                    </div>
                   {/* Legend for progress ranges */}
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     {[
@@ -1664,7 +1687,8 @@ export default function Dashboard() {
                     ))}
                   </div>
                 </div>
-              ) : null}
+                );
+              })() : null}
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
