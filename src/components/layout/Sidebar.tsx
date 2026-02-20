@@ -34,7 +34,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { icon: LayoutDashboard, label: "City Monitor", href: "/" },
+  { icon: LayoutDashboard, label: "Citywise Progress", href: "/" },
   { icon: BarChart3, label: "City Comparison", href: "/comparison" },
   { icon: LucideBanknote, label: "Finance & Budget", href: "/finance" },
   { icon: MapIcon, label: "GIS Layers", href: "/gis" },

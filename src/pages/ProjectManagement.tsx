@@ -1,7 +1,8 @@
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { FolderKanban, Plus, Upload, FileText, MapPin, X, File, ChevronRight, ChevronLeft, CheckCircle2 } from "lucide-react";
+import { FolderKanban, Plus, Upload, FileText, MapPin, X, File, ChevronRight, ChevronLeft, CheckCircle2, Calendar, Users, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -83,10 +84,23 @@ function ProjectAreaMap({ geoData }: { geoData: any }) {
   );
 }
 
+interface Project {
+  id: string;
+  name: string;
+  division: string;
+  district: string;
+  tehsil: string;
+  xerFileName: string;
+  areaFileName: string;
+  createdAt: Date;
+  status: "Active" | "Completed" | "On Hold";
+}
+
 export default function ProjectManagement() {
   const [showAddProjectDialog, setShowAddProjectDialog] = useState(false);
   const [showXERDialog, setShowXERDialog] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [projects, setProjects] = useState<Project[]>([]);
   
   // Form state
   const [projectName, setProjectName] = useState("");
@@ -261,6 +275,22 @@ export default function ProjectManagement() {
         return;
       }
 
+      // Create new project
+      const newProject: Project = {
+        id: Date.now().toString(),
+        name: projectName,
+        division: selectedDivision,
+        district: selectedDistrict,
+        tehsil: selectedTehsil,
+        xerFileName: xerFile?.name || "",
+        areaFileName: areaFile?.name || "",
+        createdAt: new Date(),
+        status: "Active"
+      };
+
+      // Add project to the list
+      setProjects([...projects, newProject]);
+
       // Here you would typically send the data to your backend
       console.log("Project Data:", {
         projectName,
@@ -279,6 +309,13 @@ export default function ProjectManagement() {
     }
   };
 
+  // Handle delete project
+  const handleDeleteProject = (id: string) => {
+    if (confirm("Are you sure you want to delete this project?")) {
+      setProjects(projects.filter(p => p.id !== id));
+    }
+  };
+
   return (
     <Layout title="Project Management">
       <div className="space-y-6">
@@ -294,18 +331,86 @@ export default function ProjectManagement() {
           </Button>
         </div>
 
-        {/* Empty State */}
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <FolderKanban className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">Get started by creating a new project</p>
-            <Button onClick={() => setShowAddProjectDialog(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add New Project
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Projects Grid */}
+        {projects.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <FolderKanban className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
+              <p className="text-sm text-muted-foreground mb-4">Get started by creating a new project</p>
+              <Button onClick={() => setShowAddProjectDialog(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add New Project
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => (
+              <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg mb-1">{project.name}</CardTitle>
+                      <CardDescription className="text-xs">
+                        Created {project.createdAt.toLocaleDateString()}
+                      </CardDescription>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`${
+                        project.status === "Active"
+                          ? "bg-blue-500 text-white border-blue-500"
+                          : project.status === "Completed"
+                          ? "bg-green-500 text-white border-green-500"
+                          : "bg-gray-500 text-white border-gray-500"
+                      }`}
+                    >
+                      {project.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        {project.division} → {project.district} → {project.tehsil}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground truncate" title={project.xerFileName}>
+                        {project.xerFileName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground truncate" title={project.areaFileName}>
+                        {project.areaFileName}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteProject(project.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add Project Dialog */}
@@ -324,37 +429,65 @@ export default function ProjectManagement() {
           </DialogHeader>
 
           {/* Step Indicator */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2 flex-1">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                currentStep >= 1 ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground"
-              }`}>
-                {currentStep > 1 ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <span className="text-sm font-semibold">1</span>
+          <div className="flex flex-col items-center justify-center mb-6">
+            <div className="flex items-center gap-3 w-fit">
+              {/* Step 1 */}
+              <div className="flex flex-col items-center">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${
+                  currentStep >= 1 ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground bg-background"
+                }`}>
+                  {currentStep > 1 ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <span className="text-sm font-semibold">1</span>
+                  )}
+                </div>
+                <p className={`text-xs font-medium mt-2 ${currentStep === 1 ? "text-primary" : "text-muted-foreground"}`}>
+                  Project Details
+                </p>
+              </div>
+
+              {/* Animated Progress Line */}
+              <div className="relative w-24 h-1 bg-muted rounded-full overflow-hidden mt-4">
+                {currentStep >= 2 && (
+                  <>
+                    <div className="absolute inset-0 bg-primary" />
+                    <div 
+                      className="absolute inset-0"
+                      style={{
+                        background: 'linear-gradient(90deg, transparent 30%, #ef4444 50%, transparent 70%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 1.5s linear infinite',
+                      }}
+                    />
+                  </>
                 )}
               </div>
-              <div className={`flex-1 h-1 ${currentStep >= 2 ? "bg-primary" : "bg-muted"}`} />
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                currentStep >= 2 ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground"
-              }`}>
-                <span className="text-sm font-semibold">2</span>
+
+              {/* Step 2 */}
+              <div className="flex flex-col items-center">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${
+                  currentStep >= 2 ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground bg-background"
+                }`}>
+                  <span className="text-sm font-semibold">2</span>
+                </div>
+                <p className={`text-xs font-medium mt-2 ${currentStep === 2 ? "text-primary" : "text-muted-foreground"}`}>
+                  Project Area
+                </p>
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between mb-6 -mt-4">
-            <div className="flex-1 text-center">
-              <p className={`text-sm font-medium ${currentStep === 1 ? "text-primary" : "text-muted-foreground"}`}>
-                Project Details
-              </p>
-            </div>
-            <div className="flex-1 text-center">
-              <p className={`text-sm font-medium ${currentStep === 2 ? "text-primary" : "text-muted-foreground"}`}>
-                Project Area
-              </p>
-            </div>
-          </div>
+
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes shimmer {
+              0% {
+                background-position: -200% 0;
+              }
+              100% {
+                background-position: 200% 0;
+              }
+            }
+          `}} />
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Step 1: Project Details */}
