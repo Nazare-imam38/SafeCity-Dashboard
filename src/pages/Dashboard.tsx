@@ -1106,21 +1106,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Legend for progress ranges */}
-                <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  {[
-                    { label: "0–25% Low", color: "#ef4444" },
-                    { label: "25–50% Moderate", color: "#f59e0b" },
-                    { label: "50–75% Good", color: "#3b82f6" },
-                    { label: "75–100% High", color: "#22c55e" },
-                  ].map((it) => (
-                    <div key={it.label} className="flex items-center gap-2">
-                      <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: it.color }} />
-                      <span>{it.label}</span>
-                    </div>
-                  ))}
-                </div>
-
                 {/* Progress Bar */}
                 <div className="mt-3">
                   <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
@@ -1136,7 +1121,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                     <span>0%</span>
-                    <span className="font-medium">Target: 100%</span>
+                    
                     <span>100%</span>
                   </div>
                 </div>
