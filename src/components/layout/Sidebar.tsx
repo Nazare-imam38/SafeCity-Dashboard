@@ -15,7 +15,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Navigation2,
-  Users
+  Users,
+  FolderKanban
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
       { icon: MapPin, label: "Tehsil", href: "/tehsil-management" },
     ]
   },
+  { icon: FolderKanban, label: "Project Management", href: "/project-management" },
   { icon: Users, label: "Stakeholders", href: "/stakeholder-management" },
   { icon: Settings, label: "Settings", href: "/settings" },
 ];

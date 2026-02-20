@@ -18,6 +18,7 @@ import DivisionManagement from "@/pages/DivisionManagement";
 import DistrictManagement from "@/pages/DistrictManagement";
 import TehsilManagement from "@/pages/TehsilManagement";
 import StakeholderManagement from "@/pages/StakeholderManagement";
+import ProjectManagement from "@/pages/ProjectManagement";
 import { useState, useEffect, useRef } from "react";
 
 function Router() {
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/district-management" component={DistrictManagement} />
       <Route path="/tehsil-management" component={TehsilManagement} />
       <Route path="/stakeholder-management" component={StakeholderManagement} />
+      <Route path="/project-management" component={ProjectManagement} />
       <Route component={NotFound} />
     </Switch>
   );
