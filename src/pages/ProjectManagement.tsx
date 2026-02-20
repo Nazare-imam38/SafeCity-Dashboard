@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { FolderKanban, Plus, Upload, FileText, MapPin, X, File } from "lucide-react";
+import { FolderKanban, Plus, Upload, FileText, MapPin, X, File, ChevronRight, ChevronLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,7 +86,7 @@ function ProjectAreaMap({ geoData }: { geoData: any }) {
 export default function ProjectManagement() {
   const [showAddProjectDialog, setShowAddProjectDialog] = useState(false);
   const [showXERDialog, setShowXERDialog] = useState(false);
-  const [showAreaDialog, setShowAreaDialog] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   
   // Form state
   const [projectName, setProjectName] = useState("");
@@ -194,53 +194,89 @@ export default function ProjectManagement() {
     setXerFile(null);
     setAreaFile(null);
     setGeoData(null);
+    setCurrentStep(1);
+  };
+
+  // Validate step 1
+  const validateStep1 = () => {
+    if (!projectName.trim()) {
+      alert("Please enter a project name");
+      return false;
+    }
+    if (!selectedDivision) {
+      alert("Please select a division");
+      return false;
+    }
+    if (!selectedDistrict) {
+      alert("Please select a district");
+      return false;
+    }
+    if (!selectedTehsil) {
+      alert("Please select a tehsil");
+      return false;
+    }
+    if (!xerFile) {
+      alert("Please upload an XER file");
+      return false;
+    }
+    return true;
+  };
+
+  // Validate step 2
+  const validateStep2 = () => {
+    if (!areaFile) {
+      alert("Please upload a project area file");
+      return false;
+    }
+    return true;
+  };
+
+  // Handle next step
+  const handleNext = () => {
+    if (currentStep === 1) {
+      if (validateStep1()) {
+        setCurrentStep(2);
+      }
+    }
+  };
+
+  // Handle previous step
+  const handlePrevious = () => {
+    if (currentStep === 2) {
+      setCurrentStep(1);
+    }
   };
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!projectName.trim()) {
-      alert("Please enter a project name");
-      return;
-    }
-    if (!selectedDivision) {
-      alert("Please select a division");
-      return;
-    }
-    if (!selectedDistrict) {
-      alert("Please select a district");
-      return;
-    }
-    if (!selectedTehsil) {
-      alert("Please select a tehsil");
-      return;
-    }
-    if (!xerFile) {
-      alert("Please upload an XER file");
-      return;
-    }
-    if (!areaFile) {
-      alert("Please upload a project area file");
+    if (currentStep === 1) {
+      handleNext();
       return;
     }
 
-    // Here you would typically send the data to your backend
-    console.log("Project Data:", {
-      projectName,
-      division: selectedDivision,
-      district: selectedDistrict,
-      tehsil: selectedTehsil,
-      xerFile,
-      areaFile,
-      geoData
-    });
+    if (currentStep === 2) {
+      if (!validateStep2()) {
+        return;
+      }
 
-    alert("Project created successfully!");
-    resetForm();
-    setShowAddProjectDialog(false);
-    setShowXERDialog(false);
-    setShowAreaDialog(false);
+      // Here you would typically send the data to your backend
+      console.log("Project Data:", {
+        projectName,
+        division: selectedDivision,
+        district: selectedDistrict,
+        tehsil: selectedTehsil,
+        xerFile,
+        areaFile,
+        geoData
+      });
+
+      alert("Project created successfully!");
+      resetForm();
+      setShowAddProjectDialog(false);
+      setShowXERDialog(false);
+    }
   };
 
   return (
@@ -273,7 +309,12 @@ export default function ProjectManagement() {
       </div>
 
       {/* Add Project Dialog */}
-      <Dialog open={showAddProjectDialog} onOpenChange={setShowAddProjectDialog}>
+      <Dialog open={showAddProjectDialog} onOpenChange={(open) => {
+        setShowAddProjectDialog(open);
+        if (!open) {
+          resetForm();
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Project</DialogTitle>
@@ -281,173 +322,260 @@ export default function ProjectManagement() {
               Fill in the project details and upload required files
             </DialogDescription>
           </DialogHeader>
+
+          {/* Step Indicator */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2 flex-1">
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+                currentStep >= 1 ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground"
+              }`}>
+                {currentStep > 1 ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <span className="text-sm font-semibold">1</span>
+                )}
+              </div>
+              <div className={`flex-1 h-1 ${currentStep >= 2 ? "bg-primary" : "bg-muted"}`} />
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+                currentStep >= 2 ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground"
+              }`}>
+                <span className="text-sm font-semibold">2</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mb-6 -mt-4">
+            <div className="flex-1 text-center">
+              <p className={`text-sm font-medium ${currentStep === 1 ? "text-primary" : "text-muted-foreground"}`}>
+                Project Details
+              </p>
+            </div>
+            <div className="flex-1 text-center">
+              <p className={`text-sm font-medium ${currentStep === 2 ? "text-primary" : "text-muted-foreground"}`}>
+                Project Area
+              </p>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Project Name */}
-            <div className="space-y-2">
-              <Label htmlFor="projectName">Project Name *</Label>
-              <Input
-                id="projectName"
-                placeholder="Enter project name"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                required
-              />
-            </div>
+            {/* Step 1: Project Details */}
+            {currentStep === 1 && (
+              <div className="space-y-6">
+                {/* Project Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="projectName">Project Name *</Label>
+                  <Input
+                    id="projectName"
+                    placeholder="Enter project name"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    required
+                  />
+                </div>
 
-            {/* Division Select */}
-            <div className="space-y-2">
-              <Label htmlFor="division">Division *</Label>
-              <Select value={selectedDivision} onValueChange={setSelectedDivision} required>
-                <SelectTrigger id="division">
-                  <SelectValue placeholder="Select division" />
-                </SelectTrigger>
-                <SelectContent>
-                  {divisions.map((division) => (
-                    <SelectItem key={division} value={division}>
-                      {division}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {/* Division Select */}
+                <div className="space-y-2">
+                  <Label htmlFor="division">Division *</Label>
+                  <Select value={selectedDivision} onValueChange={setSelectedDivision} required>
+                    <SelectTrigger id="division">
+                      <SelectValue placeholder="Select division" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {divisions.map((division) => (
+                        <SelectItem key={division} value={division}>
+                          {division}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* District Select */}
-            <div className="space-y-2">
-              <Label htmlFor="district">District *</Label>
-              <Select
-                value={selectedDistrict}
-                onValueChange={setSelectedDistrict}
-                disabled={!selectedDivision}
-                required
-              >
-                <SelectTrigger id="district">
-                  <SelectValue placeholder={selectedDivision ? "Select district" : "Select division first"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {districts.map((district) => (
-                    <SelectItem key={district} value={district}>
-                      {district}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {/* District Select */}
+                <div className="space-y-2">
+                  <Label htmlFor="district">District *</Label>
+                  <Select
+                    value={selectedDistrict}
+                    onValueChange={setSelectedDistrict}
+                    disabled={!selectedDivision}
+                    required
+                  >
+                    <SelectTrigger id="district">
+                      <SelectValue placeholder={selectedDivision ? "Select district" : "Select division first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {districts.map((district) => (
+                        <SelectItem key={district} value={district}>
+                          {district}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* Tehsil Select */}
-            <div className="space-y-2">
-              <Label htmlFor="tehsil">Tehsil *</Label>
-              <Select
-                value={selectedTehsil}
-                onValueChange={setSelectedTehsil}
-                disabled={!selectedDistrict}
-                required
-              >
-                <SelectTrigger id="tehsil">
-                  <SelectValue placeholder={selectedDistrict ? "Select tehsil" : "Select district first"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {tehsils.map((tehsil) => (
-                    <SelectItem key={tehsil} value={tehsil}>
-                      {tehsil}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {/* Tehsil Select */}
+                <div className="space-y-2">
+                  <Label htmlFor="tehsil">Tehsil *</Label>
+                  <Select
+                    value={selectedTehsil}
+                    onValueChange={setSelectedTehsil}
+                    disabled={!selectedDistrict}
+                    required
+                  >
+                    <SelectTrigger id="tehsil">
+                      <SelectValue placeholder={selectedDistrict ? "Select tehsil" : "Select district first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tehsils.map((tehsil) => (
+                        <SelectItem key={tehsil} value={tehsil}>
+                          {tehsil}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* XER File Upload */}
-            <div className="space-y-2">
-              <Label>XER File *</Label>
-              <div
-                className={`relative border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-all ${
-                  xerFile
-                    ? "border-primary bg-primary/5"
-                    : "border-muted-foreground/20 hover:border-primary/50 cursor-pointer"
-                }`}
-                onClick={() => !xerFile && setShowXERDialog(true)}
-              >
-                {xerFile ? (
-                  <div className="flex items-center gap-3 w-full">
-                    <FileText className="h-8 w-8 text-primary" />
-                    <div className="flex-1">
-                      <p className="font-medium">{xerFile.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {(xerFile.size / 1024).toFixed(2)} KB
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setXerFile(null);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                {/* XER File Upload */}
+                <div className="space-y-2">
+                  <Label>XER File *</Label>
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-all ${
+                      xerFile
+                        ? "border-primary bg-primary/5"
+                        : "border-muted-foreground/20 hover:border-primary/50 cursor-pointer"
+                    }`}
+                    onClick={() => !xerFile && setShowXERDialog(true)}
+                  >
+                    {xerFile ? (
+                      <div className="flex items-center gap-3 w-full">
+                        <FileText className="h-8 w-8 text-primary" />
+                        <div className="flex-1">
+                          <p className="font-medium">{xerFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(xerFile.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setXerFile(null);
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                        <p className="text-sm font-medium">Click to upload XER file</p>
+                        <p className="text-xs text-muted-foreground">.xer format</p>
+                      </>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm font-medium">Click to upload XER file</p>
-                    <p className="text-xs text-muted-foreground">.xer format</p>
-                  </>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Project Area */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Project Area (GeoJSON, Shapefile, KMZ, KML) *</Label>
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-all ${
+                      areaFile
+                        ? "border-primary bg-primary/5"
+                        : "border-muted-foreground/20 hover:border-primary/50 cursor-pointer"
+                    }`}
+                    onClick={() => document.getElementById("area-file-input")?.click()}
+                  >
+                    {areaFile ? (
+                      <div className="flex items-center gap-3 w-full">
+                        <MapPin className="h-8 w-8 text-primary" />
+                        <div className="flex-1">
+                          <p className="font-medium">{areaFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(areaFile.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAreaFile(null);
+                            setGeoData(null);
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                        <p className="text-sm font-medium">Click to upload area file</p>
+                        <p className="text-xs text-muted-foreground">GeoJSON, Shapefile, KMZ, or KML</p>
+                      </>
+                    )}
+                    <Input
+                      id="area-file-input"
+                      type="file"
+                      accept=".geojson,.json,.kml,.kmz,.zip,.shp"
+                      onChange={handleAreaFileChange}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                {isLoadingGeoData && (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="text-sm text-muted-foreground mt-2">Loading geographic data...</p>
+                  </div>
+                )}
+
+                {geoData && (
+                  <div className="space-y-2">
+                    <Label>Map Preview</Label>
+                    <ProjectAreaMap geoData={geoData} />
+                  </div>
                 )}
               </div>
-            </div>
-
-            {/* Project Area File Upload */}
-            <div className="space-y-2">
-              <Label>Project Area (GeoJSON, Shapefile, KMZ, KML) *</Label>
-              <div
-                className={`relative border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-all ${
-                  areaFile
-                    ? "border-primary bg-primary/5"
-                    : "border-muted-foreground/20 hover:border-primary/50 cursor-pointer"
-                }`}
-                onClick={() => !areaFile && setShowAreaDialog(true)}
-              >
-                {areaFile ? (
-                  <div className="flex items-center gap-3 w-full">
-                    <MapPin className="h-8 w-8 text-primary" />
-                    <div className="flex-1">
-                      <p className="font-medium">{areaFile.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {(areaFile.size / 1024).toFixed(2)} KB
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAreaFile(null);
-                        setGeoData(null);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm font-medium">Click to upload area file</p>
-                    <p className="text-xs text-muted-foreground">GeoJSON, Shapefile, KMZ, or KML</p>
-                  </>
-                )}
-              </div>
-            </div>
+            )}
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => {
-                setShowAddProjectDialog(false);
-                resetForm();
-              }}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowAddProjectDialog(false);
+                  resetForm();
+                }}
+              >
                 Cancel
               </Button>
-              <Button type="submit">Create Project</Button>
+              {currentStep === 1 && (
+                <Button type="button" onClick={handleNext} className="gap-2">
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+              {currentStep === 2 && (
+                <>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handlePrevious}
+                    className="gap-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button type="submit">Create Project</Button>
+                </>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>
@@ -510,76 +638,6 @@ export default function ProjectManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Project Area Upload Dialog */}
-      <Dialog open={showAreaDialog} onOpenChange={setShowAreaDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Upload Project Area</DialogTitle>
-            <DialogDescription>
-              Upload geographic boundary files (GeoJSON, Shapefile, KMZ, or KML) and preview on map
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div
-              className="relative border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center transition-all hover:border-primary/50 cursor-pointer"
-              onClick={() => document.getElementById("area-file-input")?.click()}
-            >
-              <MapPin className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-sm font-medium mb-1">Click to upload area file</p>
-              <p className="text-xs text-muted-foreground">
-                GeoJSON, Shapefile (.zip), KMZ, or KML formats
-              </p>
-              <Input
-                id="area-file-input"
-                type="file"
-                accept=".geojson,.json,.kml,.kmz,.zip,.shp"
-                onChange={handleAreaFileChange}
-                className="hidden"
-              />
-            </div>
-            {areaFile && (
-              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                <File className="h-5 w-5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{areaFile.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(areaFile.size / 1024).toFixed(2)} KB
-                  </p>
-                </div>
-              </div>
-            )}
-            {isLoadingGeoData && (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="text-sm text-muted-foreground mt-2">Loading geographic data...</p>
-              </div>
-            )}
-            {geoData && (
-              <div className="space-y-2">
-                <Label>Map Preview</Label>
-                <ProjectAreaMap geoData={geoData} />
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowAreaDialog(false)}>
-              Close
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                if (areaFile) {
-                  setShowAreaDialog(false);
-                } else {
-                  alert("Please select an area file first");
-                }
-              }}
-            >
-              Confirm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 }
