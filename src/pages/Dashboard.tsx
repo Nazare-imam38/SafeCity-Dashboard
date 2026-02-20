@@ -34,8 +34,6 @@ import {
   Zap,
   Home,
   Radio,
-  Moon,
-  Sun,
   TrendingUp,
   FileDown,
   Filter,
@@ -1154,7 +1152,7 @@ export default function Dashboard() {
             <Card className="border-2 transition-colors hover:border-[#101a3c]">
               <CardHeader>
                 <CardTitle>Financial Progress Overview</CardTitle>
-                <CardDescription>Planned vs Actual vs Variance breakdown</CardDescription>
+                
               </CardHeader>
               <CardContent>
                 {/* Always-visible values (avoid pie labels getting clipped) */}
@@ -1255,7 +1253,7 @@ export default function Dashboard() {
             <Card className="border-2 transition-colors hover:border-[#101a3c]">
               <CardHeader>
                 <CardTitle>Overall Progress</CardTitle>
-                <CardDescription>Planned vs Actual progress with variance</CardDescription>
+                
               </CardHeader>
               <CardContent>
                 {/* Always-visible values (avoid pie labels getting clipped) */}
@@ -1692,14 +1690,6 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-xl w-11 h-11 border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all shadow-sm"
-                onClick={() => toggleTheme()}
-              >
-                {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
               {((selectedItemName && singleItemData) || aggregatedData) && viewType && (
                 <Button
                   className="rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm font-semibold"
