@@ -4,11 +4,13 @@ import { FolderKanban, Plus, Upload, FileText, MapPin, X, File, ChevronRight, Ch
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useState, useMemo, useEffect } from "react";
 import { getAllDivisions, getDistrictsByDivision, getTehsilsByDivisionAndDistrict } from "@/data/punjabHierarchy";
+import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -87,6 +89,10 @@ function ProjectAreaMap({ geoData }: { geoData: any }) {
 interface Project {
   id: string;
   name: string;
+  description: string;
+  startingDate: string;
+  referenceNumber: string;
+  saNumber: string;
   division: string;
   district: string;
   tehsil: string;
@@ -97,6 +103,7 @@ interface Project {
 }
 
 export default function ProjectManagement() {
+  const { toast } = useToast();
   const [showAddProjectDialog, setShowAddProjectDialog] = useState(false);
   const [showXERDialog, setShowXERDialog] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -104,6 +111,10 @@ export default function ProjectManagement() {
   
   // Form state
   const [projectName, setProjectName] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
+  const [startingDate, setStartingDate] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [saNumber, setSaNumber] = useState("");
   const [selectedDivision, setSelectedDivision] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedTehsil, setSelectedTehsil] = useState<string>("");
@@ -143,7 +154,11 @@ export default function ProjectManagement() {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.name.toLowerCase().endsWith('.xer')) {
-        alert('Please select a valid .xer file');
+        toast({
+          title: "Invalid File",
+          description: "Please select a valid .xer file",
+          variant: "destructive",
+        });
         return;
       }
       setXerFile(file);
@@ -172,7 +187,11 @@ export default function ProjectManagement() {
             setIsLoadingGeoData(false);
           } catch (err) {
             console.error("Error parsing GeoJSON:", err);
-            alert("Error parsing GeoJSON file. Please ensure it's a valid GeoJSON file.");
+            toast({
+              title: "Error",
+              description: "Error parsing GeoJSON file. Please ensure it's a valid GeoJSON file.",
+              variant: "destructive",
+            });
             setIsLoadingGeoData(false);
           }
         };
@@ -181,20 +200,34 @@ export default function ProjectManagement() {
         // For KML/KMZ, we'll store the file but note that full parsing requires additional libraries
         // For now, we'll show a message that KML/KMZ support is coming
         setAreaFile(file);
-        alert("KML/KMZ file uploaded. Full parsing support coming soon. For now, please use GeoJSON format.");
+        toast({
+          title: "File Uploaded",
+          description: "KML/KMZ file uploaded. Full parsing support coming soon. For now, please use GeoJSON format.",
+        });
         setIsLoadingGeoData(false);
       } else if (extension === 'zip' || extension === 'shp') {
         // For Shapefile, we'll store the file but note that parsing requires shapefile.js
         setAreaFile(file);
-        alert("Shapefile uploaded. Full parsing support coming soon. For now, please use GeoJSON format.");
+        toast({
+          title: "File Uploaded",
+          description: "Shapefile uploaded. Full parsing support coming soon. For now, please use GeoJSON format.",
+        });
         setIsLoadingGeoData(false);
       } else {
-        alert("Unsupported file format. Please upload GeoJSON, KML, KMZ, or Shapefile (ZIP).");
+        toast({
+          title: "Invalid File Format",
+          description: "Unsupported file format. Please upload GeoJSON, KML, KMZ, or Shapefile (ZIP).",
+          variant: "destructive",
+        });
         setIsLoadingGeoData(false);
       }
     } catch (err) {
       console.error("Error handling area file:", err);
-      alert("Error processing file. Please try again.");
+      toast({
+        title: "Error",
+        description: "Error processing file. Please try again.",
+        variant: "destructive",
+      });
       setIsLoadingGeoData(false);
     }
   };
@@ -202,6 +235,10 @@ export default function ProjectManagement() {
   // Reset form
   const resetForm = () => {
     setProjectName("");
+    setProjectDescription("");
+    setStartingDate("");
+    setReferenceNumber("");
+    setSaNumber("");
     setSelectedDivision("");
     setSelectedDistrict("");
     setSelectedTehsil("");
@@ -214,23 +251,43 @@ export default function ProjectManagement() {
   // Validate step 1
   const validateStep1 = () => {
     if (!projectName.trim()) {
-      alert("Please enter a project name");
+      toast({
+        title: "Validation Error",
+        description: "Please enter a project name",
+        variant: "destructive",
+      });
       return false;
     }
     if (!selectedDivision) {
-      alert("Please select a division");
+      toast({
+        title: "Validation Error",
+        description: "Please select a division",
+        variant: "destructive",
+      });
       return false;
     }
     if (!selectedDistrict) {
-      alert("Please select a district");
+      toast({
+        title: "Validation Error",
+        description: "Please select a district",
+        variant: "destructive",
+      });
       return false;
     }
     if (!selectedTehsil) {
-      alert("Please select a tehsil");
+      toast({
+        title: "Validation Error",
+        description: "Please select a tehsil",
+        variant: "destructive",
+      });
       return false;
     }
     if (!xerFile) {
-      alert("Please upload an XER file");
+      toast({
+        title: "Validation Error",
+        description: "Please upload an XER file",
+        variant: "destructive",
+      });
       return false;
     }
     return true;
@@ -239,7 +296,11 @@ export default function ProjectManagement() {
   // Validate step 2
   const validateStep2 = () => {
     if (!areaFile) {
-      alert("Please upload a project area file");
+      toast({
+        title: "Validation Error",
+        description: "Please upload a project area file",
+        variant: "destructive",
+      });
       return false;
     }
     return true;
@@ -279,6 +340,10 @@ export default function ProjectManagement() {
       const newProject: Project = {
         id: Date.now().toString(),
         name: projectName,
+        description: projectDescription,
+        startingDate: startingDate,
+        referenceNumber: referenceNumber,
+        saNumber: saNumber,
         division: selectedDivision,
         district: selectedDistrict,
         tehsil: selectedTehsil,
@@ -294,6 +359,10 @@ export default function ProjectManagement() {
       // Here you would typically send the data to your backend
       console.log("Project Data:", {
         projectName,
+        projectDescription,
+        startingDate,
+        referenceNumber,
+        saNumber,
         division: selectedDivision,
         district: selectedDistrict,
         tehsil: selectedTehsil,
@@ -302,7 +371,10 @@ export default function ProjectManagement() {
         geoData
       });
 
-      alert("Project created successfully!");
+      toast({
+        title: "Success!",
+        description: "Project created successfully!",
+      });
       resetForm();
       setShowAddProjectDialog(false);
       setShowXERDialog(false);
@@ -311,8 +383,13 @@ export default function ProjectManagement() {
 
   // Handle delete project
   const handleDeleteProject = (id: string) => {
-    if (confirm("Are you sure you want to delete this project?")) {
+    const project = projects.find(p => p.id === id);
+    if (window.confirm(`Are you sure you want to delete "${project?.name}"?`)) {
       setProjects(projects.filter(p => p.id !== id));
+      toast({
+        title: "Project Deleted",
+        description: `"${project?.name}" has been deleted successfully.`,
+      });
     }
   };
 
@@ -372,6 +449,29 @@ export default function ProjectManagement() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
+                    {project.description && (
+                      <div className="text-sm">
+                        <p className="text-muted-foreground line-clamp-2">{project.description}</p>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        Start: {project.startingDate ? new Date(project.startingDate).toLocaleDateString() : "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        Ref: {project.referenceNumber || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        SA: {project.saNumber || "N/A"}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">
@@ -381,13 +481,13 @@ export default function ProjectManagement() {
                     <div className="flex items-center gap-2 text-sm">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground truncate" title={project.xerFileName}>
-                        {project.xerFileName}
+                        XER: {project.xerFileName}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground truncate" title={project.areaFileName}>
-                        {project.areaFileName}
+                        Area: {project.areaFileName}
                       </span>
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t">
@@ -501,6 +601,55 @@ export default function ProjectManagement() {
                     placeholder="Enter project name"
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Project Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="projectDescription">Project Description *</Label>
+                  <Textarea
+                    id="projectDescription"
+                    placeholder="Enter project description..."
+                    value={projectDescription}
+                    onChange={(e) => setProjectDescription(e.target.value)}
+                    rows={4}
+                    required
+                  />
+                </div>
+
+                {/* Starting Date and Reference Number */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startingDate">Project Starting Date *</Label>
+                    <Input
+                      id="startingDate"
+                      type="date"
+                      value={startingDate}
+                      onChange={(e) => setStartingDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="referenceNumber">Reference Number *</Label>
+                    <Input
+                      id="referenceNumber"
+                      placeholder="Enter reference number"
+                      value={referenceNumber}
+                      onChange={(e) => setReferenceNumber(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* SA Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="saNumber">SA Number *</Label>
+                  <Input
+                    id="saNumber"
+                    placeholder="Enter SA number"
+                    value={saNumber}
+                    onChange={(e) => setSaNumber(e.target.value)}
                     required
                   />
                 </div>
@@ -761,7 +910,11 @@ export default function ProjectManagement() {
                 if (xerFile) {
                   setShowXERDialog(false);
                 } else {
-                  alert("Please select an XER file first");
+                  toast({
+                    title: "No File Selected",
+                    description: "Please select an XER file first",
+                    variant: "destructive",
+                  });
                 }
               }}
             >
