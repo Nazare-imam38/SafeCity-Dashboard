@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SplashScreen } from "@/components/layout/SplashScreen";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Comparison from "@/pages/Comparison";
@@ -45,6 +46,17 @@ function AppContent() {
   const previousLocation = useRef<string | null>(null);
   const isInitialLoad = useRef<boolean>(true);
 
+  // Helper function to check if a route is an Area Management page
+  const isAreaManagementRoute = (route: string): boolean => {
+    const areaManagementRoutes = [
+      '/province-management',
+      '/division-management',
+      '/district-management',
+      '/tehsil-management'
+    ];
+    return areaManagementRoutes.includes(route);
+  };
+
   useEffect(() => {
     // On initial load, show splash screen first
     if (isInitialLoad.current) {
@@ -52,9 +64,19 @@ function AppContent() {
       return;
     }
 
-    // If route changed (navigation), show splash screen
+    // If route changed (navigation), check if we should show splash screen
     if (previousLocation.current !== null && previousLocation.current !== location) {
-      setShowSplash(true);
+      // Skip splash screen if navigating between Area Management pages
+      const isFromAreaManagement = isAreaManagementRoute(previousLocation.current);
+      const isToAreaManagement = isAreaManagementRoute(location);
+      
+      if (isFromAreaManagement && isToAreaManagement) {
+        // Both are Area Management pages, skip splash screen
+        setShowSplash(false);
+      } else {
+        // Show splash screen for other navigations
+        setShowSplash(true);
+      }
     }
 
     previousLocation.current = location;
@@ -71,7 +93,9 @@ function AppContent() {
     <>
       {/* Router is always mounted to detect route changes */}
       <div style={{ visibility: showSplash ? 'hidden' : 'visible' }}>
-        <Router />
+        <SidebarProvider>
+          <Router />
+        </SidebarProvider>
       </div>
       {/* Splash screen overlays on top */}
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
