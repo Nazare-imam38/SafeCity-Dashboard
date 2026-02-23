@@ -332,7 +332,7 @@ export default function Finance() {
                     setSelectedDistrict("all");
                     setSelectedTehsil("all");
                   }}
-                  className="h-9 px-3 text-xs font-medium w-full sm:w-auto mt-2 sm:mt-0 color-darkblue"
+                  className="h-9 px-3 text-xs font-medium w-full sm:w-auto mt-2 sm:mt-0 color-white backgroundcolor-darkblue"
                 >
                   Clear Filters
                 </Button>

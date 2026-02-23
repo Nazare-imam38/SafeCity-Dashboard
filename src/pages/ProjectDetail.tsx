@@ -23,7 +23,8 @@ import {
   Home, 
   Radio,
   TrendingUp,
-  ArrowLeft
+  ArrowLeft,
+  DollarSign
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
@@ -239,6 +240,49 @@ export default function ProjectDetail() {
   const isMobile = width < 640;
   const isTablet = width >= 640 && width < 1024;
   const [selectedMilestoneKey, setSelectedMilestoneKey] = useState<PhaseKey | null>(null);
+  const [progressType, setProgressType] = useState<"physical" | "financial">("physical");
+
+  // Convert physical progress to financial progress
+  const convertToFinancialProgress = (physicalPhase: PhaseProgress): PhaseProgress => {
+    // Financial progress typically runs slightly behind physical progress
+    // and has different variance patterns
+    const financialMultiplier = 0.92; // Financial is typically 92% of physical
+    const varianceAdjustment = 0.85; // Financial variance is typically 85% of physical variance
+    
+    const financialActual = Math.min(100, physicalPhase.actual * financialMultiplier);
+    const variance = physicalPhase.actual - physicalPhase.planned;
+    const financialVariance = variance * varianceAdjustment;
+    const financialPlanned = financialActual - financialVariance;
+    
+    // Convert sub-projects to financial
+    const financialSubProjects: SubProject[] = (physicalPhase.subProjects || []).map(sub => {
+      const subFinancialActual = Math.min(100, sub.actualProgress * financialMultiplier);
+      const subVariance = sub.actualProgress - sub.plannedProgress;
+      const subFinancialVariance = subVariance * varianceAdjustment;
+      const subFinancialPlanned = subFinancialActual - subFinancialVariance;
+      
+      return {
+        ...sub,
+        name: sub.name.replace(/(Survey|Assessment|Collection|Measurements|Study|Documentation|Feasibility)/g, '$1 Budget'),
+        actualProgress: subFinancialActual,
+        plannedProgress: Math.max(0, subFinancialPlanned),
+      };
+    });
+    
+    // Convert timeline to financial
+    const financialTimeline = (physicalPhase.timeline || []).map(t => ({
+      month: t.month,
+      actual: Math.min(100, t.actual * financialMultiplier),
+      planned: Math.min(100, t.planned * financialMultiplier),
+    }));
+    
+    return {
+      actual: financialActual,
+      planned: Math.max(0, financialPlanned),
+      subProjects: financialSubProjects,
+      timeline: financialTimeline,
+    };
+  };
 
   // Extract tehsil and projectId from URL
   // URL format: /project/:tehsil/:projectId
@@ -463,60 +507,107 @@ export default function ProjectDetail() {
               <h2 className="text-xl font-bold font-heading mb-1">Project KPIs</h2>
               <p className="text-sm text-muted-foreground">Sub-projects breakdown for {selectedProject.title}</p>
             </div>
-            {selectedMilestoneKey && (
-              <button
-                type="button"
-                onClick={() => setSelectedMilestoneKey(null)}
-                className="h-9 px-4 rounded-xl border border-border/60 bg-background hover:bg-muted/40 text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0"
-              >
-                Clear
-              </button>
-            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              {selectedMilestoneKey && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedMilestoneKey(null)}
+                  className="h-9 px-4 rounded-xl border border-border/60 bg-background hover:bg-muted/40 text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0"
+                >
+                  Clear
+                </button>
+              )}
+              {/* Progress Type Toggle - Always visible */}
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-primary/20 bg-background shadow-sm hover:border-primary/40 transition-colors">
+                <TrendingUp className={`h-4 w-4 ${progressType === "physical" ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`text-sm font-semibold ${progressType === "physical" ? "text-foreground" : "text-muted-foreground"}`}>
+                  Physical
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setProgressType(prev => prev === "physical" ? "financial" : "physical")}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                    progressType === "financial" ? "bg-primary" : "bg-muted"
+                  }`}
+                  aria-label="Toggle between Physical and Financial Progress"
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                      progressType === "financial" ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+                <DollarSign className={`h-4 w-4 ${progressType === "financial" ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`text-sm font-semibold ${progressType === "financial" ? "text-foreground" : "text-muted-foreground"}`}>
+                  Financial
+                </span>
+              </div>
+            </div>
           </div>
-          {subProjects.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {subProjects.map((subProject) => {
-                const subProjectProgress = Math.round(subProject.actualProgress);
-                const isSelected = selectedMilestoneKey === subProject.id;
-              
-              return (
-                <InstallationCard
-                    key={subProject.id}
-                    title={subProject.name}
-                    percentage={subProjectProgress}
-                    icon={selectedProject.icon}
-                    color={selectedProject.color}
-                    actualProgress={subProject.actualProgress}
-                    plannedProgress={subProject.plannedProgress}
-                    selected={isSelected}
-                  onClick={() => {
-                      setSelectedMilestoneKey(prev => (prev === subProject.id ? null : subProject.id));
-                  }}
-                />
-              );
-            })}
-          </div>
-          ) : (
-            <Card className="border-border/50">
-              <CardContent className="p-6">
-                <p className="text-muted-foreground text-center">
-                  No sub-projects found for {selectedProject.title}. Sub-projects will be generated automatically.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          {(() => {
+            // Get the appropriate sub-projects based on progress type
+            const displaySubProjects = progressType === "financial" 
+              ? (projectPhaseProgress.subProjects || []).map(sub => {
+                  const financialActual = Math.min(100, sub.actualProgress * 0.92);
+                  const variance = sub.actualProgress - sub.plannedProgress;
+                  const financialVariance = variance * 0.85;
+                  const financialPlanned = financialActual - financialVariance;
+                  return {
+                    ...sub,
+                    name: sub.name.replace(/(Survey|Assessment|Collection|Measurements|Study|Documentation|Feasibility)/g, '$1 Budget'),
+                    actualProgress: financialActual,
+                    plannedProgress: Math.max(0, financialPlanned),
+                  };
+                })
+              : subProjects;
+            
+            return displaySubProjects.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {displaySubProjects.map((subProject) => {
+                  const subProjectProgress = Math.round(subProject.actualProgress);
+                  const isSelected = selectedMilestoneKey === subProject.id;
+                
+                return (
+                  <InstallationCard
+                      key={subProject.id}
+                      title={subProject.name}
+                      percentage={subProjectProgress}
+                      icon={selectedProject.icon}
+                      color={selectedProject.color}
+                      actualProgress={subProject.actualProgress}
+                      plannedProgress={subProject.plannedProgress}
+                      selected={isSelected}
+                    onClick={() => {
+                        setSelectedMilestoneKey(prev => (prev === subProject.id ? null : subProject.id));
+                    }}
+                  />
+                );
+              })}
+            </div>
+            ) : (
+              <Card className="border-border/50">
+                <CardContent className="p-6">
+                  <p className="text-muted-foreground text-center">
+                    No sub-projects found for {selectedProject.title}. Sub-projects will be generated automatically.
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })()}
         </div>
 
         {/* Charts Section - Always visible, updates based on selected KPI */}
         <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-bold font-heading mb-1">Project Charts</h2>
-            <p className="text-sm text-muted-foreground">
-              {selectedMilestoneKey 
-                ? `Gantt chart, WBS breakdown, and S-curves for ${installationPhases.find(p => p.key === selectedMilestoneKey)?.title || 'selected milestone'}`
-                : `Gantt chart, WBS breakdown, and S-curves for ${selectedProject.title}`
-              }
-            </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold font-heading mb-1">Project Charts</h2>
+              <p className="text-sm text-muted-foreground">
+                {selectedMilestoneKey 
+                  ? `Gantt chart, WBS breakdown, and S-curves for ${installationPhases.find(p => p.key === selectedMilestoneKey)?.title || 'selected milestone'}`
+                  : `Gantt chart, WBS breakdown, and S-curves for ${selectedProject.title}`
+                }
+              </p>
+            </div>
           </div>
 
           {/* Get current phase data based on selection */}
@@ -526,6 +617,11 @@ export default function ProjectDetail() {
             let currentPhase: PhaseProgress;
             let currentPhaseTitle: string;
             let currentPhaseColor: string;
+
+            // Apply financial conversion if needed
+            const basePhaseProgress = progressType === "financial" 
+              ? convertToFinancialProgress(projectPhaseProgress)
+              : projectPhaseProgress;
 
             if (selectedMilestoneKey && subProjects.length > 0) {
               // A sub-project KPI was selected
@@ -571,31 +667,41 @@ export default function ProjectDetail() {
                   });
                 }
                 
+                // Get the selected sub-project from the appropriate source (physical or financial)
+                const displaySubProjects = progressType === "financial" 
+                  ? basePhaseProgress.subProjects || []
+                  : subProjects;
+                const selectedDisplaySubProject = displaySubProjects.find(sp => sp.id === selectedMilestoneKey) || selectedSubProject;
+                
                 // Use the sub-project's timeline (generate from parent timeline)
-                const subProjectTimeline = projectPhaseProgress.timeline?.map(t => ({
+                const subProjectTimeline = basePhaseProgress.timeline?.map(t => ({
                   month: t.month,
-                  actual: selectedSubProject.actualProgress * (t.actual / 100),
-                  planned: selectedSubProject.plannedProgress * (t.planned / 100),
+                  actual: selectedDisplaySubProject.actualProgress * (t.actual / 100),
+                  planned: selectedDisplaySubProject.plannedProgress * (t.planned / 100),
                 })) || [];
 
                 currentPhase = {
-                  actual: selectedSubProject.actualProgress,
-                  planned: selectedSubProject.plannedProgress,
+                  actual: selectedDisplaySubProject.actualProgress,
+                  planned: selectedDisplaySubProject.plannedProgress,
                   subProjects: milestoneSubProjects, // Show milestones as sub-projects
                   timeline: subProjectTimeline,
                 };
-                currentPhaseTitle = selectedSubProject.name;
+                currentPhaseTitle = selectedDisplaySubProject.name;
                 currentPhaseColor = phaseColor;
               } else {
                 // Fallback to main project
-                currentPhase = projectPhaseProgress;
-                currentPhaseTitle = selectedProject.title;
+                currentPhase = basePhaseProgress;
+                currentPhaseTitle = progressType === "financial" 
+                  ? `${selectedProject.title} - Financial Progress`
+                  : selectedProject.title;
                 currentPhaseColor = phaseColor;
               }
             } else {
               // No sub-project selected, show main project data
-              currentPhase = projectPhaseProgress;
-              currentPhaseTitle = selectedProject.title;
+              currentPhase = basePhaseProgress;
+              currentPhaseTitle = progressType === "financial" 
+                ? `${selectedProject.title} - Financial Progress`
+                : selectedProject.title;
               currentPhaseColor = phaseColor;
             }
 
@@ -617,7 +723,7 @@ export default function ProjectDetail() {
             const displayPhase = selectedMilestoneKey && subProjects.find(sp => sp.id === selectedMilestoneKey)
               ? {
                   ...currentPhase,
-                  subProjects: projectPhaseProgress.subProjects || [], // Keep all sub-projects for WBS view
+                  subProjects: basePhaseProgress.subProjects || [], // Keep all sub-projects for WBS view
                 }
               : currentPhase;
 

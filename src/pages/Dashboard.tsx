@@ -34,15 +34,14 @@ import {
   Zap,
   Home,
   Radio,
-  Moon,
-  Sun,
   TrendingUp,
   FileDown,
   Filter,
   ArrowLeft,
   ChevronDown,
   ChevronUp,
-  Search
+  Search,
+  DollarSign
 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -432,6 +431,7 @@ export default function Dashboard() {
   const [showFilters, setShowFilters] = useState(true);
   const [selectedMilestoneKey, setSelectedMilestoneKey] = useState<PhaseKey | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [progressType, setProgressType] = useState<"physical" | "financial">("physical");
   const { theme, toggleTheme } = useTheme();
   const { width } = useWindowSize();
   const isMobile = width < 640;
@@ -939,6 +939,46 @@ export default function Dashboard() {
     </div>
   );
 
+  // Convert physical progress to financial progress
+  const convertToFinancialProgress = (physicalPhase: PhaseProgress): PhaseProgress => {
+    const financialMultiplier = 0.92; // Financial is typically 92% of physical
+    const varianceAdjustment = 0.85; // Financial variance is typically 85% of physical variance
+
+    const financialActual = Math.min(100, physicalPhase.actual * financialMultiplier);
+    const variance = physicalPhase.actual - physicalPhase.planned;
+    const financialVariance = variance * varianceAdjustment;
+    const financialPlanned = financialActual - financialVariance;
+
+    // Convert sub-projects to financial
+    const financialSubProjects: SubProject[] = (physicalPhase.subProjects || []).map(sub => {
+      const subFinancialActual = Math.min(100, sub.actualProgress * financialMultiplier);
+      const subVariance = sub.actualProgress - sub.plannedProgress;
+      const subFinancialVariance = subVariance * varianceAdjustment;
+      const subFinancialPlanned = subFinancialActual - subFinancialVariance;
+
+      return {
+        ...sub,
+        name: sub.name.replace(/(Survey|Assessment|Collection|Measurements|Study|Documentation|Feasibility|Installation|Laying|Renovations|Go Live)/g, '$1 Budget'),
+        actualProgress: subFinancialActual,
+        plannedProgress: Math.max(0, subFinancialPlanned),
+      };
+    });
+
+    // Convert timeline to financial
+    const financialTimeline = (physicalPhase.timeline || []).map(t => ({
+      month: t.month,
+      actual: Math.min(100, t.actual * financialMultiplier),
+      planned: Math.min(100, t.planned * financialMultiplier),
+    }));
+
+    return {
+      actual: financialActual,
+      planned: Math.max(0, financialPlanned),
+      subProjects: financialSubProjects,
+      timeline: financialTimeline,
+    };
+  };
+
   // Render aggregated charts function
   const renderAggregatedCharts = (title: string, data: CityInstallationData) => {
     const isAggregatedView = title.startsWith("All Punjab");
@@ -1108,21 +1148,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Legend for progress ranges */}
-                <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  {[
-                    { label: "0–25% Low", color: "#ef4444" },
-                    { label: "25–50% Moderate", color: "#f59e0b" },
-                    { label: "50–75% Good", color: "#3b82f6" },
-                    { label: "75–100% High", color: "#22c55e" },
-                  ].map((it) => (
-                    <div key={it.label} className="flex items-center gap-2">
-                      <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: it.color }} />
-                      <span>{it.label}</span>
-                    </div>
-                  ))}
-                </div>
-
                 {/* Progress Bar */}
                 <div className="mt-3">
                   <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted/60 shadow-inner">
@@ -1138,7 +1163,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                     <span>0%</span>
-                    <span className="font-medium">Target: 100%</span>
+                    
                     <span>100%</span>
                   </div>
                 </div>
@@ -1154,7 +1179,7 @@ export default function Dashboard() {
             <Card className="border-2 transition-colors hover:border-[#101a3c]">
               <CardHeader>
                 <CardTitle>Financial Progress Overview</CardTitle>
-                <CardDescription>Planned vs Actual vs Variance breakdown</CardDescription>
+                
               </CardHeader>
               <CardContent>
                 {/* Always-visible values (avoid pie labels getting clipped) */}
@@ -1255,7 +1280,7 @@ export default function Dashboard() {
             <Card className="border-2 transition-colors hover:border-[#101a3c]">
               <CardHeader>
                 <CardTitle>Overall Progress</CardTitle>
-                <CardDescription>Planned vs Actual progress with variance</CardDescription>
+                
               </CardHeader>
               <CardContent>
                 {/* Always-visible values (avoid pie labels getting clipped) */}
@@ -1358,14 +1383,63 @@ export default function Dashboard() {
         {/* Milestone details should appear beneath Overall Progress (and replace the old charts when selected) */}
         {selectedMilestoneKey && selectedPhaseMeta && selectedProgress && hasDetailedProgress(selectedProgress) && (
           <div className="space-y-4">
+            {/* Header with Toggle - Right side where charts are shown */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold font-heading mb-1">
+                  {progressType === "financial" 
+                    ? `${selectedPhaseMeta.title} - Financial Progress`
+                    : `${selectedPhaseMeta.title} - Milestone KPIs`}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {progressType === "financial"
+                    ? "Financial progress charts and analysis"
+                    : "Gantt chart, WBS breakdown, and S-curves"}
+                </p>
+              </div>
+              {/* Progress Type Toggle - Right side */}
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-primary/20 bg-background shadow-sm hover:border-primary/40 transition-colors flex-shrink-0">
+                <TrendingUp className={`h-4 w-4 ${progressType === "physical" ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`text-sm font-semibold ${progressType === "physical" ? "text-foreground" : "text-muted-foreground"}`}>
+                  Physical
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setProgressType(prev => prev === "physical" ? "financial" : "physical")}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                    progressType === "financial" ? "bg-primary" : "bg-muted"
+                  }`}
+                  aria-label="Toggle between Physical and Financial Progress"
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                      progressType === "financial" ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+                <DollarSign className={`h-4 w-4 ${progressType === "financial" ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`text-sm font-semibold ${progressType === "financial" ? "text-foreground" : "text-muted-foreground"}`}>
+                  Financial
+                </span>
+              </div>
+            </div>
             <MilestoneDetailsPanel
-              milestoneTitle={selectedPhaseMeta.title}
-              phase={{
-                actual: selectedProgress.actual,
-                planned: selectedProgress.planned,
-                subProjects: selectedProgress.subProjects,
-                timeline: selectedProgress.timeline,
-              }}
+              milestoneTitle={progressType === "financial" 
+                ? `${selectedPhaseMeta.title} - Financial Progress`
+                : selectedPhaseMeta.title}
+              phase={progressType === "financial" 
+                ? convertToFinancialProgress({
+                    actual: selectedProgress.actual,
+                    planned: selectedProgress.planned,
+                    subProjects: selectedProgress.subProjects,
+                    timeline: selectedProgress.timeline,
+                  })
+                : {
+                    actual: selectedProgress.actual,
+                    planned: selectedProgress.planned,
+                    subProjects: selectedProgress.subProjects,
+                    timeline: selectedProgress.timeline,
+                  }}
               phaseColor={colorMap[selectedPhaseMeta.color] || "#6b7280"}
               onClear={() => setSelectedMilestoneKey(null)}
             />
@@ -1616,9 +1690,6 @@ export default function Dashboard() {
             }`}>
             <div className="space-y-3 flex-1">
               <div className="flex items-center gap-3 flex-wrap">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
-                  <Camera className="h-6 w-6 text-white" />
-                </div>
                 <div>
                   <h1 className="text-xl sm:text-3xl md:text-4xl font-bold font-heading bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {selectedItemName && selectedItemType === "division"
@@ -1641,14 +1712,40 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-7 w-32 rounded-full" />
                 </div>
-              ) : (selectedItemName && singleItemData) || aggregatedData ? (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <Badge className="px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
-                      <TrendingUp className="h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400" />
-                      Overall: {selectedItemName && singleItemData ? singleItemData.overall : aggregatedData?.overall || 0}%
-                    </Badge>
-                  </div>
+              ) : (selectedItemName && singleItemData) || aggregatedData ? (() => {
+                const overall = selectedItemName && singleItemData ? singleItemData.overall : aggregatedData?.overall || 0;
+                const meta = getProgressRangeMeta(overall);
+                
+                // Map color to Tailwind classes
+                const getBadgeClasses = (color: string) => {
+                  if (color === "#ef4444") { // red - Low
+                    return "px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors";
+                  } else if (color === "#f59e0b") { // orange/amber - Moderate
+                    return "px-4 py-1.5 text-sm font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors";
+                  } else if (color === "#3b82f6") { // blue - Good
+                    return "px-4 py-1.5 text-sm font-semibold bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors";
+                  } else if (color === "#22c55e" || color === "#10b981") { // green/emerald - High/Fully Completed
+                    return "px-4 py-1.5 text-sm font-semibold bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors";
+                  }
+                  return "px-4 py-1.5 text-sm font-semibold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors";
+                };
+                
+                const getIconClasses = (color: string) => {
+                  if (color === "#ef4444") return "h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400";
+                  else if (color === "#f59e0b") return "h-3.5 w-3.5 mr-1.5 text-amber-600 dark:text-amber-400";
+                  else if (color === "#3b82f6") return "h-3.5 w-3.5 mr-1.5 text-blue-600 dark:text-blue-400";
+                  else if (color === "#22c55e" || color === "#10b981") return "h-3.5 w-3.5 mr-1.5 text-green-600 dark:text-green-400";
+                  return "h-3.5 w-3.5 mr-1.5 text-red-600 dark:text-red-400";
+                };
+                
+                return (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <Badge className={getBadgeClasses(meta.color)}>
+                        <TrendingUp className={getIconClasses(meta.color)} />
+                        Overall: {overall}%
+                      </Badge>
+                    </div>
                   {/* Legend for progress ranges */}
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     {[
@@ -1664,18 +1761,11 @@ export default function Dashboard() {
                     ))}
                   </div>
                 </div>
-              ) : null}
+                );
+              })() : null}
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-xl w-11 h-11 border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all shadow-sm"
-                onClick={() => toggleTheme()}
-              >
-                {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
               {((selectedItemName && singleItemData) || aggregatedData) && viewType && (
                 <Button
                   className="rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm font-semibold"
