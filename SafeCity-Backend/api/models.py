@@ -3,7 +3,8 @@ from django.utils import timezone
 from django.contrib.auth.base_user import AbstractBaseUser,BaseUserManager
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.validators import FileExtensionValidator
-# from .utils import project_doc_file_path, project_image_file_path
+from django.contrib.gis.db import models as gis_models
+from .utils import project_doc_file_path, project_image_file_path
 from dateutil.relativedelta import relativedelta
 
 # --------------------------------------------------------
@@ -178,3 +179,35 @@ class Tehsil(models.Model):
     def __str__(self):
         return self.tehsil_name
     
+# --------------------------------------------------------
+# Projects
+# --------------------------------------------------------
+class Project(models.Model):
+    stakeholder = models.ForeignKey(Stakeholder, on_delete=models.CASCADE, related_name='project')
+    project_name = models.CharField(max_length=255, null=True, blank=True)
+    project_description = models.TextField(null=True, blank=True)
+    project_starting_date = models.DateField(null=True, blank=True)
+    project_reference_no = models.CharField(max_length=200, null=True, blank=True)
+    province = models.ForeignKey(Province, on_delete=models.CASCADE, default=None)
+    division = models.ForeignKey(Division, on_delete=models.CASCADE, default=None)
+    district = models.ForeignKey(District, on_delete=models.CASCADE, default=None)
+    tehsil = models.ForeignKey(Tehsil, on_delete=models.CASCADE, default=None)
+    total_budget_allocated = models.CharField(max_length=200, null=True, blank=True)
+    budget_utilized = models.CharField(max_length=200, null=True, blank=True)
+    budget_variance = models.CharField(max_length=200, null=True, blank=True)
+    budget_remaining = models.CharField(max_length=200, null=True, blank=True)
+    xer_file = models.FileField(upload_to=project_doc_file_path, null=True, blank=True)    
+    geom = gis_models.MultiPolygonField(srid=4326, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True) 
+    updated_by = models.DateTimeField(auto_now=True)
+    
+# --------------------------------------------------------
+# Pictorial Archive
+# --------------------------------------------------------
+class PictorialArchive(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='pictorial_archive')
+    image = models.ImageField(upload_to=project_image_file_path, null=True, blank=True)
+    image_date = models.DateField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True) 
+    updated_by = models.DateTimeField(auto_now=True)
