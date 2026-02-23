@@ -170,7 +170,7 @@ export default function AuthPage() {
                             >
                                 Command Access
                             </button>
-                            {stakeholderType === "Client" && (
+                            {stakeholderType !== "Client" && (
                                 <button
                                     onClick={() => setIsLogin(false)}
                                     className={`relative flex-1 py-3 rounded-[16px] font-bold text-[13px] transition-colors duration-300 z-10 ${!isLogin ? 'text-secondary' : 'text-muted-foreground'}`}
@@ -198,7 +198,7 @@ export default function AuthPage() {
                     </div>
 
                     <AnimatePresence mode="wait">
-                        {isLogin ? (
+                        {isLogin || stakeholderType === "Client" ? (
                             <motion.form
                                 key="login"
                                 initial={{ x: 30, opacity: 0 }}
@@ -216,7 +216,11 @@ export default function AuthPage() {
                                                 value={stakeholderType}
                                                 onValueChange={(val) => {
                                                     setStakeholderType(val);
-                                                    if (val !== "Client") setIsLogin(true);
+                                                    // If Client is selected, always show login (no signup)
+                                                    // If other types are selected, allow signup option
+                                                    if (val === "Client") {
+                                                        setIsLogin(true);
+                                                    }
                                                 }}
                                             >
                                                 <SelectTrigger className="pl-12 h-14 bg-muted/5 border-2 border-muted/50 hover:border-primary/30 focus:border-primary rounded-2xl transition-all font-bold text-[15px]">

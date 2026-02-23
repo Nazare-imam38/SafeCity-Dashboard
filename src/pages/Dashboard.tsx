@@ -40,7 +40,8 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
-  Search
+  Search,
+  DollarSign
 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -430,6 +431,7 @@ export default function Dashboard() {
   const [showFilters, setShowFilters] = useState(true);
   const [selectedMilestoneKey, setSelectedMilestoneKey] = useState<PhaseKey | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [progressType, setProgressType] = useState<"physical" | "financial">("physical");
   const { theme, toggleTheme } = useTheme();
   const { width } = useWindowSize();
   const isMobile = width < 640;
@@ -937,6 +939,46 @@ export default function Dashboard() {
     </div>
   );
 
+  // Convert physical progress to financial progress
+  const convertToFinancialProgress = (physicalPhase: PhaseProgress): PhaseProgress => {
+    const financialMultiplier = 0.92; // Financial is typically 92% of physical
+    const varianceAdjustment = 0.85; // Financial variance is typically 85% of physical variance
+
+    const financialActual = Math.min(100, physicalPhase.actual * financialMultiplier);
+    const variance = physicalPhase.actual - physicalPhase.planned;
+    const financialVariance = variance * varianceAdjustment;
+    const financialPlanned = financialActual - financialVariance;
+
+    // Convert sub-projects to financial
+    const financialSubProjects: SubProject[] = (physicalPhase.subProjects || []).map(sub => {
+      const subFinancialActual = Math.min(100, sub.actualProgress * financialMultiplier);
+      const subVariance = sub.actualProgress - sub.plannedProgress;
+      const subFinancialVariance = subVariance * varianceAdjustment;
+      const subFinancialPlanned = subFinancialActual - subFinancialVariance;
+
+      return {
+        ...sub,
+        name: sub.name.replace(/(Survey|Assessment|Collection|Measurements|Study|Documentation|Feasibility|Installation|Laying|Renovations|Go Live)/g, '$1 Budget'),
+        actualProgress: subFinancialActual,
+        plannedProgress: Math.max(0, subFinancialPlanned),
+      };
+    });
+
+    // Convert timeline to financial
+    const financialTimeline = (physicalPhase.timeline || []).map(t => ({
+      month: t.month,
+      actual: Math.min(100, t.actual * financialMultiplier),
+      planned: Math.min(100, t.planned * financialMultiplier),
+    }));
+
+    return {
+      actual: financialActual,
+      planned: Math.max(0, financialPlanned),
+      subProjects: financialSubProjects,
+      timeline: financialTimeline,
+    };
+  };
+
   // Render aggregated charts function
   const renderAggregatedCharts = (title: string, data: CityInstallationData) => {
     const isAggregatedView = title.startsWith("All Punjab");
@@ -1341,14 +1383,63 @@ export default function Dashboard() {
         {/* Milestone details should appear beneath Overall Progress (and replace the old charts when selected) */}
         {selectedMilestoneKey && selectedPhaseMeta && selectedProgress && hasDetailedProgress(selectedProgress) && (
           <div className="space-y-4">
+            {/* Header with Toggle - Right side where charts are shown */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold font-heading mb-1">
+                  {progressType === "financial" 
+                    ? `${selectedPhaseMeta.title} - Financial Progress`
+                    : `${selectedPhaseMeta.title} - Milestone KPIs`}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {progressType === "financial"
+                    ? "Financial progress charts and analysis"
+                    : "Gantt chart, WBS breakdown, and S-curves"}
+                </p>
+              </div>
+              {/* Progress Type Toggle - Right side */}
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-primary/20 bg-background shadow-sm hover:border-primary/40 transition-colors flex-shrink-0">
+                <TrendingUp className={`h-4 w-4 ${progressType === "physical" ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`text-sm font-semibold ${progressType === "physical" ? "text-foreground" : "text-muted-foreground"}`}>
+                  Physical
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setProgressType(prev => prev === "physical" ? "financial" : "physical")}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                    progressType === "financial" ? "bg-primary" : "bg-muted"
+                  }`}
+                  aria-label="Toggle between Physical and Financial Progress"
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                      progressType === "financial" ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+                <DollarSign className={`h-4 w-4 ${progressType === "financial" ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`text-sm font-semibold ${progressType === "financial" ? "text-foreground" : "text-muted-foreground"}`}>
+                  Financial
+                </span>
+              </div>
+            </div>
             <MilestoneDetailsPanel
-              milestoneTitle={selectedPhaseMeta.title}
-              phase={{
-                actual: selectedProgress.actual,
-                planned: selectedProgress.planned,
-                subProjects: selectedProgress.subProjects,
-                timeline: selectedProgress.timeline,
-              }}
+              milestoneTitle={progressType === "financial" 
+                ? `${selectedPhaseMeta.title} - Financial Progress`
+                : selectedPhaseMeta.title}
+              phase={progressType === "financial" 
+                ? convertToFinancialProgress({
+                    actual: selectedProgress.actual,
+                    planned: selectedProgress.planned,
+                    subProjects: selectedProgress.subProjects,
+                    timeline: selectedProgress.timeline,
+                  })
+                : {
+                    actual: selectedProgress.actual,
+                    planned: selectedProgress.planned,
+                    subProjects: selectedProgress.subProjects,
+                    timeline: selectedProgress.timeline,
+                  }}
               phaseColor={colorMap[selectedPhaseMeta.color] || "#6b7280"}
               onClear={() => setSelectedMilestoneKey(null)}
             />

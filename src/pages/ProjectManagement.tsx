@@ -399,8 +399,8 @@ export default function ProjectManagement() {
         {/* Header with Add Project Button */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Project Management</h1>
-            <p className="text-muted-foreground">Create and manage Safe City projects</p>
+            <h1 className="text-3xl font-bold tracking-tight">No of Added Projects</h1>
+            
           </div>
           <Button onClick={() => setShowAddProjectDialog(true)} className="gap-2">
             <Plus className="h-4 w-4" />
@@ -415,10 +415,7 @@ export default function ProjectManagement() {
               <FolderKanban className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
               <p className="text-sm text-muted-foreground mb-4">Get started by creating a new project</p>
-              <Button onClick={() => setShowAddProjectDialog(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add New Project
-              </Button>
+              
             </CardContent>
           </Card>
         ) : (

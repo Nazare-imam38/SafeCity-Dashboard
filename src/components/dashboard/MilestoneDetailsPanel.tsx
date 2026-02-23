@@ -109,7 +109,7 @@ type DelayLogFormData = {
   imagePreview: string | null; // base64 preview
 };
 
-// Hardcoded delay reasons for realistic delay logs
+// Hardcoded delay reasons for realistic delay logs (Physical Progress)
 const DELAY_REASONS = [
   "Weather conditions delayed site work",
   "Material delivery delayed due to supply chain issues",
@@ -125,13 +125,38 @@ const DELAY_REASONS = [
   "Technical issues with equipment installation",
 ];
 
+// Financial-specific delay reasons (Financial Progress)
+const FINANCIAL_DELAY_REASONS = [
+  "Budget approval pending from finance department",
+  "Payment processing delay due to documentation issues",
+  "Fund allocation delayed - awaiting authorization",
+  "Invoice approval pending from accounts",
+  "Budget reallocation required - awaiting approval",
+  "Financial clearance delayed - compliance review",
+  "Payment terms renegotiation in progress",
+  "Cost overrun - additional budget approval needed",
+  "Vendor payment delayed - invoice verification",
+  "Budget constraint - awaiting additional funds",
+  "Financial audit delay - documentation pending",
+  "Expense approval pending from management",
+];
+
 // Generate hardcoded delay logs for delayed sub-projects
 function generateHardcodedDelayLogs(
   subProjects: SubProject[],
   months: string[],
-  ganttTasks: GanttTask[]
+  ganttTasks: GanttTask[],
+  isFinancial: boolean = false
 ): DelayLog[] {
   const delayLogs: DelayLog[] = [];
+
+  // Detect if we're in financial mode by checking sub-project names
+  const hasFinancialIndicators = subProjects.some(sp => 
+    sp.name.toLowerCase().includes('budget') || 
+    sp.name.toLowerCase().includes('financial')
+  );
+  const useFinancialReasons = isFinancial || hasFinancialIndicators;
+  const delayReasons = useFinancialReasons ? FINANCIAL_DELAY_REASONS : DELAY_REASONS;
 
   // Find delayed sub-projects (where plannedProgress > actualProgress)
   const delayedSubProjects = subProjects.filter(
@@ -166,16 +191,20 @@ function generateHardcodedDelayLogs(
       const dayInMonth = Math.floor(5 + hash01(subProject.id + `|delay|${i}`) * 20); // Day 5-25
       const delayDate = new Date(currentYear, monthNum, dayInMonth);
 
-      // Select reason based on sub-project name
+      // Select reason based on sub-project name and mode
       const reasonSeed = hash01(subProject.id + `|reason|${i}`);
-      const reason = DELAY_REASONS[Math.floor(reasonSeed * DELAY_REASONS.length)];
+      const reason = delayReasons[Math.floor(reasonSeed * delayReasons.length)];
 
-      // Generate delay duration (3-15 days)
-      const delayDuration = Math.floor(3 + hash01(subProject.id + `|duration|${i}`) * 12);
+      // Generate delay duration (3-15 days for physical, 5-20 days for financial)
+      const baseDuration = useFinancialReasons ? 5 : 3;
+      const maxDuration = useFinancialReasons ? 20 : 15;
+      const delayDuration = Math.floor(baseDuration + hash01(subProject.id + `|duration|${i}`) * (maxDuration - baseDuration));
 
-      // Generate logged by person
+      // Generate logged by person (financial uses different roles)
       const loggedBySeed = hash01(subProject.id + `|loggedBy|${i}`);
-      const loggedByOptions = ["Project Manager", "Site Supervisor", "QC Engineer", "Team Lead", "Site Engineer"];
+      const loggedByOptions = useFinancialReasons
+        ? ["Finance Manager", "Accounts Officer", "Budget Controller", "Financial Analyst", "CFO"]
+        : ["Project Manager", "Site Supervisor", "QC Engineer", "Team Lead", "Site Engineer"];
       const loggedBy = loggedByOptions[Math.floor(loggedBySeed * loggedByOptions.length)];
 
       // Generate logged at date (1-5 days after delay date)
@@ -1833,6 +1862,12 @@ export function MilestoneDetailsPanel({
   const timeline = phase.timeline ?? [];
   const months = useMemo(() => timeline.map((t) => t.month), [timeline]);
 
+  // Detect if we're in financial mode based on milestone title or sub-project names
+  const isFinancialMode = useMemo(() => {
+    return milestoneTitle.toLowerCase().includes('financial') || 
+           subProjects.some(sp => sp.name.toLowerCase().includes('budget'));
+  }, [milestoneTitle, subProjects]);
+
   // Build Gantt tasks first (needed for delay log generation)
   const ganttTasksForDelayLogs = useMemo(() => {
     if (subProjects.length === 0 || months.length === 0) return [];
@@ -1842,19 +1877,19 @@ export function MilestoneDetailsPanel({
   // Initialize delay logs with hardcoded data for delayed sub-projects
   const initialDelayLogs = useMemo(() => {
     if (subProjects.length === 0 || months.length === 0) return [];
-    return generateHardcodedDelayLogs(subProjects, months, ganttTasksForDelayLogs);
-  }, [subProjects, months, ganttTasksForDelayLogs]);
+    return generateHardcodedDelayLogs(subProjects, months, ganttTasksForDelayLogs, isFinancialMode);
+  }, [subProjects, months, ganttTasksForDelayLogs, isFinancialMode]);
 
   // Delay logs state - stored per milestone, initialized with hardcoded delays
   const [delayLogs, setDelayLogs] = useState<DelayLog[]>(initialDelayLogs);
 
-  // Update delay logs when sub-projects or months change
+  // Update delay logs when sub-projects, months, or financial mode changes
   useEffect(() => {
     if (subProjects.length > 0 && months.length > 0) {
-      const newDelayLogs = generateHardcodedDelayLogs(subProjects, months, ganttTasksForDelayLogs);
+      const newDelayLogs = generateHardcodedDelayLogs(subProjects, months, ganttTasksForDelayLogs, isFinancialMode);
       setDelayLogs(newDelayLogs);
     }
-  }, [subProjects, months, ganttTasksForDelayLogs]);
+  }, [subProjects, months, ganttTasksForDelayLogs, isFinancialMode]);
 
   // Create adjusted sub-projects based on delay logs with impact tracking
   const adjustedSubProjects = useMemo(() => {
