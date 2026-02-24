@@ -13,7 +13,7 @@ CORS_ALLOWED_ORIGINS = [
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql', 
+        'ENGINE': 'django.contrib.gis.db.backends.postgis', 
         'NAME': get_secret("DB_NAME", "safecity"),
         'USER': get_secret("DB_USER", "postgres"),
         'PASSWORD': get_secret("DB_PASSWORD", "admin123"),
@@ -22,5 +22,5 @@ DATABASES = {
     }
 }
 
-# GDAL_LIBRARY_PATH = secrets["GDAL_LIBRARY_PATH"]
-# GEOS_LIBRARY_PATH = secrets["GEOS_LIBRARY_PATH"]
+GDAL_LIBRARY_PATH = secrets["GDAL_LIBRARY_PATH"]
+GEOS_LIBRARY_PATH = secrets["GEOS_LIBRARY_PATH"]
