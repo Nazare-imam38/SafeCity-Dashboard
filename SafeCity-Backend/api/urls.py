@@ -29,6 +29,11 @@ router.register(r'list-tehsil', ListTehsilView, basename='list-tehsil')
 router.register(r'update-tehsil', TehsilUpdateView, basename='update-tehsil') 
 router.register(r'delete-tehsil', TehsilDeleteView, basename='delete-tehsil')
 
+#---------------------------------- Stakeholder View ----------------------------------
+router.register(r'create-stakeholder', StakeholderCreateView, basename='create-stakeholder')
+router.register(r'list-stakeholder', ListStakeholderView, basename='list-stakeholder')
+router.register(r'update-stakeholder', StakeholderUpdateView, basename='update-stakeholder')
+router.register(r'delete-stakeholder', StakeholderDeleteView, basename='delete-stakeholder')
 
 #---------------------------------- Project View ----------------------------------
 router.register(r'create-project', ProjectCreateView, basename='create-project')
