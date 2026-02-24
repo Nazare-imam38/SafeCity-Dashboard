@@ -152,34 +152,6 @@ export default function AuthPage() {
                     </div>
 
                     <div className="mb-12">
-                        <div className="relative flex items-center p-1 bg-muted/30 rounded-[20px] w-full mb-8 overflow-hidden group border border-border/40 min-h-[50px]">
-                            {/* Sliding Background */}
-                            <motion.div
-                                className="absolute top-1 bottom-1 left-1 bg-white rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-border/50"
-                                initial={false}
-                                animate={{
-                                    x: isLogin ? 0 : '100%',
-                                    width: stakeholderType === "Client" ? 'calc(50% - 4px)' : 'calc(100% - 8px)'
-                                }}
-                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                style={{ display: !isLogin && stakeholderType !== "Client" ? 'none' : 'block' }}
-                            />
-                            <button
-                                onClick={() => setIsLogin(true)}
-                                className={`relative flex-1 py-3 rounded-[16px] font-bold text-[13px] transition-colors duration-300 z-10 ${isLogin ? 'text-primary' : 'text-muted-foreground'}`}
-                            >
-                                Command Access
-                            </button>
-                            {stakeholderType !== "Client" && (
-                                <button
-                                    onClick={() => setIsLogin(false)}
-                                    className={`relative flex-1 py-3 rounded-[16px] font-bold text-[13px] transition-colors duration-300 z-10 ${!isLogin ? 'text-secondary' : 'text-muted-foreground'}`}
-                                >
-                                    Administrative Signup
-                                </button>
-                            )}
-                        </div>
-
                         <div className="space-y-2">
                             <motion.h2
                                 key={isLogin ? 'login-head' : 'signup-head'}

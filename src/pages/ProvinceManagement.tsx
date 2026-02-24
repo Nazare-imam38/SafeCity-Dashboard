@@ -20,8 +20,17 @@ export default function ProvinceManagement() {
         { id: 5, name: "Gilgit Baltistan" }
     ]);
     const [provinceName, setProvinceName] = useState("");
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const { toast } = useToast();
+
+    const handleEdit = (id: number) => {
+        const province = provinces.find(p => p.id === id);
+        if (province) {
+            setProvinceName(province.name);
+            setEditingId(id);
+        }
+    };
 
     const handleCreate = () => {
         if (!provinceName.trim()) {
@@ -33,16 +42,35 @@ export default function ProvinceManagement() {
             return;
         }
 
-        const newProvince = {
-            id: provinces.length + 1,
-            name: provinceName
-        };
-        setProvinces([...provinces, newProvince]);
+        if (editingId !== null) {
+            // Update existing province
+            setProvinces(provinces.map(p => 
+                p.id === editingId ? { ...p, name: provinceName } : p
+            ));
+            setProvinceName("");
+            setEditingId(null);
+            toast({
+                title: "Success",
+                description: "Province updated successfully"
+            });
+        } else {
+            // Create new province
+            const newProvince = {
+                id: provinces.length + 1,
+                name: provinceName
+            };
+            setProvinces([...provinces, newProvince]);
+            setProvinceName("");
+            toast({
+                title: "Success",
+                description: "Province created successfully"
+            });
+        }
+    };
+
+    const handleCancel = () => {
         setProvinceName("");
-        toast({
-            title: "Success",
-            description: "Province created successfully"
-        });
+        setEditingId(null);
     };
 
     const handleDelete = (id: number) => {
@@ -86,11 +114,22 @@ export default function ProvinceManagement() {
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Button onClick={handleCreate} className="bg-secondary hover:bg-secondary/90 text-white w-full h-10">
-                                    <Plus className="h-4 w-4 mr-2" /> Create Province
+                                    {editingId !== null ? (
+                                        <>Update Province</>
+                                    ) : (
+                                        <><Plus className="h-4 w-4 mr-2" /> Create Province</>
+                                    )}
                                 </Button>
-                                <Button variant="outline" onClick={() => setProvinceName("")} className="w-full h-10">
-                                    Clear
-                                </Button>
+                                {editingId !== null && (
+                                    <Button variant="outline" onClick={handleCancel} className="w-full h-10">
+                                        Cancel
+                                    </Button>
+                                )}
+                                {editingId === null && (
+                                    <Button variant="outline" onClick={() => setProvinceName("")} className="w-full h-10">
+                                        Clear
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </CardContent>
@@ -134,7 +173,12 @@ export default function ProvinceManagement() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted whitespace-nowrap">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        onClick={() => handleEdit(province.id)}
+                                                        className="h-8 border border-muted hover:bg-muted whitespace-nowrap"
+                                                    >
                                                         <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
                                                     </Button>
                                                     <Button

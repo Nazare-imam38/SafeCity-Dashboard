@@ -22,8 +22,20 @@ export default function DivisionManagement() {
         province: "",
         name: ""
     });
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const { toast } = useToast();
+
+    const handleEdit = (id: number) => {
+        const division = divisions.find(d => d.id === id);
+        if (division) {
+            setFormData({
+                province: division.province,
+                name: division.name
+            });
+            setEditingId(id);
+        }
+    };
 
     const handleCreate = () => {
         if (!formData.province || !formData.name) {
@@ -35,17 +47,36 @@ export default function DivisionManagement() {
             return;
         }
 
-        const newDivision = {
-            id: divisions.length + 1,
-            province: formData.province,
-            name: formData.name
-        };
-        setDivisions([...divisions, newDivision]);
+        if (editingId !== null) {
+            // Update existing division
+            setDivisions(divisions.map(d => 
+                d.id === editingId ? { ...d, province: formData.province, name: formData.name } : d
+            ));
+            setFormData({ province: "", name: "" });
+            setEditingId(null);
+            toast({
+                title: "Success",
+                description: "Division updated successfully"
+            });
+        } else {
+            // Create new division
+            const newDivision = {
+                id: divisions.length + 1,
+                province: formData.province,
+                name: formData.name
+            };
+            setDivisions([...divisions, newDivision]);
+            setFormData({ province: "", name: "" });
+            toast({
+                title: "Success",
+                description: "Division created successfully"
+            });
+        }
+    };
+
+    const handleCancel = () => {
         setFormData({ province: "", name: "" });
-        toast({
-            title: "Success",
-            description: "Division created successfully"
-        });
+        setEditingId(null);
     };
 
     const handleDelete = (id: number) => {
@@ -102,11 +133,22 @@ export default function DivisionManagement() {
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2 lg:col-span-1">
                                 <Button onClick={handleCreate} className="bg-secondary hover:bg-secondary/90 text-white w-full h-10">
-                                    <Plus className="h-4 w-4 mr-2" /> Create Division
+                                    {editingId !== null ? (
+                                        <>Update Division</>
+                                    ) : (
+                                        <><Plus className="h-4 w-4 mr-2" /> Create Division</>
+                                    )}
                                 </Button>
-                                <Button variant="outline" onClick={() => setFormData({ province: "", name: "" })} className="w-full h-10">
-                                    Clear
-                                </Button>
+                                {editingId !== null && (
+                                    <Button variant="outline" onClick={handleCancel} className="w-full h-10">
+                                        Cancel
+                                    </Button>
+                                )}
+                                {editingId === null && (
+                                    <Button variant="outline" onClick={() => setFormData({ province: "", name: "" })} className="w-full h-10">
+                                        Clear
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </CardContent>
@@ -152,7 +194,12 @@ export default function DivisionManagement() {
                                             <TableCell className="font-semibold text-primary">{division.name}</TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted whitespace-nowrap">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        onClick={() => handleEdit(division.id)}
+                                                        className="h-8 border border-muted hover:bg-muted whitespace-nowrap"
+                                                    >
                                                         <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
                                                     </Button>
                                                     <Button

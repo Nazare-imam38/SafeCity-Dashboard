@@ -20,8 +20,21 @@ export default function DistrictManagement() {
         division: "",
         name: ""
     });
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const { toast } = useToast();
+
+    const handleEdit = (id: number) => {
+        const district = districts.find(d => d.id === id);
+        if (district) {
+            setFormData({
+                province: district.province,
+                division: district.division,
+                name: district.name
+            });
+            setEditingId(id);
+        }
+    };
 
     const handleCreate = () => {
         if (!formData.province || !formData.division || !formData.name) {
@@ -33,18 +46,37 @@ export default function DistrictManagement() {
             return;
         }
 
-        const newDistrict = {
-            id: districts.length + 1,
-            province: formData.province,
-            division: formData.division,
-            name: formData.name
-        };
-        setDistricts([...districts, newDistrict]);
+        if (editingId !== null) {
+            // Update existing district
+            setDistricts(districts.map(d => 
+                d.id === editingId ? { ...d, province: formData.province, division: formData.division, name: formData.name } : d
+            ));
+            setFormData({ province: "", division: "", name: "" });
+            setEditingId(null);
+            toast({
+                title: "Success",
+                description: "District updated successfully"
+            });
+        } else {
+            // Create new district
+            const newDistrict = {
+                id: districts.length + 1,
+                province: formData.province,
+                division: formData.division,
+                name: formData.name
+            };
+            setDistricts([...districts, newDistrict]);
+            setFormData({ province: "", division: "", name: "" });
+            toast({
+                title: "Success",
+                description: "District created successfully"
+            });
+        }
+    };
+
+    const handleCancel = () => {
         setFormData({ province: "", division: "", name: "" });
-        toast({
-            title: "Success",
-            description: "District created successfully"
-        });
+        setEditingId(null);
     };
 
     const handleDelete = (id: number) => {
@@ -115,8 +147,17 @@ export default function DistrictManagement() {
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Button onClick={handleCreate} className="bg-secondary hover:bg-secondary/90 text-white flex-1 h-10 w-full">
-                                    <Plus className="h-4 w-4 mr-2" /> Create District
+                                    {editingId !== null ? (
+                                        <>Update District</>
+                                    ) : (
+                                        <><Plus className="h-4 w-4 mr-2" /> Create District</>
+                                    )}
                                 </Button>
+                                {editingId !== null && (
+                                    <Button variant="outline" onClick={handleCancel} className="w-full h-10">
+                                        Cancel
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </CardContent>
@@ -157,7 +198,12 @@ export default function DistrictManagement() {
                                             <TableCell className="font-semibold text-primary whitespace-nowrap">{district.name}</TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted whitespace-nowrap">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        onClick={() => handleEdit(district.id)}
+                                                        className="h-8 border border-muted hover:bg-muted whitespace-nowrap"
+                                                    >
                                                         <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
                                                     </Button>
                                                     <Button

@@ -20,8 +20,22 @@ export default function TehsilManagement() {
         district: "",
         name: ""
     });
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const { toast } = useToast();
+
+    const handleEdit = (id: number) => {
+        const tehsil = tehsils.find(t => t.id === id);
+        if (tehsil) {
+            setFormData({
+                province: tehsil.province,
+                division: tehsil.division,
+                district: tehsil.district,
+                name: tehsil.name
+            });
+            setEditingId(id);
+        }
+    };
 
     const handleCreate = () => {
         if (!formData.province || !formData.division || !formData.district || !formData.name) {
@@ -33,19 +47,38 @@ export default function TehsilManagement() {
             return;
         }
 
-        const newTehsil = {
-            id: tehsils.length + 1,
-            province: formData.province,
-            division: formData.division,
-            district: formData.district,
-            name: formData.name
-        };
-        setTehsils([...tehsils, newTehsil]);
+        if (editingId !== null) {
+            // Update existing tehsil
+            setTehsils(tehsils.map(t => 
+                t.id === editingId ? { ...t, province: formData.province, division: formData.division, district: formData.district, name: formData.name } : t
+            ));
+            setFormData({ province: "", division: "", district: "", name: "" });
+            setEditingId(null);
+            toast({
+                title: "Success",
+                description: "Tehsil updated successfully"
+            });
+        } else {
+            // Create new tehsil
+            const newTehsil = {
+                id: tehsils.length + 1,
+                province: formData.province,
+                division: formData.division,
+                district: formData.district,
+                name: formData.name
+            };
+            setTehsils([...tehsils, newTehsil]);
+            setFormData({ province: "", division: "", district: "", name: "" });
+            toast({
+                title: "Success",
+                description: "Tehsil created successfully"
+            });
+        }
+    };
+
+    const handleCancel = () => {
         setFormData({ province: "", division: "", district: "", name: "" });
-        toast({
-            title: "Success",
-            description: "Tehsil created successfully"
-        });
+        setEditingId(null);
     };
 
     const handleDelete = (id: number) => {
@@ -128,8 +161,17 @@ export default function TehsilManagement() {
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Button onClick={handleCreate} className="bg-secondary hover:bg-secondary/90 text-white w-full h-10 text-xs">
-                                    <Plus className="h-3 w-3 mr-2" /> Create Tehsil
+                                    {editingId !== null ? (
+                                        <>Update Tehsil</>
+                                    ) : (
+                                        <><Plus className="h-3 w-3 mr-2" /> Create Tehsil</>
+                                    )}
                                 </Button>
+                                {editingId !== null && (
+                                    <Button variant="outline" onClick={handleCancel} className="w-full h-10 text-xs">
+                                        Cancel
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </CardContent>
@@ -172,7 +214,12 @@ export default function TehsilManagement() {
                                             <TableCell className="font-semibold text-primary whitespace-nowrap">{tehsil.name}</TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="sm" className="h-8 border border-muted hover:bg-muted whitespace-nowrap">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        onClick={() => handleEdit(tehsil.id)}
+                                                        className="h-8 border border-muted hover:bg-muted whitespace-nowrap"
+                                                    >
                                                         <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
                                                     </Button>
                                                     <Button

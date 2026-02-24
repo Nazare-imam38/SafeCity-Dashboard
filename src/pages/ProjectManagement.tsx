@@ -93,6 +93,7 @@ interface Project {
   startingDate: string;
   referenceNumber: string;
   saNumber: string;
+  stakeholderType: string;
   division: string;
   district: string;
   tehsil: string;
@@ -115,6 +116,7 @@ export default function ProjectManagement() {
   const [startingDate, setStartingDate] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [saNumber, setSaNumber] = useState("");
+  const [stakeholderType, setStakeholderType] = useState<string>("");
   const [selectedDivision, setSelectedDivision] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedTehsil, setSelectedTehsil] = useState<string>("");
@@ -239,6 +241,7 @@ export default function ProjectManagement() {
     setStartingDate("");
     setReferenceNumber("");
     setSaNumber("");
+    setStakeholderType("");
     setSelectedDivision("");
     setSelectedDistrict("");
     setSelectedTehsil("");
@@ -344,6 +347,7 @@ export default function ProjectManagement() {
         startingDate: startingDate,
         referenceNumber: referenceNumber,
         saNumber: saNumber,
+        stakeholderType: stakeholderType,
         division: selectedDivision,
         district: selectedDistrict,
         tehsil: selectedTehsil,
@@ -363,6 +367,7 @@ export default function ProjectManagement() {
         startingDate,
         referenceNumber,
         saNumber,
+        stakeholderType,
         division: selectedDivision,
         district: selectedDistrict,
         tehsil: selectedTehsil,
@@ -467,6 +472,12 @@ export default function ProjectManagement() {
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">
                         SA: {project.saNumber || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        Stakeholder: {project.stakeholderType || "N/A"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
@@ -649,6 +660,21 @@ export default function ProjectManagement() {
                     onChange={(e) => setSaNumber(e.target.value)}
                     required
                   />
+                </div>
+
+                {/* Stakeholder Type */}
+                <div className="space-y-2">
+                  <Label htmlFor="stakeholderType">Stakeholder Type *</Label>
+                  <Select value={stakeholderType} onValueChange={setStakeholderType} required>
+                    <SelectTrigger id="stakeholderType">
+                      <SelectValue placeholder="Select stakeholder type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Consultant">Consultant</SelectItem>
+                      <SelectItem value="Client">Client</SelectItem>
+                      <SelectItem value="Contractor">Contractor</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Division Select */}
