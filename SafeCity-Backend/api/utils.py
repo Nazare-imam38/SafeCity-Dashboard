@@ -60,10 +60,20 @@ class StandardResultsSetPagination(PageNumberPagination):
             'results': data
         })
 def project_image_file_path(instance, filename):
-    """Generate file path for new project image using UUID"""
-    ext = filename.split('.')[-1]  # Get the file extension
-    filename = f'{uuid.uuid4()}.{ext}'  # Generate a new filename using UUID
-    return os.path.join('images/', filename)
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+
+    # Use image_date if available
+    if instance.image_date:
+        date_folder = instance.image_date.strftime("%Y-%m-%d")
+    else:
+        date_folder = "undated"
+
+    return os.path.join(
+        f"projects/{instance.project.id}/daily_logs/{date_folder}/",
+        filename
+    )
+
 
 def project_doc_file_path(instance, filename):
     """Generate file path for new project image using UUID"""

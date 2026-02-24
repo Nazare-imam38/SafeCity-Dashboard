@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from .models import *
+from django.contrib.gis.geos import GEOSGeometry
+import json
 
 # --------------------------------------------------------
 # MyUser Serializer
@@ -112,3 +114,66 @@ class TehsilSerializer(serializers.ModelSerializer):
 
     def get_district_name(self, obj):
         return obj.district.district_name
+    
+class StakeholderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stakeholder
+        fields = ['id', 'stakeholder_type', 'stakeholder_name', 'status']
+
+class ProjectSerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = Project
+        geo_field = "geom"  # required for GeoFeatureModelSerializer
+        fields = [
+            'id', 'stakeholder', 'project_name', 'project_description',
+            'project_starting_date', 'project_reference_no', 'province',
+            'division', 'district', 'tehsil', 'total_budget_allocated',
+            'budget_utilized', 'budget_variance', 'budget_remaining',
+            'xer_file', 'boundary_file', 'geom', 'created_at', 'updated_at'
+        ]
+
+    def create(self, validated_data):
+        boundary_file = validated_data.pop("boundary_file", None)
+        project = super().create(validated_data)
+
+        if boundary_file:
+            try:
+                geojson_data = json.load(boundary_file)
+                # handle both FeatureCollection or single Feature
+                geometry = None
+                if geojson_data.get("type") == "FeatureCollection":
+                    geometry = geojson_data["features"][0]["geometry"]
+                else:
+                    geometry = geojson_data.get("geometry")
+                project.geom = GEOSGeometry(json.dumps(geometry))
+                project.boundary_file = boundary_file  # save the file too
+                project.save()
+            except Exception as e:
+                raise serializers.ValidationError({"boundary_file": f"Invalid GeoJSON: {e}"})
+
+        return project
+
+    def update(self, instance, validated_data):
+        boundary_file = validated_data.pop("boundary_file", None)
+        instance = super().update(instance, validated_data)
+
+        if boundary_file:
+            try:
+                geojson_data = json.load(boundary_file)
+                geometry = None
+                if geojson_data.get("type") == "FeatureCollection":
+                    geometry = geojson_data["features"][0]["geometry"]
+                else:
+                    geometry = geojson_data.get("geometry")
+                instance.geom = GEOSGeometry(json.dumps(geometry))
+                instance.boundary_file = boundary_file
+                instance.save()
+            except Exception as e:
+                raise serializers.ValidationError({"boundary_file": f"Invalid GeoJSON: {e}"})
+
+        return instance
+
+class PictorialArchiveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PictorialArchive
+        fields = ['id', 'project', 'image', 'image_date', 'description', 'created_at', 'updated_at' ]

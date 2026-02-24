@@ -44,7 +44,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", secrets.get("SECRET_KEY", "dev-
 SECRET_KEY = 'django-insecure-xfg45)2$253-9o8ts*_006iv7o%=3og$sx(@q9x9^vhv_(_7d_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     # "sdasurvey.cloud", "www.sdasurvey.cloud", "72.61.229.127",
@@ -63,9 +63,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'django.contrib.gis', 
+    'django.contrib.gis', 
     'rest_framework',
-    # 'rest_framework_gis',
+    'rest_framework_gis',
     "corsheaders",
     'api',
 ]
@@ -162,6 +162,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Media files (Uploads like XER, Images, etc.)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

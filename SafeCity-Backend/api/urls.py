@@ -28,3 +28,15 @@ router.register(r'create-tehsil', TehsilCreateView, basename='create-tehsil')
 router.register(r'list-tehsil', ListTehsilView, basename='list-tehsil')
 router.register(r'update-tehsil', TehsilUpdateView, basename='update-tehsil') 
 router.register(r'delete-tehsil', TehsilDeleteView, basename='delete-tehsil')
+
+
+#---------------------------------- Project View ----------------------------------
+router.register(r'create-project', ProjectCreateView, basename='create-project')
+router.register(r'list-project', ListProjectView, basename='list-project')
+router.register(r'update-project', ProjectUpdateView, basename='update-project') 
+router.register(r'delete-project', ProjectDeleteView, basename='delete-project')
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/', include(router.urls)),
+]

@@ -196,18 +196,35 @@ class Project(models.Model):
     budget_utilized = models.CharField(max_length=200, null=True, blank=True)
     budget_variance = models.CharField(max_length=200, null=True, blank=True)
     budget_remaining = models.CharField(max_length=200, null=True, blank=True)
-    xer_file = models.FileField(upload_to=project_doc_file_path, null=True, blank=True)    
+    xer_file = models.FileField(upload_to=project_doc_file_path, validators=[FileExtensionValidator(allowed_extensions=['xer'])],null=True, blank=True) 
+    boundary_file = models.FileField(
+        upload_to=project_doc_file_path,
+        validators=[FileExtensionValidator(allowed_extensions=['geojson', 'json'])],
+        null=True,
+        blank=True
+    )
+
     geom = gis_models.MultiPolygonField(srid=4326, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True) 
-    updated_by = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.project_name
+
     
 # --------------------------------------------------------
 # Pictorial Archive
 # --------------------------------------------------------
 class PictorialArchive(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='pictorial_archive')
-    image = models.ImageField(upload_to=project_image_file_path, null=True, blank=True)
-    image_date = models.DateField(null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True) 
-    updated_by = models.DateTimeField(auto_now=True)
+    image = models.ImageField(upload_to=project_image_file_path)
+    image_date = models.DateField()
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-image_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.project.project_name} - {self.image_date}"
