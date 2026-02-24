@@ -42,23 +42,33 @@ class MyUserSerializer(serializers.ModelSerializer):
 
 
 class MyUserLoginDashboardSerializer(serializers.ModelSerializer):
-    code = serializers.CharField(write_only=True)
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+    stakeholder_type = serializers.SerializerMethodField()
+    stakeholder_id = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
         fields = [
             "id",
-            "code",
+            "email",
             "password",
             "full_name",
-            "role",
+            "stakeholder_type",
+            "stakeholder_id", 
             "is_active",
-            
         ]
         extra_kwargs = {
-            "password": {"write_only": True}
+            "password": {"write_only": True},
         }
+    def get_stakeholder_type(self, obj):
+        # If user has a stakeholder, return its type, else default to 'Client'
+        return obj.stakeholder.stakeholder_type if obj.stakeholder else "Client"
+
+    def get_stakeholder_id(self, obj):
+        # If user has a stakeholder, return its id, else None
+        return obj.stakeholder.id if obj.stakeholder else None
+    
 # --------------------------------------------------------
 # Province Administrative Divisions
 # --------------------------------------------------------
