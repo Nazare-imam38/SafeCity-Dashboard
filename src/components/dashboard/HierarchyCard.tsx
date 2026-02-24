@@ -13,7 +13,7 @@ interface HierarchyCardProps {
 export function HierarchyCard({ title, overallProgress, onClick, className, color }: HierarchyCardProps) {
   const status = overallProgress === 100 
     ? "Completed" 
-    : overallProgress >= 90 
+    : overallProgress >= 80 
     ? "Near Complete" 
     : overallProgress >= 50 
     ? "In Progress" 
